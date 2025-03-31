@@ -1,0 +1,22 @@
+Package: neurogam
+Type: Package
+Title: Precise temporal localisation of M/EEG effects with Bayesian generalised additive multilevel models
+Version: 0.0.1
+Date: 2025-03-31
+Authors@R:
+    c(
+    person(
+    given = "Ladislas", family = "Nalborczyk",
+    role = c("aut", "cre"),
+    email = "ladislas.nalborczyk@gmail.com", 
+    comment = c(ORCID = "0000-0002-7419-9855")
+    ))
+Description: TBD.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    brms,
+    tidybayes
+Depends: 
+    R (>= 3.5)
