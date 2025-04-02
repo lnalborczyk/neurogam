@@ -2,7 +2,7 @@
 #'
 #' Finding clusters (groups of timesteps) in time-series that exceeds some threshold.
 #'
-#' @param data Dataframe, containing time-series of posterior probability ratios (in long format).
+#' @param data Dataframe, containing exactly two columns called "time" and "value" (in long format).
 #' @param threshold Numeric, indicates the threshold for finding clusters.
 #'
 #' @return The identified clusters (i.e., onset and offset).
@@ -15,13 +15,12 @@
 
 find_clusters <- function (data, threshold) {
 
-    # checking required column names
-    required_columns <- c("time", "prob_ratio")
+    required_columns <- c("time", "value")
     assertthat::assert_that(
-        all(required_columns %in% colnames(data) ),
+        identical(sort(colnames(data) ), sort(required_columns) ),
         msg = paste(
-            "Missing columns:",
-            paste(setdiff(required_columns, colnames(data) ), collapse = ", ")
+            "Data must have exactly two columns named 'time' and 'value'. Found:",
+            paste(colnames(data), collapse = ", ")
             )
         )
 
@@ -35,7 +34,6 @@ find_clusters <- function (data, threshold) {
         dplyr::group_by(.data$name, .data$cluster_id) |>
         dplyr::summarise(cluster_onset = dplyr::first(.data$time), cluster_offset = dplyr::last(.data$time) ) |>
         dplyr::ungroup() |>
-        # dplyr::select(.data$cluster_onset, .data$cluster_offset) |>
         dplyr::select(-.data$name) |>
         data.frame()
 

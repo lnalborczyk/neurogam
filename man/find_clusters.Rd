@@ -7,7 +7,7 @@
 find_clusters(data, threshold)
 }
 \arguments{
-\item{data}{Dataframe, containing time-series of posterior probability ratios (in long format).}
+\item{data}{Dataframe, containing exactly two columns called "time" and "value" (in long format).}
 
 \item{threshold}{Numeric, indicates the threshold for finding clusters.}
 }

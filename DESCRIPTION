@@ -2,7 +2,7 @@ Package: neurogam
 Type: Package
 Title: Precise temporal localisation of M/EEG effects with Bayesian generalised additive multilevel models
 Version: 0.0.1
-Date: 2025-04-01
+Date: 2025-04-02
 Authors@R:
     c(
     person(
@@ -16,7 +16,8 @@ Authors@R:
     role = c("ctb"),
     email = "paul.buerkner@gmail.com"
     ) )
-Description: TBD.
+Description: Providing utility functions for fitting a Bayesian multilevel GAM
+    to time-series such as M/EEG data and identifying clusters.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

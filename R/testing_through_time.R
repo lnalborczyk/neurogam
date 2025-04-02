@@ -94,11 +94,7 @@ testing_through_time <- function (
         formula_obj <- brms::bf(formula_str)
 
         # fitting the GAMM
-        # cat("Fitting the model...\n")
         brms_gam <- brms::brm(
-            # eeg_mean | se(eeg_sd) ~
-            #     condition + s(time, bs = get(bs), k = get(kvalue), by = condition) +
-            #     (1 | participant),
             formula = formula_obj,
             data = summary_data,
             family = stats::gaussian(),
@@ -128,9 +124,7 @@ testing_through_time <- function (
         formula_obj <- brms::bf(formula_str)
 
         # fitting the GAM
-        # cat("Fitting the model...\n")
         brms_gam <- brms::brm(
-            # eeg ~ brms::s(time, bs = bs, k = kvalue),
             formula = formula_obj,
             data = summary_data,
             family = stats::gaussian(),
