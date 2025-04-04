@@ -2,8 +2,6 @@
 output: github_document
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
@@ -17,9 +15,6 @@ knitr::opts_chunk$set(
 ```
 
 # Precise temporal localisation of M/EEG effects with Bayesian generalised additive multilevel models
-
-<!-- badges: start -->
-<!-- badges: end -->
 
 The goal of `neurogam` is to provide utilities for estimating onset and offset of effects in M/EEG data.
 
@@ -49,10 +44,15 @@ data(eeg_data)
 head(eeg_data)
 
 # fitting the BGAMM to identify clusters
-results <- testing_through_time(data = eeg_data, post_prob_ratio_threshold = 3)
+results <- testing_through_time(data = eeg_data, threshold = 3)
 ```
 
 ```{r}
 # displaying the identified clusters
 print(results$clusters)
+```
+
+```{r, fig.asp = 0.5}
+# plotting the identified clusters superimposed with the data
+plot(results)
 ```

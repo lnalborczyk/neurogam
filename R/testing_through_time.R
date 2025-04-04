@@ -14,7 +14,8 @@
 #' @param iter Numeric, number of total iterations per chain.
 #' @param chains Numeric, number of MCMCs.
 #' @param cores Numeric, number of parallel cores to use.
-#' @param post_prob_ratio_threshold Numeric, threshold for identifying clusters.
+#' @param threshold Numeric, threshold for identifying clusters.
+#' @param n_post_samples Numeric, number of posterior samples to use to compute the posterior probability ratio (the larger the better).
 #' @param chance_level Numeric, chance level (for analysing time-resolved decoding performance).
 #' @param sesoi Numeric, smallest effect size of interest (defaults to 0).
 #'
@@ -29,7 +30,13 @@
 #' head(eeg_data)
 #'
 #' # fitting the BGAMM to identify clusters
-#' testing_through_time(data = eeg_data, post_prob_ratio_threshold = 2)
+#' results <- testing_through_time(data = eeg_data, threshold = 2)
+#'
+#' # displaying the identified clusters
+#' print(results$clusters)
+#'
+#' # plotting the identified clusters
+#' plot(results)
 #' }
 #'
 #' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@gmail.com}.
@@ -41,7 +48,7 @@ testing_through_time <- function (
         participant_id = "participant", meeg_id = "eeg", time_id = "time", predictor_id = "condition",
         kvalue = 20, bs = "cr", multilevel = TRUE,
         warmup = 1000, iter = 2000, chains = 4, cores = 4,
-        post_prob_ratio_threshold = 20,
+        threshold = 20, n_post_samples = 1e3,
         chance_level = 0, sesoi = 0
         ) {
 
@@ -52,7 +59,8 @@ testing_through_time <- function (
     stopifnot("iter must be a numeric..." = is.numeric(iter) )
     stopifnot("chains must be a numeric..." = is.numeric(chains) )
     stopifnot("cores must be a numeric..." = is.numeric(cores) )
-    stopifnot("post_prob_ratio_threshold must be a numeric..." = is.numeric(post_prob_ratio_threshold) )
+    stopifnot("threshold must be a numeric..." = is.numeric(threshold) )
+    stopifnot("n_post_samples must be a numeric..." = is.numeric(n_post_samples) )
     stopifnot("chance_level must be a numeric..." = is.numeric(chance_level) )
     stopifnot("sesoi must be a numeric..." = is.numeric(sesoi) )
     stopifnot("bs must be a character..." = is.character(bs) )
@@ -139,7 +147,7 @@ testing_through_time <- function (
     # computing the posterior probability
     prob_y_above <- brms_gam$data |>
         # retrieving the posterior samples
-        tidybayes::add_epred_draws(object = brms_gam, ndraws = 1e3) |>
+        tidybayes::add_epred_draws(object = brms_gam, ndraws = n_post_samples) |>
         # converting to dataframe
         data.frame() |>
         # computing posterior probability at the group level
@@ -154,8 +162,8 @@ testing_through_time <- function (
 
     # finding the clusters
     clusters <- find_clusters(
-        data = prob_y_above |> dplyr::select(-.data$prob_above),
-        threshold = post_prob_ratio_threshold
+        data = prob_y_above |> dplyr::select(.data$time, value = .data$prob_ratio),
+        threshold = threshold
         )
 
     # combining the results in a list

@@ -4,12 +4,14 @@
 \alias{find_clusters}
 \title{Finding clusters (groups of timesteps) in time-series}
 \usage{
-find_clusters(data, threshold)
+find_clusters(data, threshold = 10, above_threshold = TRUE)
 }
 \arguments{
 \item{data}{Dataframe, containing exactly two columns called "time" and "value" (in long format).}
 
 \item{threshold}{Numeric, indicates the threshold for finding clusters.}
+
+\item{above_threshold}{Logical, indicates whether we should threshold above (or below) value.}
 }
 \value{
 The identified clusters (i.e., onset and offset).

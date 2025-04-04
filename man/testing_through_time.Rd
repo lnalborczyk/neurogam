@@ -17,7 +17,8 @@ testing_through_time(
   iter = 2000,
   chains = 4,
   cores = 4,
-  post_prob_ratio_threshold = 20,
+  threshold = 20,
+  n_post_samples = 1000,
   chance_level = 0,
   sesoi = 0
 )
@@ -47,7 +48,9 @@ testing_through_time(
 
 \item{cores}{Numeric, number of parallel cores to use.}
 
-\item{post_prob_ratio_threshold}{Numeric, threshold for identifying clusters.}
+\item{threshold}{Numeric, threshold for identifying clusters.}
+
+\item{n_post_samples}{Numeric, number of posterior samples to use to compute the posterior probability ratio (the larger the better).}
 
 \item{chance_level}{Numeric, chance level (for analysing time-resolved decoding performance).}
 

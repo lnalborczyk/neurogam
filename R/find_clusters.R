@@ -4,6 +4,7 @@
 #'
 #' @param data Dataframe, containing exactly two columns called "time" and "value" (in long format).
 #' @param threshold Numeric, indicates the threshold for finding clusters.
+#' @param above_threshold Logical, indicates whether we should threshold above (or below) value.
 #'
 #' @return The identified clusters (i.e., onset and offset).
 #'
@@ -13,7 +14,11 @@
 #'
 #' @export
 
-find_clusters <- function (data, threshold) {
+find_clusters <- function (data, threshold = 10, above_threshold = TRUE) {
+
+    stopifnot("data must be a dataframe..." = is.data.frame(data) )
+    stopifnot("threshold must be a numeric..." = is.numeric(threshold) )
+    stopifnot("above_threshold must be a logical..." = is.logical(above_threshold) )
 
     required_columns <- c("time", "value")
     assertthat::assert_that(
@@ -24,17 +29,26 @@ find_clusters <- function (data, threshold) {
             )
         )
 
+    if (isFALSE(above_threshold) ) {
+
+        threshold <- -threshold
+        data <- data |> dplyr::mutate(value = if (above_threshold) .data$value else -.data$value)
+
+    }
+
     clusters <- data |>
-        tidyr::pivot_longer(cols = -.data$time) |>
-        dplyr::group_by(.data$name) |>
-        dplyr::mutate(above_threshold = .data$value >= threshold) |>
-        dplyr::mutate(cluster_change = c(TRUE, diff(.data$above_threshold) != 0) ) |>
-        dplyr::filter(.data$above_threshold) |>
-        dplyr::mutate(cluster_id = cumsum(.data$cluster_change) ) |>
-        dplyr::group_by(.data$name, .data$cluster_id) |>
-        dplyr::summarise(cluster_onset = dplyr::first(.data$time), cluster_offset = dplyr::last(.data$time) ) |>
-        dplyr::ungroup() |>
-        dplyr::select(-.data$name) |>
+        dplyr::mutate(
+            above = .data$value >= threshold,
+            change = dplyr::lag(.data$above, default = FALSE) != .data$above,
+            cluster_id = cumsum(.data$change & .data$above)
+            ) |>
+        dplyr::filter(.data$above) |>
+        dplyr::group_by(.data$cluster_id) |>
+        dplyr::summarise(
+            cluster_onset = dplyr::first(.data$time),
+            cluster_offset = dplyr::last(.data$time),
+            .groups = "drop"
+            ) |>
         data.frame()
 
     return (clusters)
