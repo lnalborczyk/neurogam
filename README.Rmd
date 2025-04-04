@@ -2,7 +2,7 @@
 output: github_document
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
     collapse = TRUE,
     cache = TRUE,
@@ -22,7 +22,7 @@ The goal of `neurogam` is to provide utilities for estimating onset and offset o
 
 You can install the development version of `neurogam` from GitHub with:
 
-```{r, eval = FALSE}
+```{r packages, eval = FALSE}
 install.packages("remotes")
 
 remotes::install_github(
@@ -35,7 +35,7 @@ remotes::install_github(
 
 Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of effect from simulated EEG data.
 
-```{r, results = "hide"}
+```{r clusters, results = "hide"}
 # loading the neurogam package
 library(neurogam)
 
@@ -47,12 +47,12 @@ head(eeg_data)
 results <- testing_through_time(data = eeg_data, threshold = 3)
 ```
 
-```{r}
+```{r print-clusters}
 # displaying the identified clusters
 print(results$clusters)
 ```
 
-```{r, fig.asp = 0.5}
+```{r fig-clusters, fig.asp = 0.5, dev = "png", dpi = 200}
 # plotting the identified clusters superimposed with the data
 plot(results)
 ```

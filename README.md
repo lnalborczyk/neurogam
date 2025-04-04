@@ -38,7 +38,7 @@ results <- testing_through_time(data = eeg_data, threshold = 3)
 # displaying the identified clusters
 print(results$clusters)
 #>   cluster_id cluster_onset cluster_offset
-#> 1          1          0.18           0.35
+#> 1          1         0.172          0.348
 ```
 
 ``` r
@@ -46,4 +46,4 @@ print(results$clusters)
 plot(results)
 ```
 
-<img src="man/figures/README-unnamed-chunk-5-1.png" width="100%" />
+<img src="man/figures/README-fig-clusters-1.png" width="100%" />
