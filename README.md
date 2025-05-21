@@ -1,8 +1,11 @@
 
 # Precise temporal localisation of M/EEG effects with Bayesian generalised additive multilevel models
 
-The goal of `neurogam` is to provide utilities for estimating onset and
-offset of effects in M/EEG data.
+The goal of `neurogam` is to provide utilities for estimating the onset
+and offset of effects in M/EEG data. The current version only includes
+the possibility of fitting 1D temporal data (e.g., raw M/EEG data or
+decoding timecourses) but will be extended in the future to support 2D
+temporal or spatiotemporal data.
 
 ## Installation
 
@@ -28,8 +31,19 @@ library(neurogam)
 
 # importing some simulated EEG data
 data(eeg_data)
-head(eeg_data)
 
+# displaying some rows
+head(eeg_data)
+#>      participant condition trial  time       eeg
+#> 1 participant_01     cond1     1 0.000 0.8618045
+#> 2 participant_01     cond1     1 0.002 1.2729148
+#> 3 participant_01     cond1     1 0.004 1.6538158
+#> 4 participant_01     cond1     1 0.006 1.3910888
+#> 5 participant_01     cond1     1 0.008 0.6499553
+#> 6 participant_01     cond1     1 0.010 0.1548358
+```
+
+``` r
 # fitting the BGAMM to identify clusters
 results <- testing_through_time(data = eeg_data, threshold = 3)
 ```

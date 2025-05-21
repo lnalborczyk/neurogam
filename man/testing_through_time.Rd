@@ -69,7 +69,13 @@ data(eeg_data)
 head(eeg_data)
 
 # fitting the BGAMM to identify clusters
-testing_through_time(data = eeg_data, post_prob_ratio_threshold = 2)
+results <- testing_through_time(data = eeg_data, threshold = 2)
+
+# displaying the identified clusters
+print(results$clusters)
+
+# plotting the identified clusters
+plot(results)
 }
 
 }

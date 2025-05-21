@@ -96,7 +96,7 @@ testing_through_time <- function (
         smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = condition)")
 
         # full formula
-        formula_str <- glue::glue("eeg_mean | se(eeg_sd) ~ condition + {smooth_term} + (1 | participant)")
+        formula_str <- glue::glue("eeg_mean | se(eeg_sd) ~ 1 + condition + {smooth_term} + (1 + condition | participant)")
 
         # convert to formula
         formula_obj <- brms::bf(formula_str)
@@ -126,7 +126,7 @@ testing_through_time <- function (
         smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = condition)")
 
         # full formula
-        formula_str <- glue::glue("eeg_mean ~ condition + {smooth_term}")
+        formula_str <- glue::glue("eeg_mean ~ 1 + condition + {smooth_term}")
 
         # convert to formula
         formula_obj <- brms::bf(formula_str)
