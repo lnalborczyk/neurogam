@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 # Precise temporal localisation of M/EEG effects with Bayesian generalised additive multilevel models
 
-The goal of `neurogam` is to provide utilities for estimating the onset and offset of effects in M/EEG data. The current version only includes the possibility of fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses) but will be extended in the future to support 2D temporal or spatiotemporal data.
+The goal of `neurogam` is to provide utilities for estimating the onset and offset of effects in M/EEG data. The current version only allows fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses) but will be extended in the future to support 2D temporal or spatiotemporal data.
 
 ## Installation
 
@@ -33,7 +33,7 @@ remotes::install_github(
 
 ## Usage
 
-Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of effect from simulated EEG data.
+Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of simulated EEG data.
 
 ```{r data}
 # loading the neurogam package

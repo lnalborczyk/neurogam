@@ -7,6 +7,7 @@
 #' @param meeg_id Character, column in data specifying the M/EEG values.
 #' @param time_id Character, column in data specifying the time information.
 #' @param predictor_id Character, column in data specifying the predictor(s).
+#' @param family A description of the response distribution to be used in the model.
 #' @param kvalue Numeric, GAM basis dimension.
 #' @param bs Character, type of splines to be passed to brms.
 #' @param multilevel Logical, should we fit a simple GAM or the multilevel GAM with summary statistics per participant?
@@ -22,6 +23,7 @@
 #' @return A list containing the identified clusters (i.e., onset and offset) and time-series of posterior probabilities.
 #'
 #' @importFrom rlang .data
+#' @importFrom stats gaussian
 #'
 #' @examples
 #' \dontrun{
@@ -46,9 +48,9 @@
 testing_through_time <- function (
         data,
         participant_id = "participant", meeg_id = "eeg", time_id = "time", predictor_id = "condition",
-        kvalue = 20, bs = "cr", multilevel = TRUE,
+        family = gaussian(), kvalue = 20, bs = "cr", multilevel = TRUE,
         warmup = 1000, iter = 2000, chains = 4, cores = 4,
-        threshold = 20, n_post_samples = 1e3,
+        threshold = 20, n_post_samples = NULL,
         chance_level = 0, sesoi = 0
         ) {
 
@@ -60,7 +62,6 @@ testing_through_time <- function (
     stopifnot("chains must be a numeric..." = is.numeric(chains) )
     stopifnot("cores must be a numeric..." = is.numeric(cores) )
     stopifnot("threshold must be a numeric..." = is.numeric(threshold) )
-    stopifnot("n_post_samples must be a numeric..." = is.numeric(n_post_samples) )
     stopifnot("chance_level must be a numeric..." = is.numeric(chance_level) )
     stopifnot("sesoi must be a numeric..." = is.numeric(sesoi) )
     stopifnot("bs must be a character..." = is.character(bs) )
@@ -105,7 +106,7 @@ testing_through_time <- function (
         brms_gam <- brms::brm(
             formula = formula_obj,
             data = summary_data,
-            family = stats::gaussian(),
+            family = family,
             warmup = warmup,
             iter = iter,
             chains = chains,
@@ -144,6 +145,12 @@ testing_through_time <- function (
 
     }
 
+    if (is.null(n_post_samples) ) {
+
+        n_post_samples <- brms::ndraws(brms_gam)
+
+    }
+
     # computing the posterior probability
     prob_y_above <- brms_gam$data |>
         # retrieving the posterior samples
@@ -154,10 +161,13 @@ testing_through_time <- function (
         dplyr::group_by(.data$time) |>
         dplyr::summarise(prob_above = mean(.data$.epred > (0 + chance_level + sesoi) ) ) |>
         dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-        # ensuring there is no 0 or +Inf values
-        dplyr::mutate(prob_ratio = ifelse(is.infinite(.data$prob_ratio), brms::ndraws(brms_gam), .data$prob_ratio) ) |>
-        dplyr::mutate(prob_ratio = ifelse(.data$prob_ratio == 0, 1 / brms::ndraws(brms_gam), .data$prob_ratio) ) |>
         dplyr::ungroup() |>
+        # ensuring there is no 0 or +Inf values
+        # dplyr::mutate(prob_ratio = ifelse(is.infinite(.data$prob_ratio), n_post_samples, .data$prob_ratio) ) |>
+        # dplyr::mutate(prob_ratio = ifelse(.data$prob_ratio == 0, 1 / brms::ndraws(brms_gam), .data$prob_ratio) ) |>
+        # ensuring there is no 0 or +Inf values
+        dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
+        dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
         data.frame()
 
     # finding the clusters

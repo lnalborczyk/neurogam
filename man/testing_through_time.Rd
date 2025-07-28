@@ -10,6 +10,7 @@ testing_through_time(
   meeg_id = "eeg",
   time_id = "time",
   predictor_id = "condition",
+  family = gaussian(),
   kvalue = 20,
   bs = "cr",
   multilevel = TRUE,
@@ -18,7 +19,7 @@ testing_through_time(
   chains = 4,
   cores = 4,
   threshold = 20,
-  n_post_samples = 1000,
+  n_post_samples = NULL,
   chance_level = 0,
   sesoi = 0
 )
@@ -33,6 +34,8 @@ testing_through_time(
 \item{time_id}{Character, column in data specifying the time information.}
 
 \item{predictor_id}{Character, column in data specifying the predictor(s).}
+
+\item{family}{A description of the response distribution to be used in the model.}
 
 \item{kvalue}{Numeric, GAM basis dimension.}
 

@@ -2,7 +2,7 @@ Package: neurogam
 Type: Package
 Title: Precise temporal localisation of M/EEG effects with Bayesian generalised additive multilevel models
 Version: 0.0.1
-Date: 2025-05-21
+Date: 2025-07-28
 Authors@R:
     c(
     person(
