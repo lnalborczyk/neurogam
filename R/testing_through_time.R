@@ -4,9 +4,9 @@
 #'
 #' @param data Dataframe, with ERP or decoding performance data (in long format).
 #' @param participant_id Character, column in data specifying the participant ID.
-#' @param meeg_id Character, column in data specifying the M/EEG values.
+#' @param outcome_id Character, column in data specifying the M/EEG values.
 #' @param time_id Character, column in data specifying the time information.
-#' @param predictor_id Character, column in data specifying the predictor(s).
+#' @param predictor_id Character, column in data specifying the binary predictor (e.g., group or condition). If predictor_id is NA, then neurogam will test difference against 0.
 #' @param family A description of the response distribution to be used in the model.
 #' @param kvalue Numeric, GAM basis dimension.
 #' @param bs Character, type of splines to be passed to brms.
@@ -48,7 +48,7 @@
 
 testing_through_time <- function (
         data,
-        participant_id = "participant", meeg_id = "eeg",
+        participant_id = "participant", outcome_id = "eeg",
         time_id = "time", predictor_id = "condition",
         family = gaussian(), kvalue = 20, bs = "tp",
         multilevel = c("summary", "group", "full"),
@@ -74,7 +74,7 @@ testing_through_time <- function (
     multilevel <- match.arg(multilevel)
 
     # checking required column names
-    required_columns <- c(participant_id, meeg_id, time_id, predictor_id)
+    required_columns <- c(participant_id, outcome_id, time_id, predictor_id)
     assertthat::assert_that(
         all(required_columns %in% colnames(data) ),
         msg = paste(
@@ -86,10 +86,26 @@ testing_through_time <- function (
     if (multilevel == "full") {
 
         # construct the smooth term dynamically
-        smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = condition)")
+        if (is.na(predictor_id) ) {
+
+            smooth_term <- glue::glue("s({time_id}, bs = '{bs}', k = {kvalue})")
+
+        } else {
+
+            smooth_term <- glue::glue("s({time_id}, bs = '{bs}', k = {kvalue}, by = {predictor_id})")
+
+        }
 
         # full formula
-        formula_str <- glue::glue("eeg_mean ~ 1 + condition + {smooth_term} + (1 + condition | participant)")
+        if (is.na(predictor_id) ) {
+
+            formula_str <- glue::glue("{outcome_id} ~ 1 + {smooth_term} + (1 | {participant_id})")
+
+        } else {
+
+            formula_str <- glue::glue("{outcome_id} ~ 1 + {predictor_id} + {smooth_term} + (1 + {predictor_id} | {participant_id})")
+
+        }
 
         # convert to formula
         formula_obj <- brms::bf(formula_str)
@@ -106,27 +122,154 @@ testing_through_time <- function (
             backend = backend
             )
 
+        if (is.null(n_post_samples) ) {
+
+            n_post_samples <- brms::ndraws(brms_gam)
+
+        }
+
+        # computing the posterior odds over time
+        if (is.na(predictor_id) ) {
+
+            # retrieving posterior predictions (draws)
+            post_draws <- brms_gam$data |>
+                tidybayes::add_epred_draws(object = brms_gam, ndraws = n_post_samples) |>
+                data.frame()
+
+            # computing the posterior odds over time
+            prob_y_above <- post_draws |>
+                dplyr::select(.data$participant, .data$time, .data$.epred, .data$.draw) |>
+                # computing posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    prob_above = mean(.data$.epred > (0 + chance_level + sesoi) )
+                    ) |>
+                dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+                dplyr::ungroup() |>
+                # ensuring there is no 0 or +Inf values
+                dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
+                dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
+                data.frame()
+
+            # retrieving posterior predictions
+            post_prob_slope <- post_draws |>
+                dplyr::select(.data$participant, .data$time,  .data$.epred, .data$.draw) |>
+                # computing mean posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    post_prob = stats::quantile(x = .data$.epred, probs = 0.5),
+                    lower = stats::quantile(x = .data$.epred, probs = 0.025),
+                    upper = stats::quantile(x = .data$.epred, probs = 0.975)
+                    ) |>
+                dplyr::ungroup()
+
+            # joining with prob_y_above
+            prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+
+        } else {
+
+            # retrieving posterior predictions (draws)
+            post_draws <- tidybayes::add_epred_draws(
+                object = brms_gam,
+                newdata = tidyr::crossing(
+                    brms_gam$data$time, brms_gam$data$predictor
+                    ) |>
+                    dplyr::rename(time = 1, predictor = 2), ndraws = n_post_samples) |>
+                data.frame()
+
+            # retrieving predictor labels
+            cond1 <- levels(post_draws$predictor)[1]
+            cond2 <- levels(post_draws$predictor)[2]
+
+            # computing the posterior odds over time
+            prob_y_above <- post_draws |>
+                dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
+                tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+                # head()
+                dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
+                # computing posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    prob_above = mean(.data$epred_diff > (0 + chance_level + sesoi) )
+                    ) |>
+                dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+                dplyr::ungroup() |>
+                # ensuring there is no 0 or +Inf values
+                dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
+                dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
+                data.frame()
+
+            # retrieving posterior predictions
+            post_prob_slope <- post_draws |>
+                dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
+                tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+                dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
+                # computing mean posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
+                    lower = stats::quantile(x = .data$epred_diff, probs = 0.025),
+                    upper = stats::quantile(x = .data$epred_diff, probs = 0.975)
+                    ) |>
+                dplyr::ungroup()
+
+            # joining with prob_y_above
+            prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+
+        }
+
     } else if (multilevel == "summary") {
 
-        # reshaping and summarising the data
-        summary_data <- data |>
-            # reshaping the original variables
-            dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) ) |>
-            dplyr::mutate(participant = .data[[participant_id]]) |>
-            dplyr::mutate(eeg = .data[[meeg_id]]) |>
-            dplyr::mutate(time = .data[[time_id]]) |>
-            # summarising per participant
-            dplyr::summarise(
-                eeg_mean = mean(.data$eeg),
-                eeg_sd = stats::sd(.data$eeg),
-                .by = c(.data$participant, .data$condition, .data$time)
-                )
-
         # construct the smooth term dynamically
-        smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = condition)")
+        if (is.na(predictor_id) ) {
+
+            # reshaping and summarising the data
+            summary_data <- data |>
+                # reshaping the original variables
+                dplyr::mutate(participant = .data[[participant_id]]) |>
+                dplyr::mutate(outcome = .data[[outcome_id]]) |>
+                dplyr::mutate(time = .data[[time_id]]) |>
+                # summarising per participant
+                dplyr::summarise(
+                    outcome_mean = mean(.data$outcome),
+                    outcome_sd = stats::sd(.data$outcome),
+                    .by = c(.data$participant, .data$time)
+                    )
+
+            # defining the smooth term
+            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
+
+        } else {
+
+            # reshaping and summarising the data
+            summary_data <- data |>
+                # reshaping the original variables
+                dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) ) |>
+                dplyr::mutate(participant = .data[[participant_id]]) |>
+                dplyr::mutate(outcome = .data[[outcome_id]]) |>
+                dplyr::mutate(time = .data[[time_id]]) |>
+                # summarising per participant
+                dplyr::summarise(
+                    outcome_mean = mean(.data$outcome),
+                    outcome_sd = stats::sd(.data$outcome),
+                    .by = c(.data$participant, .data$predictor, .data$time)
+                    )
+
+            # defining the smooth term
+            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
+
+        }
 
         # full formula
-        formula_str <- glue::glue("eeg_mean | se(eeg_sd) ~ 1 + condition + {smooth_term} + (1 + condition | participant)")
+        if (is.na(predictor_id) ) {
+
+            formula_str <- glue::glue("outcome_mean | se(outcome_sd) ~ 1 + {smooth_term} + (1 | participant)")
+
+        } else {
+
+            formula_str <- glue::glue("outcome_mean | se(outcome_sd) ~ 1 + predictor + {smooth_term} + (1 + predictor | participant)")
+
+        }
 
         # convert to formula
         formula_obj <- brms::bf(formula_str)
@@ -143,28 +286,157 @@ testing_through_time <- function (
             backend = backend
             )
 
+        if (is.null(n_post_samples) ) {
 
-    } else if (multilevel == FALSE) {
+            n_post_samples <- brms::ndraws(brms_gam)
 
-        # reshaping and summarising the data
-        summary_data <- data |>
-            # reshaping the original variables
-            dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) ) |>
-            dplyr::mutate(participant = .data[[participant_id]]) |>
-            dplyr::mutate(eeg = .data[[meeg_id]]) |>
-            dplyr::mutate(time = .data[[time_id]]) |>
-            # summarising per participant
-            dplyr::summarise(
-                eeg_mean = mean(.data$eeg),
-                eeg_sd = stats::sd(.data$eeg),
-                .by = c(.data$participant, .data$condition, .data$time)
-                )
+        }
+
+        # computing the posterior odds over time
+        if (is.na(predictor_id) ) {
+
+            # retrieving posterior predictions (draws)
+            post_draws <- brms_gam$data |>
+                tidybayes::add_epred_draws(object = brms_gam, ndraws = n_post_samples) |>
+                data.frame()
+
+            # computing the posterior odds over time
+            prob_y_above <- post_draws |>
+                dplyr::select(.data$participant, .data$time, .data$.epred, .data$.draw) |>
+                # computing posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    prob_above = mean(.data$.epred > (0 + chance_level + sesoi) )
+                    ) |>
+                dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+                dplyr::ungroup() |>
+                # ensuring there is no 0 or +Inf values
+                dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
+                dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
+                data.frame()
+
+            # retrieving posterior predictions
+            post_prob_slope <- post_draws |>
+                dplyr::select(.data$participant, .data$time,  .data$.epred, .data$.draw) |>
+                # computing mean posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    post_prob = stats::quantile(x = .data$.epred, probs = 0.5),
+                    lower = stats::quantile(x = .data$.epred, probs = 0.025),
+                    upper = stats::quantile(x = .data$.epred, probs = 0.975)
+                    ) |>
+                dplyr::ungroup()
+
+            # joining with prob_y_above
+            prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+
+        } else {
+
+            # retrieving posterior predictions (draws)
+            post_draws <- tidybayes::add_epred_draws(
+                object = brms_gam,
+                # newdata = tidyr::crossing(
+                #     brms_gam$data$time, brms_gam$data$predictor
+                #     ) |> dplyr::rename(time = 1, predictor = 2),
+                newdata = brms_gam$data,
+                ndraws = n_post_samples
+                ) |>
+                data.frame()
+
+            # retrieving predictor labels
+            cond1 <- levels(post_draws$predictor)[1]
+            cond2 <- levels(post_draws$predictor)[2]
+
+            # computing the posterior odds over time
+            prob_y_above <- post_draws |>
+                # dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
+                dplyr::select(.data$time, .data$participant, .data$predictor, .data$.epred, .data$.draw) |>
+                tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+                # head()
+                dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
+                # computing posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    prob_above = mean(.data$epred_diff > (0 + chance_level + sesoi) )
+                    ) |>
+                dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+                dplyr::ungroup() |>
+                # ensuring there is no 0 or +Inf values
+                dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
+                dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
+                data.frame()
+
+            # retrieving posterior predictions
+            post_prob_slope <- post_draws |>
+                dplyr::select(.data$time, .data$participant, .data$predictor, .data$.epred, .data$.draw) |>
+                tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+                dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
+                # computing mean posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
+                    lower = stats::quantile(x = .data$epred_diff, probs = 0.025),
+                    upper = stats::quantile(x = .data$epred_diff, probs = 0.975)
+                    ) |>
+                dplyr::ungroup()
+
+            # joining with prob_y_above
+            prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+
+        }
+
+    } else if (multilevel == "group") {
 
         # construct the smooth term dynamically
-        smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = condition)")
+        if (is.na(predictor_id) ) {
+
+            # reshaping and summarising the data
+            summary_data <- data |>
+                # reshaping the original variables
+                dplyr::mutate(participant = .data[[participant_id]]) |>
+                dplyr::mutate(outcome = .data[[outcome_id]]) |>
+                dplyr::mutate(time = .data[[time_id]]) |>
+                # summarising per participant
+                dplyr::summarise(
+                    outcome_mean = mean(.data$outcome),
+                    outcome_sd = stats::sd(.data$outcome),
+                    .by = c(.data$participant, .data$time)
+                    )
+
+            # defining the smooth term
+            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
+
+        } else {
+
+            # reshaping and summarising the data
+            summary_data <- data |>
+                # reshaping the original variables
+                dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) ) |>
+                dplyr::mutate(participant = .data[[participant_id]]) |>
+                dplyr::mutate(outcome = .data[[outcome_id]]) |>
+                dplyr::mutate(time = .data[[time_id]]) |>
+                # summarising per participant
+                dplyr::summarise(
+                    outcome_mean = mean(.data$outcome),
+                    outcome_sd = stats::sd(.data$outcome),
+                    .by = c(.data$participant, .data$predictor, .data$time)
+                    )
+
+            # defining the smooth term
+            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
+
+        }
 
         # full formula
-        formula_str <- glue::glue("eeg_mean ~ 1 + condition + {smooth_term}")
+        if (is.na(predictor_id) ) {
+
+            formula_str <- glue::glue("outcome_mean ~ 1 + {smooth_term}")
+
+        } else {
+
+            formula_str <- glue::glue("outcome_mean ~ 1 + predictor + {smooth_term}")
+
+        }
 
         # convert to formula
         formula_obj <- brms::bf(formula_str)
@@ -181,52 +453,102 @@ testing_through_time <- function (
             backend = backend
             )
 
+        if (is.null(n_post_samples) ) {
+
+            n_post_samples <- brms::ndraws(brms_gam)
+
+        }
+
+        # computing the posterior odds over time
+        if (is.na(predictor_id) ) {
+
+            # retrieving posterior predictions (draws)
+            post_draws <- brms_gam$data |>
+                tidybayes::add_epred_draws(object = brms_gam, ndraws = n_post_samples) |>
+                data.frame()
+
+            prob_y_above <- post_draws |>
+                dplyr::select(.data$time, .data$.epred, .data$.draw) |>
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    prob_above = mean(.data$.epred > (0 + chance_level + sesoi) )
+                    ) |>
+                dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+                dplyr::ungroup() |>
+                # ensuring there is no 0 or +Inf values
+                dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
+                dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
+                data.frame()
+
+            # retrieving posterior predictions
+            post_prob_slope <- post_draws |>
+                dplyr::select(.data$time, .data$.epred, .data$.draw) |>
+                # computing mean posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    post_prob = stats::quantile(x = .data$.epred, probs = 0.5),
+                    lower = stats::quantile(x = .data$.epred, probs = 0.025),
+                    upper = stats::quantile(x = .data$.epred, probs = 0.975)
+                    ) |>
+                dplyr::ungroup()
+
+            # joining with prob_y_above
+            prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+
+        } else {
+
+            # retrieving posterior predictions (draws)
+            post_draws <- tidybayes::add_epred_draws(
+                object = brms_gam,
+                newdata = tidyr::crossing(
+                    brms_gam$data$time, brms_gam$data$predictor
+                    ) |> dplyr::rename(time = 1, predictor = 2),
+                ndraws = n_post_samples
+                ) |>
+                data.frame()
+
+            # retrieving predictor labels
+            cond1 <- levels(post_draws$predictor)[1]
+            cond2 <- levels(post_draws$predictor)[2]
+
+            # computing the posterior odds over time
+            prob_y_above <- post_draws |>
+                dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
+                tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+                # head()
+                dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
+                # computing posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    prob_above = mean(.data$epred_diff > (0 + chance_level + sesoi) )
+                    ) |>
+                dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+                dplyr::ungroup() |>
+                # ensuring there is no 0 or +Inf values
+                dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
+                dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
+                data.frame()
+
+            # retrieving posterior predictions
+            post_prob_slope <- post_draws |>
+                dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
+                tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+                dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
+                # computing mean posterior probability at the group level
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
+                    lower = stats::quantile(x = .data$epred_diff, probs = 0.025),
+                    upper = stats::quantile(x = .data$epred_diff, probs = 0.975)
+                    ) |>
+                dplyr::ungroup()
+
+            # joining with prob_y_above
+            prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+
+        }
+
     }
-
-    if (is.null(n_post_samples) ) {
-
-        n_post_samples <- brms::ndraws(brms_gam)
-
-    }
-
-    # retrieving posterior predictions (draws)
-    post_draws <- brms_gam$data |>
-        tidybayes::add_epred_draws(object = brms_gam, ndraws = n_post_samples) |>
-        data.frame()
-
-    # computing the posterior odds over time
-    prob_y_above <- post_draws |>
-        dplyr::select(.data$participant, .data$time, .data$condition, .data$.epred, .data$.draw) |>
-        tidyr::pivot_wider(names_from = .data$condition, values_from = .data$.epred) |>
-        dplyr::mutate(epred_diff = .data$cond2 - .data$cond1) |>
-        # computing posterior probability at the group level
-        dplyr::group_by(.data$time) |>
-        dplyr::summarise(
-            prob_above = mean(.data$epred_diff > (0 + chance_level + sesoi) )
-            ) |>
-        dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-        dplyr::ungroup() |>
-        # ensuring there is no 0 or +Inf values
-        dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
-        dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
-        data.frame()
-
-    # retrieving posterior predictions
-    post_prob_slope <- post_draws |>
-        dplyr::select(.data$participant, .data$time, .data$condition, .data$.epred, .data$.draw) |>
-        tidyr::pivot_wider(names_from = .data$condition, values_from = .data$.epred) |>
-        dplyr::mutate(epred_diff = .data$cond2 - .data$cond1) |>
-        # computing mean posterior probability at the group level
-        dplyr::group_by(.data$time) |>
-        dplyr::summarise(
-            post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
-            lower = stats::quantile(x = .data$epred_diff, probs = 0.025),
-            upper = stats::quantile(x = .data$epred_diff, probs = 0.975)
-            ) |>
-        dplyr::ungroup()
-
-    # joining with prob_y_above
-    prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
 
     # finding the clusters
     clusters <- find_clusters(
@@ -237,8 +559,8 @@ testing_through_time <- function (
     # combining the results in a list
     clusters_results <- list(
         clusters = clusters,
-        post_prob_timecourse = prob_y_above,
-        raw_data = brms_gam$data
+        predictions = prob_y_above,
+        data = brms_gam$data
         )
 
     # assigning a new class to the list
@@ -253,21 +575,35 @@ testing_through_time <- function (
 
 plot.clusters_results <- function (x, clusters_y = -Inf, clusters_colour = "steelblue", lineend = "butt", ...) {
 
-    x$raw_data |>
-        dplyr::summarise(eeg_mean = mean(.data$eeg_mean), .by = c(.data$time, .data$condition) ) |>
-        tidyr::pivot_wider(names_from = .data$condition, values_from = .data$eeg_mean) |>
-        dplyr::mutate(cond_diff = .data$cond2 - .data$cond1) |>
+    if (ncol(x$data) > 2) {
+
+        cond1 <- levels(x$data$predictor)[1]
+        cond2 <- levels(x$data$predictor)[2]
+
+        reshaped_data <- x$data |>
+            dplyr::summarise(outcome_mean = mean(.data$outcome_mean), .by = c(.data$time, .data$predictor) ) |>
+            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$outcome_mean) |>
+            dplyr::mutate(outcome_mean = .data[[cond2]] - .data[[cond1]])
+
+    } else {
+
+        reshaped_data <- x$data |>
+            dplyr::summarise(outcome_mean = mean(.data$outcome_mean), .by = .data$time)
+
+    }
+
+    reshaped_data |>
         ggplot2::ggplot(
-            ggplot2::aes(x = .data$time, y = .data$cond_diff)
+            ggplot2::aes(x = .data$time, y = .data$outcome_mean)
             ) +
         ggplot2::geom_hline(yintercept = 0.0, linetype = 2) +
         ggplot2::geom_ribbon(
-            data = x$post_prob_timecourse,
+            data = x$predictions,
             ggplot2::aes(x = .data$time, y = NULL, ymin = .data$lower, ymax = .data$upper),
             fill = clusters_colour, alpha = 0.2
             ) +
         ggplot2::geom_line(
-            data = x$post_prob_timecourse,
+            data = x$predictions,
             ggplot2::aes(x = .data$time, y = .data$post_prob),
             colour = clusters_colour, linewidth = 1
             ) +

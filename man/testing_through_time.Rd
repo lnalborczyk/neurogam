@@ -7,7 +7,7 @@
 testing_through_time(
   data,
   participant_id = "participant",
-  meeg_id = "eeg",
+  outcome_id = "eeg",
   time_id = "time",
   predictor_id = "condition",
   family = gaussian(),
@@ -30,11 +30,11 @@ testing_through_time(
 
 \item{participant_id}{Character, column in data specifying the participant ID.}
 
-\item{meeg_id}{Character, column in data specifying the M/EEG values.}
+\item{outcome_id}{Character, column in data specifying the M/EEG values.}
 
 \item{time_id}{Character, column in data specifying the time information.}
 
-\item{predictor_id}{Character, column in data specifying the predictor(s).}
+\item{predictor_id}{Character, column in data specifying the binary predictor (e.g., group or condition). If predictor_id is NA, then neurogam will test difference against 0.}
 
 \item{family}{A description of the response distribution to be used in the model.}
 
