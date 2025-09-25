@@ -10,7 +10,7 @@
 #'
 #' @importFrom rlang .data
 #'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@gmail.com}.
+#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
 #'
 #' @export
 

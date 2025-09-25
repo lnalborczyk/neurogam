@@ -20,5 +20,5 @@ The identified clusters (i.e., onset and offset).
 Finding clusters (groups of timesteps) in time-series that exceeds some threshold.
 }
 \author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@gmail.com}.
+Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }

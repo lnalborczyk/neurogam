@@ -1,11 +1,12 @@
 
-# Precise temporal localisation of M/EEG effects with Bayesian generalised additive multilevel models
+# Precise temporal localisation of time-resolved effects with Bayesian generalised additive multilevel models
 
 The goal of `neurogam` is to provide utilities for estimating the onset
-and offset of effects in M/EEG data. The current version only includes
-the possibility of fitting 1D temporal data (e.g., raw M/EEG data or
-decoding timecourses) but will be extended in the future to support 2D
-temporal or spatiotemporal data.
+and offset of time-resolved effects, such as those found in M/EEG,
+pupillometry, or finger/mouse-tracking data (amongst others). The
+current version only allows fitting 1D temporal data (e.g., raw M/EEG
+data or decoding timecourses) but will be extended in the near future to
+support 2D temporal or spatiotemporal data.
 
 ## Installation
 
@@ -23,7 +24,8 @@ remotes::install_github(
 ## Usage
 
 Below we fit a Bayesian generalised additive multilevel model (BGAMM) to
-estimate the onset and offset of effect from simulated EEG data.
+estimate the onset and offset of a difference between conditions (in
+simulated EEG data).
 
 ``` r
 # loading the neurogam package
@@ -45,7 +47,11 @@ head(eeg_data)
 
 ``` r
 # fitting the BGAMM to identify clusters
-results <- testing_through_time(data = eeg_data, threshold = 3)
+results <- testing_through_time(
+    data = eeg_data,
+    predictor_id = "condition",
+    threshold = 10
+    )
 ```
 
 ``` r
@@ -56,7 +62,7 @@ print(results$clusters)
 ```
 
 ``` r
-# plotting the identified clusters superimposed with the data
+# plotting the identified clusters superimposed with the data and GAM-smoothed data
 plot(results)
 ```
 

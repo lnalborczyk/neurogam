@@ -12,13 +12,14 @@ testing_through_time(
   predictor_id = "condition",
   family = gaussian(),
   kvalue = 20,
-  bs = "cr",
-  multilevel = TRUE,
+  bs = "tp",
+  multilevel = c("summary", "group", "full"),
   warmup = 1000,
   iter = 2000,
   chains = 4,
   cores = 4,
-  threshold = 20,
+  backend = "cmdstanr",
+  threshold = 10,
   n_post_samples = NULL,
   chance_level = 0,
   sesoi = 0
@@ -41,7 +42,7 @@ testing_through_time(
 
 \item{bs}{Character, type of splines to be passed to brms.}
 
-\item{multilevel}{Logical, should we fit a simple GAM or the multilevel GAM with summary statistics per participant?}
+\item{multilevel}{Character, should we fit the full GAMM ("full"), GAMM with summary statistics per participant ("summary"), or group-level GAM ("group").}
 
 \item{warmup}{Numeric, number of warm-up iterations per chain.}
 
@@ -50,6 +51,8 @@ testing_through_time(
 \item{chains}{Numeric, number of MCMCs.}
 
 \item{cores}{Numeric, number of parallel cores to use.}
+
+\item{backend}{Character, package to use as the backend for fitting the Stan model. Options are "cmdstanr" (the default) or "rstan".}
 
 \item{threshold}{Numeric, threshold for identifying clusters.}
 
@@ -63,7 +66,7 @@ testing_through_time(
 A list containing the identified clusters (i.e., onset and offset) and time-series of posterior probabilities.
 }
 \description{
-Time-resolved testing using Bayesian generalised additive multilevel regression models.
+Time-resolved testing using Bayesian generalised additive multilevel regression models (BGAMMs).
 }
 \examples{
 \dontrun{
@@ -72,16 +75,16 @@ data(eeg_data)
 head(eeg_data)
 
 # fitting the BGAMM to identify clusters
-results <- testing_through_time(data = eeg_data, threshold = 2)
+results <- testing_through_time(data = eeg_data)
 
 # displaying the identified clusters
 print(results$clusters)
 
-# plotting the identified clusters
+# plotting the GAM-smoothed signal and identified clusters
 plot(results)
 }
 
 }
 \author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@gmail.com}.
+Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }
