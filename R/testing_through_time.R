@@ -222,97 +222,34 @@ testing_through_time <- function (
         # computing the posterior odds over time
         if (is.na(predictor_id) ) {
 
-            # retrieving posterior predictions (draws)
-            post_draws <- brms_gam$data |>
-                tidybayes::add_epred_draws(
-                    object = brms_gam,
-                    ndraws = n_post_samples
-                    ) |>
-                data.frame()
-
-            # # computing the posterior odds over time
-            # prob_y_above <- post_draws |>
-            #     dplyr::select(.data$participant, .data$time, .data$.epred, .data$.draw) |>
-            #     # computing posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         prob_above = mean(.data$.epred > (0 + chance_level + sesoi) )
-            #         ) |>
-            #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            #     dplyr::ungroup() |>
-            #     # ensuring there is no 0 or +Inf values
-            #     dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
-            #     dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
-            #     data.frame()
-            #
-            # # retrieving posterior predictions
-            # post_prob_slope <- post_draws |>
-            #     dplyr::select(.data$participant, .data$time,  .data$.epred, .data$.draw) |>
-            #     # computing mean posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         post_prob = stats::quantile(x = .data$.epred, probs = 0.5),
-            #         lower = stats::quantile(x = .data$.epred, probs = 0.025),
-            #         upper = stats::quantile(x = .data$.epred, probs = 0.975)
-            #         ) |>
-            #     dplyr::ungroup()
-            #
-            # # joining with prob_y_above
-            # prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
-
-        } else {
+            # newdata grid over time
+            newdata_grid <- tidyr::crossing(time = sort(unique(brms_gam$data$time) ) )
 
             # retrieving posterior predictions (draws)
             post_draws <- tidybayes::add_epred_draws(
                 object = brms_gam,
-                newdata = tidyr::crossing(
-                    # time = brms_gam$data[[time_id]],
-                    # predictor = brms_gam$data[[predictor_id]]
-                    time = sort(unique(data[[time_id]])),
-                    predictor = sort(unique(data[[predictor_id]]))
-                    ),
+                newdata = newdata_grid,
                 ndraws = n_post_samples,
                 re_formula = NA
                 ) |>
                 data.frame()
 
-            # # retrieving predictor labels
-            # cond1 <- levels(post_draws$predictor)[1]
-            # cond2 <- levels(post_draws$predictor)[2]
-            #
-            # # computing the posterior odds over time
-            # prob_y_above <- post_draws |>
-            #     dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
-            #     tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            #     dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
-            #     # computing posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         prob_above = mean(.data$epred_diff > (0 + chance_level + sesoi) )
-            #         ) |>
-            #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            #     dplyr::ungroup() |>
-            #     # ensuring there is no 0 or +Inf values
-            #     dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
-            #     dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
-            #     data.frame()
-            #
-            # # retrieving posterior predictions
-            # post_prob_slope <- post_draws |>
-            #     dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
-            #     tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            #     dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
-            #     # computing mean posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
-            #         lower = stats::quantile(x = .data$epred_diff, probs = 0.025),
-            #         upper = stats::quantile(x = .data$epred_diff, probs = 0.975)
-            #         ) |>
-            #     dplyr::ungroup()
-            #
-            # # joining with prob_y_above
-            # prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+        } else {
+
+            # newdata grid over time and predictor
+            newdata_grid <- tidyr::crossing(
+                time = sort(unique(brms_gam$data$time) ),
+                predictor = levels(brms_gam$data$predictor)
+                )
+
+            # retrieving posterior predictions (draws)
+            post_draws <- tidybayes::add_epred_draws(
+                object = brms_gam,
+                newdata = newdata_grid,
+                ndraws = n_post_samples,
+                re_formula = NA
+                ) |>
+                data.frame()
 
         }
 
@@ -393,22 +330,14 @@ testing_through_time <- function (
         # computing the posterior odds over time
         if (is.na(predictor_id) ) {
 
-            # # retrieving posterior predictions (draws)
-            # post_draws <- brms_gam$data |>
-            #     tidybayes::add_epred_draws(
-            #         object = brms_gam,
-            #         ndraws = n_post_samples
-            #         ) |>
-            #     data.frame()
-
             # newdata grid over time
             newdata_grid <- tidyr::crossing(
                 time = sort(unique(brms_gam$data$time) )
-                # predictor = levels(brms_gam$data$predictor)
                 ) |>
                 # dummy outcome_sd to satisfy | se(outcome_sd)
                 dplyr::mutate(outcome_sd = 1)
 
+            # retrieving posterior predictions (draws)
             post_draws <- tidybayes::add_epred_draws(
                 object = brms_gam,
                 newdata = newdata_grid,
@@ -417,39 +346,9 @@ testing_through_time <- function (
                 ) |>
                 data.frame()
 
-            # # computing the posterior odds over time
-            # prob_y_above <- post_draws |>
-            #     dplyr::select(.data$participant, .data$time, .data$.epred, .data$.draw) |>
-            #     # computing posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         prob_above = mean(.data$.epred > (0 + chance_level + sesoi) )
-            #         ) |>
-            #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            #     dplyr::ungroup() |>
-            #     # ensuring there is no 0 or +Inf values
-            #     dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
-            #     dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
-            #     data.frame()
-            #
-            # # retrieving posterior predictions
-            # post_prob_slope <- post_draws |>
-            #     dplyr::select(.data$participant, .data$time,  .data$.epred, .data$.draw) |>
-            #     # computing mean posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         post_prob = stats::quantile(x = .data$.epred, probs = 0.5, na.rm = TRUE),
-            #         lower = stats::quantile(x = .data$.epred, probs = 0.025, na.rm = TRUE),
-            #         upper = stats::quantile(x = .data$.epred, probs = 0.975, na.rm = TRUE)
-            #         ) |>
-            #     dplyr::ungroup()
-            #
-            # # joining with prob_y_above
-            # prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
-
         } else {
 
-            # newdata grid over time × predictor
+            # newdata grid over time and predictor
             newdata_grid <- tidyr::crossing(
                 time = sort(unique(brms_gam$data$time) ),
                 predictor = levels(brms_gam$data$predictor)
@@ -457,6 +356,7 @@ testing_through_time <- function (
                 # dummy outcome_sd to satisfy | se(outcome_sd)
                 dplyr::mutate(outcome_sd = 1)
 
+            # retrieving posterior predictions (draws)
             post_draws <- tidybayes::add_epred_draws(
                 object = brms_gam,
                 newdata = newdata_grid,
@@ -464,46 +364,6 @@ testing_through_time <- function (
                 re_formula = NA
                 ) |>
                 data.frame()
-
-            # # retrieving predictor labels
-            # cond1 <- levels(brms_gam$data$predictor)[1]
-            # cond2 <- levels(brms_gam$data$predictor)[2]
-            #
-            # # computing the posterior odds over time
-            # prob_y_above <- post_draws |>
-            #     # dplyr::select(.data$time, .data$participant, .data$predictor, .data$.epred, .data$.draw) |>
-            #     dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
-            #     tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            #     dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
-            #     # computing posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         prob_above = mean(.data$epred_diff > (0 + chance_level + sesoi) )
-            #         ) |>
-            #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            #     dplyr::ungroup() |>
-            #     # ensuring there is no 0 or +Inf values
-            #     dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
-            #     dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
-            #     data.frame()
-            #
-            # # retrieving group-level posterior predictions
-            # post_prob_slope <- post_draws |>
-            #     # dplyr::select(.data$time, .data$participant, .data$predictor, .data$.epred, .data$.draw) |>
-            #     dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
-            #     tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            #     dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
-            #     # computing mean posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
-            #         lower = stats::quantile(x = .data$epred_diff, probs = 0.025),
-            #         upper = stats::quantile(x = .data$epred_diff, probs = 0.975)
-            #         ) |>
-            #     dplyr::ungroup()
-            #
-            # # joining with prob_y_above
-            # prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
 
         }
 
@@ -584,93 +444,34 @@ testing_through_time <- function (
         # computing the posterior odds over time
         if (is.na(predictor_id) ) {
 
-            # retrieving posterior predictions (draws)
-            post_draws <- brms_gam$data |>
-                tidybayes::add_epred_draws(
-                    object = brms_gam,
-                    ndraws = n_post_samples
-                    ) |>
-                data.frame()
-
-            # prob_y_above <- post_draws |>
-            #     dplyr::select(.data$time, .data$.epred, .data$.draw) |>
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         prob_above = mean(.data$.epred > (0 + chance_level + sesoi) )
-            #         ) |>
-            #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            #     dplyr::ungroup() |>
-            #     # ensuring there is no 0 or +Inf values
-            #     dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
-            #     dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
-            #     data.frame()
-            #
-            # # retrieving posterior predictions
-            # post_prob_slope <- post_draws |>
-            #     dplyr::select(.data$time, .data$.epred, .data$.draw) |>
-            #     # computing mean posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         post_prob = stats::quantile(x = .data$.epred, probs = 0.5),
-            #         lower = stats::quantile(x = .data$.epred, probs = 0.025),
-            #         upper = stats::quantile(x = .data$.epred, probs = 0.975)
-            #         ) |>
-            #     dplyr::ungroup()
-            #
-            # # joining with prob_y_above
-            # prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
-
-        } else {
+            # newdata grid over time
+            newdata_grid <- tidyr::crossing(time = sort(unique(brms_gam$data$time) ) )
 
             # retrieving posterior predictions (draws)
             post_draws <- tidybayes::add_epred_draws(
                 object = brms_gam,
-                newdata = tidyr::crossing(
-                    time = sort(unique(brms_gam$data$time) ),
-                    predictor = unique(brms_gam$data$predictor)
-                    ),
-                ndraws = n_post_samples
+                newdata = newdata_grid,
+                ndraws = n_post_samples,
+                re_formula = NA
                 ) |>
                 data.frame()
 
-            # # retrieving predictor labels
-            # cond1 <- levels(post_draws$predictor)[1]
-            # cond2 <- levels(post_draws$predictor)[2]
-            #
-            # # computing the posterior odds over time
-            # prob_y_above <- post_draws |>
-            #     dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
-            #     tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            #     # head()
-            #     dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
-            #     # computing posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         prob_above = mean(.data$epred_diff > (0 + chance_level + sesoi) )
-            #         ) |>
-            #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            #     dplyr::ungroup() |>
-            #     # ensuring there is no 0 or +Inf values
-            #     dplyr::mutate(prob_ratio = pmin(.data$prob_ratio, n_post_samples) ) |>
-            #     dplyr::mutate(prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples) ) |>
-            #     data.frame()
-            #
-            # # retrieving posterior predictions
-            # post_prob_slope <- post_draws |>
-            #     dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
-            #     tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            #     dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]]) |>
-            #     # computing mean posterior probability at the group level
-            #     dplyr::group_by(.data$time) |>
-            #     dplyr::summarise(
-            #         post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
-            #         lower = stats::quantile(x = .data$epred_diff, probs = 0.025),
-            #         upper = stats::quantile(x = .data$epred_diff, probs = 0.975)
-            #         ) |>
-            #     dplyr::ungroup()
-            #
-            # # joining with prob_y_above
-            # prob_y_above <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+        } else {
+
+            # newdata grid over time and predictor
+            newdata_grid <- tidyr::crossing(
+                time = sort(unique(brms_gam$data$time) ),
+                predictor = levels(brms_gam$data$predictor)
+                )
+
+            # retrieving posterior predictions (draws)
+            post_draws <- tidybayes::add_epred_draws(
+                object = brms_gam,
+                newdata = newdata_grid,
+                ndraws = n_post_samples,
+                re_formula = NA
+                ) |>
+                data.frame()
 
         }
 
@@ -697,13 +498,13 @@ testing_through_time <- function (
 
     }
 
-    # finding the clusters
+    # find the clusters
     clusters <- find_clusters(
         data = prob_y_above |> dplyr::select(.data$time, value = .data$prob_ratio),
         threshold = threshold
         )
 
-    # combining the results in a list
+    # combine the results in a list
     clusters_results <- list(
         clusters = clusters,
         predictions = prob_y_above,
@@ -711,10 +512,10 @@ testing_through_time <- function (
         multilevel = multilevel
         )
 
-    # assigning a new class to the list
+    # assign a new class to the list
     class(clusters_results) <- "clusters_results"
 
-    # returning the clusters and posterior probabilities
+    # return the clusters and posterior probabilities
     return (clusters_results)
 
 }
@@ -816,66 +617,6 @@ testing_through_time <- function (
 }
 
 #' @export
-# plot.clusters_results <- function (x, clusters_y = -Inf, clusters_colour = "black", lineend = "butt", ...) {
-#
-#     emp_data <- x$model$data
-#
-#     if (ncol(emp_data) > 2 & "predictor" %in% colnames(emp_data) ) {
-#
-#         cond1 <- levels(emp_data$predictor)[1]
-#         cond2 <- levels(emp_data$predictor)[2]
-#
-#         reshaped_data <- emp_data |>
-#             dplyr::summarise(
-#                 outcome_mean = mean(.data$outcome_mean),
-#                 .by = c(.data$time, .data$predictor)
-#                 ) |>
-#             tidyr::pivot_wider(
-#                 names_from = .data$predictor,
-#                 values_from = .data$outcome_mean
-#                 ) |>
-#             dplyr::mutate(outcome_mean = .data[[cond2]] - .data[[cond1]])
-#
-#     } else {
-#
-#         reshaped_data <- emp_data |>
-#             dplyr::summarise(outcome_mean = mean(.data$outcome_mean), .by = .data$time)
-#
-#     }
-#
-#     reshaped_data |>
-#         ggplot2::ggplot(
-#             ggplot2::aes(x = .data$time, y = .data$outcome_mean)
-#             ) +
-#         ggplot2::geom_hline(yintercept = 0.0, linetype = 2) +
-#         ggplot2::geom_ribbon(
-#             data = x$predictions,
-#             ggplot2::aes(x = .data$time, y = NULL, ymin = .data$lower, ymax = .data$upper),
-#             fill = clusters_colour, alpha = 0.2
-#             ) +
-#         ggplot2::geom_line(
-#             data = x$predictions,
-#             ggplot2::aes(x = .data$time, y = .data$post_prob),
-#             colour = clusters_colour, linewidth = 1
-#             ) +
-#         ggplot2::geom_segment(
-#             data = x$clusters,
-#             ggplot2::aes(
-#                 x = .data$cluster_onset,
-#                 xend = .data$cluster_offset,
-#                 y = clusters_y,
-#                 yend = clusters_y
-#                 ),
-#             colour = clusters_colour,
-#             inherit.aes = FALSE,
-#             lineend = lineend,
-#             linewidth = 5
-#             ) +
-#         ggplot2::geom_line(linewidth = 0.5) +
-#         ggplot2::theme_bw() +
-#         ggplot2::labs(x = "Time (s)", y = "Observed and predicted effect")
-#
-# }
 plot.clusters_results <- function (x, clusters_y = -Inf, clusters_colour = "black", lineend = "butt", ...) {
 
     # retrieve the empirical data
@@ -957,5 +698,105 @@ plot.clusters_results <- function (x, clusters_y = -Inf, clusters_colour = "blac
             ) +
         ggplot2::theme_bw() +
         ggplot2::labs(x = "Time", y = "Observed and predicted effect")
+
+}
+
+#' @export
+print.clusters_results <- function (x, digits = 3, ...) {
+
+    cat("\n==== Time-resolved Bayesian GAMM Results ======================\n\n")
+
+    # number of clusters
+    n_clust <- nrow(x$clusters)
+    cat("Clusters found: ", n_clust, "\n\n", sep = "")
+
+    # if no clusters, stop early
+    if (n_clust == 0) {
+
+        cat("\nNo clusters exceed the threshold.\n\n")
+
+        return (invisible(x) )
+
+    }
+
+    # prepare cluster table
+    clust_tbl <- x$clusters |>
+        dplyr::mutate(
+            cluster_onset = round(.data$cluster_onset,  digits),
+            cluster_offset = round(.data$cluster_offset, digits),
+            duration = round(.data$cluster_offset - .data$cluster_onset, digits)
+            ) |>
+        dplyr::select(.data$cluster_id, .data$cluster_onset, .data$cluster_offset, .data$duration)
+
+    # print nicely
+    print(clust_tbl, row.names = FALSE)
+    cat("\n=================================================================\n")
+    invisible(x)
+
+}
+
+#' @export
+summary.clusters_results <- function (object, digits = 3, ...) {
+
+    cat("\n==== Time-resolved Bayesian GAMM Results ======================\n\n")
+
+    # model type
+    if (!is.null(object$multilevel) ) {
+
+        cat("Model type: ", object$multilevel, "\n", sep = "")
+
+    }
+
+    # class of backend model
+    if (!is.null(object$model) ) {
+
+        cat("Backend model: ", class(object$model)[1], "\n", sep = "")
+        cat("Posterior draws: ", brms::ndraws(object$model), "\n\n", sep = "")
+
+    }
+
+    # number of clusters
+    n_clust <- nrow(object$clusters)
+    cat("Clusters detected: ", n_clust, "\n", sep = "")
+
+    # no clusters, simple summary
+    if (n_clust == 0) {
+
+        cat("\nNo clusters exceeded the threshold.\n\n")
+
+        return (invisible(object) )
+
+    }
+
+    # compute durations
+    cl <- object$clusters |>
+        dplyr::mutate(duration = .data$cluster_offset - .data$cluster_onset)
+
+    # basic cluster stats
+    cat("\nCluster statistics:\n")
+    cat("  Total duration of all clusters: ",
+        round(sum(cl$duration), digits), "\n", sep = "")
+    cat("  Mean cluster duration: ",
+        round(mean(cl$duration), digits), "\n", sep = "")
+    cat("  Median cluster duration: ",
+        round(stats::median(cl$duration), digits), "\n", sep = "")
+    cat("  Min cluster duration: ",
+        round(min(cl$duration), digits), "\n", sep = "")
+    cat("  Max cluster duration: ",
+        round(max(cl$duration), digits), "\n", sep = "")
+
+    # pretty table of clusters
+    cl_print <- cl |>
+        dplyr::mutate(
+            cluster_onset = round(.data$cluster_onset,  digits),
+            cluster_offset = round(.data$cluster_offset, digits),
+            duration = round(.data$duration, digits)
+            ) |>
+        dplyr::select(.data$cluster_id, .data$cluster_onset, .data$cluster_offset, .data$duration)
+
+    cat("\nCluster table:\n\n")
+    print(cl_print, row.names = FALSE)
+    cat("\n=================================================================\n")
+    invisible(object)
 
 }

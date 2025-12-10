@@ -64,7 +64,7 @@ results <- testing_through_time(
 
 ```{r print-clusters}
 # displaying the identified clusters
-print(results$clusters)
+print(results)
 ```
 
 ```{r fig-clusters, fig.asp = 0.5, dev = "png", dpi = 300}

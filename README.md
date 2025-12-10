@@ -61,9 +61,16 @@ results <- testing_through_time(
 
 ``` r
 # displaying the identified clusters
-print(results$clusters)
-#>   cluster_id cluster_onset cluster_offset
-#> 1          1         0.172          0.348
+print(results)
+#> 
+#> ==== Time-resolved Bayesian GAMM Results ======================
+#> 
+#> Clusters found: 1
+#> 
+#>  cluster_id cluster_onset cluster_offset duration
+#>           1          0.16          0.346    0.186
+#> 
+#> =================================================================
 ```
 
 ``` r
