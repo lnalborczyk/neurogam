@@ -1,8 +1,8 @@
 Package: neurogam
 Type: Package
-Title: Precise temporal localisation of time-resolved effects with Bayesian generalised additive multilevel models
+Title: Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
 Version: 0.0.2
-Date: 2025-09-25
+Date: 2025-12-10
 Authors@R:
     c(
     person(
@@ -16,7 +16,7 @@ Authors@R:
     role = c("ctb"),
     email = "paul.buerkner@gmail.com"
     ) )
-Description: Providing utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved signals (e.g., M/EEG, pupillometry, mouse-tracking, etc) and identifying clusters.
+Description: Providing utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved data (e.g., M/EEG, pupillometry, mouse-tracking, etc) and identifying clusters.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -32,5 +32,5 @@ Imports:
 Depends: 
     R (>= 3.5)
 RoxygenNote: 7.3.3
-URL: https://github.com/lnalborczyk/neurogam
+URL: https://github.com/lnalborczyk/neurogam, https://lnalborczyk.github.io/neurogam/
 BugReports: https://github.com/lnalborczyk/neurogam/issues

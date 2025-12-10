@@ -1,0 +1,12 @@
+bibentry(
+    bibtype = "Article",
+    title = "Precise temporal localisation of M/EEG effects with Bayesian generalised additive multilevel models",
+    author = c(
+        person(given = "Ladislas", family = "Nalborczyk"),
+        person(given = "Paul", family = "Bürkner")
+        ),
+    year = "2025",
+    journal = "bioRxiv",
+    volume = "2025.08.29.672336",
+    doi = "10.1101/2025.08.29.672336"
+    )

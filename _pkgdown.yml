@@ -1,0 +1,5 @@
+url: https://lnalborczyk.github.io/neurogam/
+template:
+  bootstrap: 5
+  # bootswatch: flatly
+  light-switch: false

@@ -48,8 +48,13 @@ head(eeg_data)
 ``` r
 # fitting the BGAMM to identify clusters
 results <- testing_through_time(
+    # simulated EEG data
     data = eeg_data,
+    # name of predictor in data
     predictor_id = "condition",
+    # we recommend fitting the GAMM with summary statistics (mean and SD)
+    multilevel = "summary",
+    # threshold on posterior odds
     threshold = 10
     )
 ```
@@ -67,3 +72,15 @@ plot(results)
 ```
 
 <img src="man/figures/README-fig-clusters-1.png" width="100%" />
+
+## Citation
+
+Nalborczyk, L., & Bürkner, P. (2025). Precise temporal localisation of
+M/EEG effects with Bayesian generalised additive multilevel models.
+Preprint available at: <https://doi.org/10.1101/2025.08.29.672336>.
+
+## Getting help
+
+If you encounter a bug or have a question please file an issue with a
+minimal reproducible example on
+[GitHub](https://github.com/lnalborczyk/neurogam/issues).

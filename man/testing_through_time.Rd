@@ -2,7 +2,7 @@
 % Please edit documentation in R/testing_through_time.R
 \name{testing_through_time}
 \alias{testing_through_time}
-\title{Time-resolved Bayesian testing}
+\title{Time-resolved testing based on BGAMMs}
 \usage{
 testing_through_time(
   data,
@@ -13,7 +13,7 @@ testing_through_time(
   family = gaussian(),
   kvalue = 20,
   bs = "tp",
-  multilevel = c("summary", "group", "full"),
+  multilevel = c("summary", "full", "group"),
   warmup = 1000,
   iter = 2000,
   chains = 4,
@@ -22,68 +22,132 @@ testing_through_time(
   threshold = 10,
   n_post_samples = NULL,
   chance_level = 0,
-  sesoi = 0
+  sesoi = 0,
+  credible_interval = 0.95
 )
 }
 \arguments{
-\item{data}{Dataframe, with ERP or decoding performance data (in long format).}
+\item{data}{A data frame in long format containing time-resolved data.}
 
-\item{participant_id}{Character, column in data specifying the participant ID.}
+\item{participant_id}{Character; name of the column in \code{data}
+specifying participant IDs.}
 
-\item{outcome_id}{Character, column in data specifying the M/EEG values.}
+\item{outcome_id}{Character; name of the column in \code{data} containing
+the outcome values (e.g., M/EEG amplitude, decoding accuracy).}
 
-\item{time_id}{Character, column in data specifying the time information.}
+\item{time_id}{Character; name of the column in \code{data}
+containing time information (e.g., in seconds or samples).}
 
-\item{predictor_id}{Character, column in data specifying the binary predictor (e.g., group or condition). If predictor_id is NA, then neurogam will test difference against 0.}
+\item{predictor_id}{Character; name of the column in \code{data}
+containing a \emph{binary} predictor (e.g., group or condition). If
+\code{predictor_id = NA}, the function tests whether the outcome differs
+from \code{0 + chance_level + sesoi} over time.}
 
-\item{family}{A description of the response distribution to be used in the model.}
+\item{family}{A \pkg{brms} family object describing the response
+distribution to be used in the model (defaults to \code{gaussian()}).}
 
-\item{kvalue}{Numeric, GAM basis dimension.}
+\item{kvalue}{Numeric; basis dimension \code{k} passed to the smooth term
+\code{s(time, ..., k = kvalue)}.}
 
-\item{bs}{Character, type of splines to be passed to brms.}
+\item{bs}{Character; Character scalar; type of spline basis to be used by \pkg{brms}
+(passed to \code{s()}, e.g., \code{"tp"} for thin-plate splines).}
 
-\item{multilevel}{Character, should we fit the full GAMM ("full"), GAMM with summary statistics per participant ("summary"), or group-level GAM ("group").}
+\item{multilevel}{Character; which model to fit. One of
+\itemize{
+  \item \code{"full"}: Full GAMM with participant-level random/varying effects;
+  \item \code{"summary"}: GAMM fitted to participant-level summary
+    statistics (mean outcome and its standard deviation);
+  \item \code{"group"}: Group-level GAM fitted to participant-averaged
+    data (no random/varying effects).
+}}
 
-\item{warmup}{Numeric, number of warm-up iterations per chain.}
+\item{warmup}{Numeric; number of warm-up iterations per chain.}
 
-\item{iter}{Numeric, number of total iterations per chain.}
+\item{iter}{Numeric; total number of iterations per chain (including warmup).}
 
-\item{chains}{Numeric, number of MCMCs.}
+\item{chains}{Numeric; number of MCMCs.}
 
-\item{cores}{Numeric, number of parallel cores to use.}
+\item{cores}{Numeric; number of parallel cores to use.}
 
-\item{backend}{Character, package to use as the backend for fitting the Stan model. Options are "cmdstanr" (the default) or "rstan".}
+\item{backend}{Character; package to use as the backend for fitting the
+Stan model. One of \code{"cmdstanr"} (default) or \code{"rstan"}.}
 
-\item{threshold}{Numeric, threshold for identifying clusters.}
+\item{threshold}{Numeric; threshold on the posterior odds
+(\code{prob_ratio}) used to define contiguous temporal clusters. Values
+greater than 1 favour the hypothesis that the effect exceeds
+\code{chance_level + sesoi}.}
 
-\item{n_post_samples}{Numeric, number of posterior samples to use to compute the posterior probability ratio (the larger the better).}
+\item{n_post_samples}{Numeric; number of posterior draws used to compute
+posterior probabilities. If \code{NULL} (default), all available draws
+from the fitted model are used.}
 
-\item{chance_level}{Numeric, chance level (for analysing time-resolved decoding performance).}
+\item{chance_level}{Numeric; reference value for the outcome (e.g., 0.5 for
+decoding accuracy). Only used when testing against a constant (i.e.,
+when there is no \code{predictor_id} or when the effect is a difference
+from chance).}
 
-\item{sesoi}{Numeric, smallest effect size of interest (defaults to 0).}
+\item{sesoi}{Numeric; smallest effect size of interest (SESOI). The
+posterior probability is computed for the effect being strictly larger
+than \code{chance_level + sesoi}.}
+
+\item{credible_interval}{Numeric; width of the credible (quantile) interval.}
 }
 \value{
-A list containing the identified clusters (i.e., onset and offset) and time-series of posterior probabilities.
+An object of class \code{"clusters_results"}, which is a list with
+  elements:
+  \itemize{
+    \item \code{clusters}: a data frame with one row per detected cluster
+      (e.g., \code{cluster_onset}, \code{cluster_offset}, \code{duration});
+    \item \code{predictions}: a data frame with time-resolved posterior
+      summaries (posterior median, credible interval, posterior
+      probabilities, and odds \code{prob_ratio});
+    \item \code{data}: data used to fit the \pkg{brms} model
+      (possibly summarised);
+    \item \code{model}: the fitted \pkg{brms} model object;
+    \item \code{multilevel}: the value of the \code{multilevel} argument.
+  }
+
+  The object has an associated \code{plot()} method for visualising the
+  smoothed time course and detected clusters.
 }
 \description{
-Time-resolved testing using Bayesian generalised additive multilevel regression models (BGAMMs).
+Fits time-resolved Bayesian generalised additive (multilevel) models (BGAMMs)
+using \pkg{brms}, and computes posterior odds for an effect at each time
+point. The effect can be either i) a deviation of the outcome from a
+reference value (e.g., zero or a chance level), or ii) a difference between two
+groups/conditions.
+}
+\details{
+Internally, the function:
+\enumerate{
+  \item builds a formula with a smooth term over time (optionally by group);
+  \item fits a \pkg{brms} model according to \code{multilevel};
+  \item uses \pkg{tidybayes} to extract posterior predictions over time;
+  \item computes, at each time point, the posterior probability that the
+    effect (or condition difference) exceeds \code{chance_level + sesoi};
+  \item converts this into posterior odds (\code{prob_ratio}) and applies
+    a clustering procedure (\code{find_clusters()}) over time.
+}
 }
 \examples{
 \dontrun{
-# importing some simulated EEG data
+# import some simulated EEG data
 data(eeg_data)
 head(eeg_data)
 
-# fitting the BGAMM to identify clusters
+# fit the BGAMM to identify clusters
 results <- testing_through_time(data = eeg_data)
 
-# displaying the identified clusters
+# display the identified clusters
 print(results$clusters)
 
-# plotting the GAM-smoothed signal and identified clusters
+# plot the GAM-smoothed signal and identified clusters
 plot(results)
 }
 
+}
+\seealso{
+\code{\link[brms]{brm}}
 }
 \author{
 Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.

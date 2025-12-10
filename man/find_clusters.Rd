@@ -2,23 +2,59 @@
 % Please edit documentation in R/find_clusters.R
 \name{find_clusters}
 \alias{find_clusters}
-\title{Finding clusters (groups of timesteps) in time-series}
+\title{Find contiguous clusters in a time series}
 \usage{
 find_clusters(data, threshold = 10, above_threshold = TRUE)
 }
 \arguments{
-\item{data}{Dataframe, containing exactly two columns called "time" and "value" (in long format).}
+\item{data}{A data frame containing at least two columns named
+\code{"time"} and \code{"value"}. Additional columns are ignored.}
 
-\item{threshold}{Numeric, indicates the threshold for finding clusters.}
+\item{threshold}{Numeric scalar; threshold used to define clusters.
+When \code{above_threshold = TRUE}, clusters are defined where
+\code{value >= threshold}. When \code{above_threshold = FALSE},
+clusters are defined where \code{value <= threshold}.}
 
-\item{above_threshold}{Logical, indicates whether we should threshold above (or below) value.}
+\item{above_threshold}{Logical scalar; if \code{TRUE} (default), clusters
+are formed where \code{value >= threshold}. If \code{FALSE}, clusters
+are formed where \code{value <= threshold}.}
 }
 \value{
-The identified clusters (i.e., onset and offset).
+A data frame with one row per detected cluster and columns:
+  \itemize{
+    \item \code{cluster_id}: integer cluster index (starting at 1);
+    \item \code{cluster_onset}: time of the first point in the cluster;
+    \item \code{cluster_offset}: time of the last point in the cluster;
+    \item \code{n_points}: number of time points in the cluster.
+  }
+  If no clusters are found, an empty data frame with these columns is
+  returned.
 }
 \description{
-Finding clusters (groups of timesteps) in time-series that exceeds some threshold.
+Identify contiguous clusters of time points in a time series where a
+variable exceeds (or falls below) a given threshold. Clusters are defined
+as consecutive time points where the thresholding condition holds.
+}
+\details{
+The function assumes that the \code{time} variable is numeric and that
+consecutive rows correspond to consecutive time points. Internally, the
+data are first arranged by \code{time} and any rows with \code{NA} in
+\code{time} or \code{value} are removed.
+}
+\examples{
+\dontrun{
+set.seed(666)
+df <- data.frame(
+  time  = seq(0, 1, length.out = 100),
+  value = c(rnorm(40, 0, 1), rnorm(20, 5, 1), rnorm(40, 0, 1))
+  )
+
+# find clusters where value >= 3
+cl <- find_clusters(df, threshold = 3, above_threshold = TRUE)
+cl
+}
+
 }
 \author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
+Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}
 }
