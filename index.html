@@ -105,9 +105,16 @@
 <span>    <span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># displaying the identified clusters</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">results</span><span class="op">$</span><span class="va">clusters</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   cluster_id cluster_onset cluster_offset</span></span>
-<span><span class="co">#&gt; 1          1         0.172          0.348</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ==== Time-resolved Bayesian GAMM Results ======================</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Clusters found: 1</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  cluster_id cluster_onset cluster_offset duration</span></span>
+<span><span class="co">#&gt;           1          0.16          0.346    0.186</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; =================================================================</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># plotting the data, model's predictions, and clusters</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></code></pre></div>
