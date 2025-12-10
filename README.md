@@ -1,5 +1,5 @@
 
-# Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
+# Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models <a href="https://lnalborczyk.github.io/neurogam/"><img src="man/figures/logo.png" align="right" height="139" alt="neurogam website" /></a>
 
 The goal of `neurogam` is to provide utilities for estimating the onset
 and offset of time-resolved effects, such as those found in M/EEG,
