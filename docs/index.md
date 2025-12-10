@@ -1,4 +1,4 @@
-# Precise temporal localisation of time-resolved effects with Bayesian generalised additive multilevel models
+# Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
 
 The goal of `neurogam` is to provide utilities for estimating the onset
 and offset of time-resolved effects, such as those found in M/EEG,
@@ -66,7 +66,7 @@ print(results$clusters)
 ```
 
 ``` r
-# plotting the identified clusters superimposed with the data and GAM-smoothed data
+# plotting the data, model's predictions, and clusters
 plot(results)
 ```
 

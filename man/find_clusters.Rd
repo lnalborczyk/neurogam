@@ -50,7 +50,7 @@ df <- data.frame(
   )
 
 # find clusters where value >= 3
-cl <- find_clusters(df, threshold = 3, above_threshold = TRUE)
+cl <- find_clusters(data = df, threshold = 3, above_threshold = TRUE)
 cl
 }
 

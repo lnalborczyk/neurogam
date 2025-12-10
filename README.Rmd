@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
     )
 ```
 
-# Precise temporal localisation of time-resolved effects with Bayesian generalised additive multilevel models
+# Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
 
 The goal of `neurogam` is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses) but will be extended in the near future to support 2D temporal or spatiotemporal data.
 
@@ -68,7 +68,7 @@ print(results$clusters)
 ```
 
 ```{r fig-clusters, fig.asp = 0.5, dev = "png", dpi = 300}
-# plotting the identified clusters superimposed with the data and GAM-smoothed data
+# plotting the data, model's predictions, and clusters
 plot(results)
 ```
 

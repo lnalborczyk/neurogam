@@ -76,13 +76,6 @@ find_clusters <- function (data, threshold = 10, above_threshold = TRUE) {
             )
         )
 
-    # if (isFALSE(above_threshold) ) {
-    #
-    #     threshold <- -threshold
-    #     data <- data |> dplyr::mutate(value = if (above_threshold) .data$value else -.data$value)
-    #
-    # }
-
     # keep only what we need and ensure proper ordering / no NAs
     data <- data |>
         dplyr::select(.data$time, .data$value) |>
@@ -97,21 +90,6 @@ find_clusters <- function (data, threshold = 10, above_threshold = TRUE) {
         threshold <- -threshold
 
     }
-
-    # clusters <- data |>
-    #     dplyr::mutate(
-    #         above = .data$value >= threshold,
-    #         change = dplyr::lag(.data$above, default = FALSE) != .data$above,
-    #         cluster_id = cumsum(.data$change & .data$above)
-    #         ) |>
-    #     dplyr::filter(.data$above) |>
-    #     dplyr::group_by(.data$cluster_id) |>
-    #     dplyr::summarise(
-    #         cluster_onset = dplyr::first(.data$time),
-    #         cluster_offset = dplyr::last(.data$time),
-    #         .groups = "drop"
-    #         ) |>
-    #     data.frame()
 
     # identify contiguous runs above threshold
     clusters <- data |>
