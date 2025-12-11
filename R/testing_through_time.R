@@ -760,6 +760,37 @@ plot.clusters_results <- function (x, clusters_y = -Inf, clusters_colour = "blac
 
 }
 
+#' Print method for \code{clusters_results} objects
+#'
+#' This method provides a concise console representation of the output from
+#' \code{\link{testing_through_time}}, including the number of detected
+#' clusters and a compact table summarising each cluster's onset, offset,
+#' and duration. Values are rounded for readability.
+#'
+#' @param x An object of class \code{"clusters_results"} as returned by
+#'   \code{\link{testing_through_time}}.
+#' @param digits Integer; number of decimal places used when printing numeric
+#'   values (default: \code{3}).
+#' @param ... Additional arguments (currently ignored).
+#'
+#' @details
+#' The printed cluster table includes:
+#' \itemize{
+#'   \item \code{cluster_id}: numeric identifier of the cluster;
+#'   \item \code{cluster_onset}: estimated temporal onset of the cluster;
+#'   \item \code{cluster_offset}: estimated temporal offset of the cluster;
+#'   \item \code{duration}: duration of the cluster, computed as
+#'     \code{cluster_offset - cluster_onset}.
+#' }
+#'
+#' If no clusters exceed the posterior odds threshold, an informative message
+#' is displayed and no table is printed.
+#'
+#' @return The input object \code{x}, returned invisibly.
+#'
+#' @seealso \code{\link{summary.clusters_results}},
+#'   \code{\link{testing_through_time}}
+#'
 #' @export
 print.clusters_results <- function (x, digits = 3, ...) {
 
@@ -794,6 +825,41 @@ print.clusters_results <- function (x, digits = 3, ...) {
 
 }
 
+#' Summary method for \code{clusters_results} objects
+#'
+#' Produces a detailed textual summary of a time-resolved Bayesian GAMM
+#' analysis, including model metadata, the number of clusters detected, and
+#' descriptive statistics of cluster durations. A rounded cluster table is
+#' also printed.
+#'
+#' @param object An object of class \code{"clusters_results"} created by
+#'   \code{\link{testing_through_time}}.
+#' @param digits Integer; number of decimal places used when printing numeric
+#'   values (default: \code{3}).
+#' @param ... Additional arguments (currently ignored).
+#'
+#' @details
+#' The summary prints:
+#' \itemize{
+#'   \item the model type used (\code{"full"}, \code{"summary"},
+#'     or \code{"group"});
+#'   \item the class of the underlying \pkg{brms} model and the number of
+#'     posterior draws;
+#'   \item the number of clusters detected by the posterior odds threshold;
+#'   \item descriptive statistics for cluster durations (minimum, maximum,
+#'     mean, median, and total duration);
+#'   \item a neatly formatted table listing each cluster's onset, offset,
+#'     and duration.
+#' }
+#'
+#' If no clusters were detected, the function prints a message and returns
+#' invisibly.
+#'
+#' @return The object \code{object}, returned invisibly.
+#'
+#' @seealso \code{\link{print.clusters_results}},
+#'   \code{\link{testing_through_time}}
+#'
 #' @export
 summary.clusters_results <- function (object, digits = 3, ...) {
 
@@ -857,5 +923,209 @@ summary.clusters_results <- function (object, digits = 3, ...) {
     print(cl_print, row.names = FALSE)
     cat("\n=================================================================\n")
     invisible(object)
+
+}
+
+#' Posterior predictive checks for time-resolved BGAMMs
+#'
+#' Generates posterior predictive checks (PPCs) for the \pkg{brms} model stored
+#' inside a \code{"clusters_results"} object, displaying:
+#' \enumerate{
+#'   \item a PPC of the predicted outcome distribution (densities), and
+#'   \item a PPC of summary statistics (mean and standard deviation).
+#' }
+#'
+#' @param object An object of class \code{"clusters_results"} as returned by
+#'   \code{\link{testing_through_time}}. The object must contain a fitted
+#'   \pkg{brms} model in its \code{$model} slot.
+#' @param ndraws_time Integer; number of posterior draws used for the
+#'   distribution-level PPC (density overlay). Defaults to \code{100}.
+#' @param ndraws_stat Integer; number of posterior draws used for the
+#'   statistic-level PPC (mean/SD). Defaults to \code{500}.
+#' @param stat A character vector of summary statistics to use for the
+#'   \code{"stat_2d"} PPC. Passed to \code{\link[brms]{pp_check}} as the
+#'   \code{stat} argument. Defaults to \code{c("mean", "sd")}.
+#' @param group_var Optional character scalar specifying the name of the
+#'   grouping variable for the grouped PPC. If \code{NULL} (default), the
+#'   function automatically uses \code{"predictor"} when that column exists in
+#'   the model data and has exactly two levels (binary predictor). When a
+#'   grouping variable is used, the density PPC employs
+#'   \code{type = "dens_overlay_grouped"}; otherwise, \code{type = "dens_overlay"}.
+#' @param ... Currently ignored. Included for future extensibility.
+#'
+#' @details
+#' This function is a convenience wrapper around \code{\link[brms]{pp_check}}
+#' and \pkg{patchwork}. It first tries to detect whether the model contains a
+#' binary grouping variable (by default, a column named \code{"predictor"} in
+#' \code{model$data}). If such a variable is found (or if \code{group_var} is
+#' explicitly provided), the distribution-level PPC is produced using
+#' \code{type = "dens_overlay_grouped"}, which compares predicted and observed
+#' densities within each group. Otherwise, a standard
+#' \code{type = "dens_overlay"} PPC is drawn.
+#'
+#' The second panel uses \code{type = "stat_2d"} with the supplied \code{stat}
+#' argument (by default, mean and standard deviation), allowing inspection of
+#' how well the posterior predictive distribution reproduces key summary
+#' statistics of the data.
+#'
+#' The two PPC plots are combined side-by-side using
+#' \code{\link[patchwork]{wrap_plots}}, and the resulting combined plot is
+#' returned (and can be further modified using standard \pkg{ggplot2} or
+#' \pkg{patchwork} operations).
+#'
+#' @return A \pkg{patchwork} / \pkg{ggplot2} object containing the combined
+#'   posterior predictive checks. The plot is also printed as a side effect.
+#'
+#' @seealso
+#'   \code{\link{testing_through_time}},
+#'   \code{\link{print.clusters_results}},
+#'   \code{\link{summary.clusters_results}},
+#'   \code{\link[brms]{pp_check}},
+#'   \code{\link[patchwork]{wrap_plots}}
+#'
+#' @importFrom brms pp_check
+#' @importFrom patchwork wrap_plots
+#'
+#' @examples
+#' \dontrun{
+#' # import some simulated EEG data
+#' data(eeg_data)
+#' head(eeg_data)
+#'
+#' # fit time-resolved model (one-sample test)
+#' res <- testing_through_time(
+#'   data = eeg_data,
+#'   participant_id = "participant",
+#'   outcome_id = "eeg",
+#'   time_id = "time",
+#'   predictor_id = NA,
+#'   kvalue = 10,
+#'   multilevel = "summary"
+#'   )
+#'
+#' # posterior predictive checks (combined plot)
+#' ppc(res)
+#' }
+#'
+#' @export
+ppc <- function (
+        object,
+        ndraws_time = 100,
+        ndraws_stat = 100,
+        stat = c("mean", "sd"),
+        group_var = NULL,
+        ...
+        ) {
+
+    if (!inherits(object, "clusters_results") ) {
+
+        stop ("`object` must be of class 'clusters_results'.", call. = FALSE)
+
+    }
+
+    fit <- object$model
+
+    if (is.null(fit) || !inherits(fit, "brmsfit") ) {
+
+        stop ("`object$model` must be a valid 'brmsfit' object.", call. = FALSE)
+
+    }
+
+    # determine grouping variable (if any)
+    data_fit <- fit$data
+
+    if (is.null(group_var) ) {
+
+        if ("predictor" %in% names(data_fit) ) {
+
+            g <- data_fit[["predictor"]]
+
+            # coerce to factor for level checking
+            if (!is.factor(g) ) {
+
+                g <- factor(g)
+
+            }
+
+            if (nlevels(g) == 2L) {
+
+                group_var <- "predictor"
+
+            } else {
+
+                group_var <- NULL
+
+            }
+
+        } else {
+
+            group_var <- NULL
+
+        }
+
+    } else {
+
+        if (!group_var %in% names(data_fit) ) {
+
+            stop (
+                "Specified `group_var` '", group_var,
+                "' not found in model$data.",
+                call. = FALSE
+                )
+
+        }
+    }
+
+    # PPC per group
+    if (!is.null(group_var) ) {
+
+        p1 <- brms::pp_check(
+            object = fit,
+            ndraws = ndraws_time,
+            type = "ribbon_grouped",
+            x = "time",
+            group = group_var,
+            prob = 0.5,
+            prob_outer = 0.95,
+            alpha = 0.2,
+            re_formula = NA
+            ) +
+            ggplot2::theme_bw()
+
+    } else { # PPC per participant
+
+        p1 <- brms::pp_check(
+            object = fit,
+            ndraws = ndraws_time,
+            type = "ribbon_grouped",
+            x = "time",
+            group = "participant",
+            prob = 0.5,
+            prob_outer = 0.95,
+            alpha = 0.2,
+            ) +
+            ggplot2::theme_bw()
+
+    }
+
+    # PPC on summary statistics (mean / SD)
+    # p2 <- brms::pp_check(
+    #     object = fit,
+    #     ndraws = ndraws_stat,
+    #     type = "stat_2d",
+    #     stat = stat,
+    #     group = "participant",
+    #     re_formula = NA
+    #     ) +
+    #     ggplot2::theme_bw()
+
+    # combine with patchwork
+    # combined <- patchwork::wrap_plots(p1, p2, ncol = 2)
+    # print(combined)
+    # invisible(combined)
+
+    # returning the plot
+    print(p1)
+    invisible(p1)
 
 }

@@ -35,7 +35,9 @@ remotes::install_github(
 
 ## Usage
 
-Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of a difference between conditions (in simulated EEG data). Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effects) may provide too liberal cluster estimates.
+### Model fitting
+
+Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of a difference between conditions (in simulated EEG data). Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide too liberal cluster estimates.
 
 ```{r data}
 # loading the neurogam package
@@ -54,13 +56,17 @@ results <- testing_through_time(
     # simulated EEG data
     data = eeg_data,
     # name of predictor in data
-    predictor_id = "condition",
+    # predictor_id = "condition",
+    # when predictor_id = NA, tests average level against 0
+    predictor_id = NA,
     # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
     # threshold on posterior odds
     threshold = 10
     )
 ```
+
+### Visualising the results
 
 ```{r print-clusters}
 # displaying the identified clusters
@@ -70,6 +76,35 @@ print(results)
 ```{r fig-clusters, fig.asp = 0.5, dev = "png", dpi = 300}
 # plotting the data, model's predictions, and clusters
 plot(results)
+```
+
+### Posterior predictive checks
+
+We recommend visually assessing the predictions of the model against the observed data.
+
+```{r fig-ppc, fig.asp = 0.5, fig.width = 12, dev = "png", dpi = 300}
+# posterior predictive checks (PPCs)
+ppc(results)
+```
+
+### How to define the basis dimension?
+
+There is no universal recommendation for choosing the optimal value of $k$, as it depends on several factors, including the sampling rate, preprocessing steps (e.g., signal-to-noise ratio, low-pass filtering), and the underlying temporal dynamics of the effect of interest. One strategy is to set $k$ as high as computational constraints allow (acknowledging that the $k$-value only provides an upper bound on the *effective* basis dimension). Alternatively, one can fit a series of models with different $k$ values and compare these models using information criteria such as LOOIC or WAIC, alongside with posterior predictive checks (PPCs), to select the model that best captures the structure of the data. We illustrate this approach below.
+
+```{r fig-reco-k, fig.asp = 0.5, dev = "png", dpi = 300, results = "hide"}
+# recommend an optimal smooth basis dimension k
+k_res <- recommend_k(
+    object = results,
+    k_min = 10,
+    k_max = 40,
+    k_step = 5,
+    criterion = "waic"
+    )
+```
+
+```{r fig-reco-k_summary}
+# results summary
+summary(k_res)
 ```
 
 ## Citation

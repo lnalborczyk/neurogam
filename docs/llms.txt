@@ -22,12 +22,14 @@ remotes::install_github(
 
 ## Usage
 
+### Model fitting
+
 Below we fit a Bayesian generalised additive multilevel model (BGAMM) to
 estimate the onset and offset of a difference between conditions (in
 simulated EEG data). Note that we recommend fitting the BGAMM on
 time-resolved summary statistics (mean and SD) as the full (i.e.,
 trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e.,
-no random/varying effects) may provide too liberal cluster estimates.
+no random/varying effect) may provide too liberal cluster estimates.
 
 ``` r
 # loading the neurogam package
@@ -53,13 +55,17 @@ results <- testing_through_time(
     # simulated EEG data
     data = eeg_data,
     # name of predictor in data
-    predictor_id = "condition",
+    # predictor_id = "condition",
+    # when predictor_id = NA, tests average level against 0
+    predictor_id = NA,
     # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
     # threshold on posterior odds
     threshold = 10
     )
 ```
+
+### Visualising the results
 
 ``` r
 # displaying the identified clusters
@@ -70,7 +76,7 @@ print(results)
 #> Clusters found: 1
 #> 
 #>  cluster_id cluster_onset cluster_offset duration
-#>           1          0.16          0.346    0.186
+#>           1         0.162          0.348    0.186
 #> 
 #> =================================================================
 ```
@@ -81,6 +87,56 @@ plot(results)
 ```
 
 ![](reference/figures/README-fig-clusters-1.png)
+
+### Posterior predictive checks
+
+``` r
+# posterior predictive checks (PPCs)
+ppc(results)
+```
+
+![](reference/figures/README-fig-ppc-1.png)
+
+### How to define the basis dimension?
+
+``` r
+# recommend an optimal smooth basis dimension k
+k_res <- recommend_k(
+    object = results,
+    k_min = 10,
+    k_max = 40,
+    k_step = 5,
+    criterion = "waic"
+    )
+```
+
+![](reference/figures/README-fig-reco-k-1.png)
+
+``` r
+# results summary
+summary(k_res)
+#> 
+#> ==== Summary of k recommendation ================================
+#> 
+#> Number of models fitted  : 7
+#> k values tested          : 10, 15, 20, 25, 30, 35, 40
+#> Range of k values        : [10, 40]
+#> Knee based on            : p_waic
+#> Recommended k (knee)     : 20
+#> 
+#> Comparison table (rounded):
+#> 
+#>   k   model waic_elpd waic_elpd_se p_waic p_waic_se     waic p_waic_smooth
+#>  10 gam_k10 -4702.794        5.396  0.115     0.002 9405.588         0.115
+#>  15 gam_k15 -4703.034        5.397  0.123     0.002 9406.069         0.123
+#>  25 gam_k25 -4703.096        5.396  0.124     0.002 9406.192         0.124
+#>  20 gam_k20 -4703.175        5.397  0.125     0.002 9406.349         0.125
+#>  30 gam_k30 -4703.233        5.397  0.127     0.002 9406.466         0.127
+#>  40 gam_k40 -4703.323        5.397  0.130     0.003 9406.646         0.130
+#>  35 gam_k35 -4703.325        5.397  0.130     0.003 9406.650         0.129
+#> 
+#> =================================================================
+```
 
 ## Citation
 
@@ -116,8 +172,33 @@ minimal reproducible example on
 
 - [`eeg_data`](https://lnalborczyk.github.io/neurogam/reference/eeg_data.md)
   : Simulated EEG data
+
 - [`find_clusters()`](https://lnalborczyk.github.io/neurogam/reference/find_clusters.md)
   : Find contiguous clusters in a time series
+
+- [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md) :
+  Posterior predictive checks for time-resolved BGAMMs
+
+- [`print(`*`<clusters_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/print.clusters_results.md)
+  :
+
+  Print method for `clusters_results` objects
+
+- [`print(`*`<recommend_k_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/print.recommend_k_results.md)
+  : Print method for recommend_k_results objects
+
+- [`recommend_k()`](https://lnalborczyk.github.io/neurogam/reference/recommend_k.md)
+  : Recommend a smooth basis dimension k via effective complexity "knee"
+  detection
+
+- [`summary(`*`<clusters_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results.md)
+  :
+
+  Summary method for `clusters_results` objects
+
+- [`summary(`*`<recommend_k_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.recommend_k_results.md)
+  : Summary method for recommend_k_results objects
+
 - [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
   : Time-resolved testing based on BGAMMs
 

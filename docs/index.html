@@ -28,7 +28,7 @@
 
     <a class="navbar-brand me-2" href="index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -74,7 +74,10 @@
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of a difference between conditions (in simulated EEG data). Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effects) may provide too liberal cluster estimates.</p>
+<div class="section level3">
+<h3 id="model-fitting">Model fitting<a class="anchor" aria-label="anchor" href="#model-fitting"></a>
+</h3>
+<p>Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of a difference between conditions (in simulated EEG data). Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide too liberal cluster estimates.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># loading the neurogam package</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/lnalborczyk/neurogam" class="external-link">neurogam</a></span><span class="op">)</span></span>
@@ -97,12 +100,18 @@
 <span>    <span class="co"># simulated EEG data</span></span>
 <span>    data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
 <span>    <span class="co"># name of predictor in data</span></span>
-<span>    predictor_id <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>    <span class="co"># predictor_id = "condition",</span></span>
+<span>    <span class="co"># when predictor_id = NA, tests average level against 0</span></span>
+<span>    predictor_id <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>    <span class="co"># we recommend fitting the GAMM with summary statistics (mean and SD)</span></span>
 <span>    multilevel <span class="op">=</span> <span class="st">"summary"</span>,</span>
 <span>    <span class="co"># threshold on posterior odds</span></span>
 <span>    threshold <span class="op">=</span> <span class="fl">10</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="visualising-the-results">Visualising the results<a class="anchor" aria-label="anchor" href="#visualising-the-results"></a>
+</h3>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># displaying the identified clusters</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
@@ -112,13 +121,60 @@
 <span><span class="co">#&gt; Clusters found: 1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  cluster_id cluster_onset cluster_offset duration</span></span>
-<span><span class="co">#&gt;           1          0.16          0.346    0.186</span></span>
+<span><span class="co">#&gt;           1         0.162          0.348    0.186</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; =================================================================</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># plotting the data, model's predictions, and clusters</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-fig-clusters-1.png" width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="posterior-predictive-checks">Posterior predictive checks<a class="anchor" aria-label="anchor" href="#posterior-predictive-checks"></a>
+</h3>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># posterior predictive checks (PPCs)</span></span>
+<span><span class="fu"><a href="reference/ppc.html">ppc</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-fig-ppc-1.png" width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="how-to-define-the-basis-dimension">How to define the basis dimension?<a class="anchor" aria-label="anchor" href="#how-to-define-the-basis-dimension"></a>
+</h3>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># recommend an optimal smooth basis dimension k</span></span>
+<span><span class="va">k_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/recommend_k.html">recommend_k</a></span><span class="op">(</span></span>
+<span>    object <span class="op">=</span> <span class="va">results</span>,</span>
+<span>    k_min <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>    k_max <span class="op">=</span> <span class="fl">40</span>,</span>
+<span>    k_step <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>    criterion <span class="op">=</span> <span class="st">"waic"</span></span>
+<span>    <span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-fig-reco-k-1.png" width="100%"></p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># results summary</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">k_res</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; ==== Summary of k recommendation ================================</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Number of models fitted  : 7</span></span>
+<span><span class="co">#&gt; k values tested          : 10, 15, 20, 25, 30, 35, 40</span></span>
+<span><span class="co">#&gt; Range of k values        : [10, 40]</span></span>
+<span><span class="co">#&gt; Knee based on            : p_waic</span></span>
+<span><span class="co">#&gt; Recommended k (knee)     : 20</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Comparison table (rounded):</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;   k   model waic_elpd waic_elpd_se p_waic p_waic_se     waic p_waic_smooth</span></span>
+<span><span class="co">#&gt;  10 gam_k10 -4702.794        5.396  0.115     0.002 9405.588         0.115</span></span>
+<span><span class="co">#&gt;  15 gam_k15 -4703.034        5.397  0.123     0.002 9406.069         0.123</span></span>
+<span><span class="co">#&gt;  25 gam_k25 -4703.096        5.396  0.124     0.002 9406.192         0.124</span></span>
+<span><span class="co">#&gt;  20 gam_k20 -4703.175        5.397  0.125     0.002 9406.349         0.125</span></span>
+<span><span class="co">#&gt;  30 gam_k30 -4703.233        5.397  0.127     0.002 9406.466         0.127</span></span>
+<span><span class="co">#&gt;  40 gam_k40 -4703.323        5.397  0.130     0.003 9406.646         0.130</span></span>
+<span><span class="co">#&gt;  35 gam_k35 -4703.325        5.397  0.130     0.003 9406.650         0.129</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; =================================================================</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>

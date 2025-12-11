@@ -1,16 +1,34 @@
+# neurogam 0.0.3
+
+## New features
+
+* Implementing the `recommend_k()` function, running model comparison with varying basis dimension (k).
+* Implementing a `ppc()` methods for `cluster_results` objects.
+
+<!--
+
+* Supporting continuous predictors in `testing_through_time()`.
+* Checking the ppc() method.
+
+-->
+
+## Other changes
+
+* Improved documentation for `print()` and `summary()` methods.
+
 # neurogam 0.0.2
 
 ## New features
 
-* Improved plotting: now plotting the GAM-smoothed signal with raw data and improved clusters aesthetics.
 * Allowing 3 different models to be fitted: full GAMM, GAMM with summary statistics (recommended), or group-level GAM.
 * Adding further support for presence or absence of predictor (e.g., group, condition). When `predictor_id = NA`, `neurogam` now tests signal against 0 through time.
 * Implementing `print()` and `summary()` methods for `cluster_results` objects.
+* Improved plotting: now plotting the GAM predictions with raw data and improved clusters aesthetics.
 
 ## Other changes
 
-* Improved functions documentation and package website
-* Factoring posterior odds computation within internal functions
+* Improved functions documentation and new package website.
+* Factoring posterior odds computation within internal functions.
 
 ## Bug fixes
 
