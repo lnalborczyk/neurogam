@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,18 +32,35 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.3" id="neurogam-003">neurogam 0.0.3<a class="anchor" aria-label="anchor" href="#neurogam-003"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-0-3">New features<a class="anchor" aria-label="anchor" href="#new-features-0-0-3"></a></h3>
+<ul><li>Implementing the <code><a href="../reference/recommend_k.html">recommend_k()</a></code> function, running model comparison with varying basis dimension (k).</li>
+<li>Implementing a <code><a href="../reference/ppc.html">ppc()</a></code> methods for <code>cluster_results</code> objects.</li>
+</ul><!--
+
+* Supporting continuous predictors in `testing_through_time()`.
+* Checking the ppc() method.
+
+--></div>
+<div class="section level3">
+<h3 id="other-changes-0-0-3">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-0-3"></a></h3>
+<ul><li>Improved documentation for <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> methods.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.2" id="neurogam-002">neurogam 0.0.2<a class="anchor" aria-label="anchor" href="#neurogam-002"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-0-2">New features<a class="anchor" aria-label="anchor" href="#new-features-0-0-2"></a></h3>
-<ul><li>Improved plotting: now plotting the GAM-smoothed signal with raw data and improved clusters aesthetics.</li>
-<li>Allowing 3 different models to be fitted: full GAMM, GAMM with summary statistics (recommended), or group-level GAM.</li>
+<ul><li>Allowing 3 different models to be fitted: full GAMM, GAMM with summary statistics (recommended), or group-level GAM.</li>
 <li>Adding further support for presence or absence of predictor (e.g., group, condition). When <code>predictor_id = NA</code>, <code>neurogam</code> now tests signal against 0 through time.</li>
 <li>Implementing <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> methods for <code>cluster_results</code> objects.</li>
+<li>Improved plotting: now plotting the GAM predictions with raw data and improved clusters aesthetics.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="other-changes-0-0-2">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-0-2"></a></h3>
-<ul><li>Improved functions documentation and package website</li>
-<li>Factoring posterior odds computation within internal functions</li>
+<ul><li>Improved functions documentation and new package website.</li>
+<li>Factoring posterior odds computation within internal functions.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="bug-fixes-0-0-2">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-0-2"></a></h3>
