@@ -54,10 +54,20 @@ testing_through_time(
 
 - predictor_id:
 
-  Character; name of the column in `data` containing a *binary*
-  predictor (e.g., group or condition). If `predictor_id = NA`, the
-  function tests whether the outcome differs from
-  `0 + chance_level + sesoi` over time.
+  Character; name of the column in `data` containing either:
+
+  - A *binary* categorical predictor (e.g., group or condition), in
+    which case the function tests, at each time point, whether the
+    difference between the two levels exceeds `chance_level + sesoi`;
+
+  - A *continuous* numeric predictor, in which case the function tests,
+    at each time point, whether the *slope* of the outcome with respect
+    to the predictor differs from `chance_level + sesoi` (typically with
+    `chance_level = 0`).
+
+  - If `predictor_id = NA`, the function tests whether the outcome
+    differs from `chance_level + sesoi` over time (useful for decoding
+    accuracies, for instance).
 
 - family:
 
@@ -155,7 +165,9 @@ An object of class `"clusters_results"`, which is a list with elements:
 
 The object has an associated
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) method for
-visualising the smoothed time course and detected clusters.
+visualising the smoothed time course and detected clusters, as well as
+[`print()`](https://rdrr.io/r/base/print.html) and
+[`summary()`](https://rdrr.io/r/base/summary.html) methods.
 
 ## Details
 

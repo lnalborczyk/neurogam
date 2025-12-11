@@ -14,9 +14,20 @@
 #' @param time_id Character; name of the column in \code{data}
 #' containing time information (e.g., in seconds or samples).
 #' @param predictor_id Character; name of the column in \code{data}
-#'   containing a \emph{binary} predictor (e.g., group or condition). If
-#'   \code{predictor_id = NA}, the function tests whether the outcome differs
-#'   from \code{0 + chance_level + sesoi} over time.
+#'   containing either:
+#'   \itemize{
+#'     \item A \emph{binary} categorical predictor (e.g., group or condition),
+#'       in which case the function tests, at each time point, whether the
+#'       difference between the two levels exceeds
+#'       \code{chance_level + sesoi};
+#'     \item A \emph{continuous} numeric predictor, in which case the function
+#'       tests, at each time point, whether the \emph{slope} of the outcome
+#'       with respect to the predictor differs from \code{chance_level + sesoi}
+#'       (typically with \code{chance_level = 0}).
+#'     \item If \code{predictor_id = NA}, the function tests whether the outcome differs
+#'       from \code{chance_level + sesoi} over time (useful for decoding accuracies,
+#'       for instance).
+#'   }
 #' @param family A \pkg{brms} family object describing the response
 #'   distribution to be used in the model (defaults to \code{gaussian()}).
 #' @param kvalue Numeric; basis dimension \code{k} passed to the smooth term
@@ -68,7 +79,8 @@
 #'   }
 #'
 #'   The object has an associated \code{plot()} method for visualising the
-#'   smoothed time course and detected clusters.
+#'   smoothed time course and detected clusters, as well as \code{print()} and
+#'   \code{summary()} methods.
 #'
 #' @details
 #' Internally, the function:
@@ -174,6 +186,33 @@ testing_through_time <- function (
             )
         )
 
+    # checking predictor type
+    predictor_type <- "none"
+
+    if (!is.na(predictor_id) ) {
+
+        pred_vec <- data[[predictor_id]]
+
+        if (is.numeric(pred_vec) ) {
+
+            predictor_type <- "continuous"
+            stop ("Continuous predictors are not yet supported, please use brms.", call. = FALSE)
+
+        } else {
+
+            predictor_type <- "categorical"
+
+            # optional: enforce 2 levels for categorical case
+            if (length(unique(pred_vec) ) != 2L) {
+
+                stop ("For categorical `predictor_id`, there must be exactly 2 levels.", call. = FALSE)
+
+            }
+
+        }
+
+    }
+
     if (multilevel == "full") {
 
         # construct the smooth term dynamically
@@ -234,7 +273,7 @@ testing_through_time <- function (
                 ) |>
                 data.frame()
 
-        } else {
+        } else if (predictor_type == "categorical") {
 
             # newdata grid over time and predictor
             newdata_grid <- tidyr::crossing(
@@ -274,7 +313,7 @@ testing_through_time <- function (
             # define the smooth term
             smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
 
-        } else {
+        } else if (predictor_type == "categorical") {
 
             # reshape and summarising the data
             summary_data <- data |>
@@ -346,7 +385,7 @@ testing_through_time <- function (
                 ) |>
                 data.frame()
 
-        } else {
+        } else if (predictor_type == "categorical") {
 
             # newdata grid over time and predictor
             newdata_grid <- tidyr::crossing(
@@ -388,7 +427,7 @@ testing_through_time <- function (
             # define the smooth term
             smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
 
-        } else {
+        } else if (predictor_type == "categorical") {
 
             # reshape and summarising the data
             summary_data <- data |>
@@ -406,6 +445,26 @@ testing_through_time <- function (
 
             # define the smooth term
             smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
+
+        # } else if (predictor_type == "continuous") {
+        #
+        #     # reshape and summarising the data
+        #     summary_data <- data |>
+        #         # reshape the original variables
+        #         dplyr::mutate(predictor = .data[[predictor_id]]) |>
+        #         dplyr::mutate(participant = .data[[participant_id]]) |>
+        #         dplyr::mutate(outcome = .data[[outcome_id]]) |>
+        #         dplyr::mutate(time = .data[[time_id]]) |>
+        #         # summarise per participant
+        #         dplyr::summarise(
+        #             predictor = mean(.data$predictor),
+        #             outcome_mean = mean(.data$outcome),
+        #             outcome_sd = stats::sd(.data$outcome),
+        #             .by = c(.data$participant, .data$time)
+        #             )
+        #
+        #     # define the smooth term
+        #     smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
 
         }
 
@@ -456,7 +515,7 @@ testing_through_time <- function (
                 ) |>
                 data.frame()
 
-        } else {
+        } else if (predictor_type == "categorical") {
 
             # newdata grid over time and predictor
             newdata_grid <- tidyr::crossing(
@@ -487,7 +546,7 @@ testing_through_time <- function (
             credible_interval = credible_interval
             )
 
-    } else {
+    } else if (predictor_type == "categorical") {
 
         prob_y_above <- .compute_two_sample_prob(
             post_draws = post_draws,

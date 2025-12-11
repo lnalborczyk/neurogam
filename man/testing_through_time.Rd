@@ -39,9 +39,20 @@ the outcome values (e.g., M/EEG amplitude, decoding accuracy).}
 containing time information (e.g., in seconds or samples).}
 
 \item{predictor_id}{Character; name of the column in \code{data}
-containing a \emph{binary} predictor (e.g., group or condition). If
-\code{predictor_id = NA}, the function tests whether the outcome differs
-from \code{0 + chance_level + sesoi} over time.}
+containing either:
+\itemize{
+  \item A \emph{binary} categorical predictor (e.g., group or condition),
+    in which case the function tests, at each time point, whether the
+    difference between the two levels exceeds
+    \code{chance_level + sesoi};
+  \item A \emph{continuous} numeric predictor, in which case the function
+    tests, at each time point, whether the \emph{slope} of the outcome
+    with respect to the predictor differs from \code{chance_level + sesoi}
+    (typically with \code{chance_level = 0}).
+  \item If \code{predictor_id = NA}, the function tests whether the outcome differs
+    from \code{chance_level + sesoi} over time (useful for decoding accuracies,
+    for instance).
+}}
 
 \item{family}{A \pkg{brms} family object describing the response
 distribution to be used in the model (defaults to \code{gaussian()}).}
@@ -108,7 +119,8 @@ An object of class \code{"clusters_results"}, which is a list with
   }
 
   The object has an associated \code{plot()} method for visualising the
-  smoothed time course and detected clusters.
+  smoothed time course and detected clusters, as well as \code{print()} and
+  \code{summary()} methods.
 }
 \description{
 Fits time-resolved Bayesian generalised additive (multilevel) models (BGAMMs)
