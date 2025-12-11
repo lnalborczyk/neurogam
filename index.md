@@ -24,7 +24,10 @@ remotes::install_github(
 
 Below we fit a Bayesian generalised additive multilevel model (BGAMM) to
 estimate the onset and offset of a difference between conditions (in
-simulated EEG data).
+simulated EEG data). Note that we recommend fitting the BGAMM on
+time-resolved summary statistics (mean and SD) as the full (i.e.,
+trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e.,
+no random/varying effects) may provide too liberal cluster estimates.
 
 ``` r
 # loading the neurogam package
@@ -81,9 +84,25 @@ plot(results)
 
 ## Citation
 
-Nalborczyk, L., & Bürkner, P. (2025). Precise temporal localisation of
-M/EEG effects with Bayesian generalised additive multilevel models.
-Preprint available at: <https://doi.org/10.1101/2025.08.29.672336>.
+When using `neurogam`, please cite the following publication:
+
+- Nalborczyk, L., & Bürkner, P. (2025). Precise temporal localisation of
+  M/EEG effects with Bayesian generalised additive multilevel models.
+  *biorXiv*. Preprint available at:
+  <https://doi.org/10.1101/2025.08.29.672336>.
+
+As `neurogam` is an interface to the `brms` package, please additionally
+cite one or more of the following publications:
+
+- Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel
+  Models using Stan. Journal of Statistical Software. 80(1), 1-28.
+  doi.org/10.18637/jss.v080.i01
+- Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R
+  Package brms. The R Journal. 10(1), 395-411.
+  doi.org/10.32614/RJ-2018-017
+- Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms
+  and Stan. Journal of Statistical Software, 100(5), 1-54.
+  doi.org/10.18637/jss.v100.i05
 
 ## Getting help
 

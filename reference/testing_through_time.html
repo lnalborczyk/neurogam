@@ -98,9 +98,18 @@ containing time information (e.g., in seconds or samples).</p></dd>
 
 <dt id="arg-predictor-id">predictor_id<a class="anchor" aria-label="anchor" href="#arg-predictor-id"></a></dt>
 <dd><p>Character; name of the column in <code>data</code>
-containing a <em>binary</em> predictor (e.g., group or condition). If
-<code>predictor_id = NA</code>, the function tests whether the outcome differs
-from <code>0 + chance_level + sesoi</code> over time.</p></dd>
+containing either:</p><ul><li><p>A <em>binary</em> categorical predictor (e.g., group or condition),
+    in which case the function tests, at each time point, whether the
+    difference between the two levels exceeds
+    <code>chance_level + sesoi</code>;</p></li>
+<li><p>A <em>continuous</em> numeric predictor, in which case the function
+    tests, at each time point, whether the <em>slope</em> of the outcome
+    with respect to the predictor differs from <code>chance_level + sesoi</code>
+    (typically with <code>chance_level = 0</code>).</p></li>
+<li><p>If <code>predictor_id = NA</code>, the function tests whether the outcome differs
+    from <code>chance_level + sesoi</code> over time (useful for decoding accuracies,
+    for instance).</p></li>
+</ul></dd>
 
 
 <dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
@@ -191,7 +200,8 @@ than <code>chance_level + sesoi</code>.</p></dd>
 <li><p><code>model</code>: the fitted <span class="pkg">brms</span> model object;</p></li>
 <li><p><code>multilevel</code>: the value of the <code>multilevel</code> argument.</p></li>
 </ul><p>The object has an associated <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> method for visualising the
-  smoothed time course and detected clusters.</p>
+  smoothed time course and detected clusters, as well as <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> and
+  <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> methods.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
