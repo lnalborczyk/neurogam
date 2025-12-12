@@ -61,7 +61,9 @@ results <- testing_through_time(
     # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
     # threshold on posterior odds
-    threshold = 10
+    threshold = 10,
+    # number of iterations (per MCMC)
+    iter = 5000
     )
 ```
 
@@ -90,6 +92,13 @@ plot(results)
 
 ### Posterior predictive checks
 
+We recommend visually assessing the predictions of the model against the
+observed data. We provide the
+[`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md)
+method, but you can conduct your own custom PPCs with
+`brms::pp_check(results$model, ...)` (for all available PPCs, see
+<https://mc-stan.org/bayesplot/reference/PPC-overview.html>).
+
 ``` r
 # posterior predictive checks (PPCs)
 ppc(results)
@@ -98,6 +107,18 @@ ppc(results)
 ![](reference/figures/README-fig-ppc-1.png)
 
 ### How to define the basis dimension?
+
+There is no universal recommendation for choosing the optimal value of
+$`k`$, as it depends on several factors, including the sampling rate,
+preprocessing steps (e.g., signal-to-noise ratio, low-pass filtering),
+and the underlying temporal dynamics of the effect of interest. One
+strategy is to set $`k`$ as high as computational constraints allow
+(acknowledging that the $`k`$-value only provides an upper bound on the
+*effective* basis dimension). Alternatively, one can fit a series of
+models with different $`k`$ values and compare these models using
+information criteria such as LOOIC or WAIC, alongside with posterior
+predictive checks (PPCs), to select the model that best captures the
+structure of the data. We illustrate this approach below.
 
 ``` r
 # recommend an optimal smooth basis dimension k
@@ -116,7 +137,7 @@ k_res <- recommend_k(
 # results summary
 summary(k_res)
 #> 
-#> ==== Summary of k recommendation ================================
+#> ==== Summary of k recommendation ===================================
 #> 
 #> Number of models fitted  : 7
 #> k values tested          : 10, 15, 20, 25, 30, 35, 40
@@ -127,15 +148,15 @@ summary(k_res)
 #> Comparison table (rounded):
 #> 
 #>   k   model waic_elpd waic_elpd_se p_waic p_waic_se     waic p_waic_smooth
-#>  10 gam_k10 -4702.794        5.396  0.115     0.002 9405.588         0.115
-#>  15 gam_k15 -4703.034        5.397  0.123     0.002 9406.069         0.123
-#>  25 gam_k25 -4703.096        5.396  0.124     0.002 9406.192         0.124
-#>  20 gam_k20 -4703.175        5.397  0.125     0.002 9406.349         0.125
-#>  30 gam_k30 -4703.233        5.397  0.127     0.002 9406.466         0.127
-#>  40 gam_k40 -4703.323        5.397  0.130     0.003 9406.646         0.130
-#>  35 gam_k35 -4703.325        5.397  0.130     0.003 9406.650         0.129
+#>  10 gam_k10 -4702.775        5.397  0.116     0.002 9405.549         0.116
+#>  15 gam_k15 -4703.098        5.397  0.124     0.002 9406.196         0.124
+#>  20 gam_k20 -4703.206        5.397  0.126     0.002 9406.411         0.126
+#>  25 gam_k25 -4703.276        5.397  0.127     0.003 9406.552         0.127
+#>  30 gam_k30 -4703.279        5.397  0.128     0.003 9406.559         0.128
+#>  35 gam_k35 -4703.296        5.397  0.128     0.003 9406.591         0.128
+#>  40 gam_k40 -4703.303        5.397  0.128     0.003 9406.606         0.128
 #> 
-#> =================================================================
+#> ====================================================================
 ```
 
 ## Citation

@@ -2,7 +2,7 @@ Package: neurogam
 Type: Package
 Title: Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
 Version: 0.0.3
-Date: 2025-12-11
+Date: 2025-12-12
 Authors@R:
     c(
     person(
@@ -26,7 +26,6 @@ Imports:
     dplyr,
     ggplot2,
     glue,
-    patchwork,
     rlang,
     tidybayes,
     tidyr

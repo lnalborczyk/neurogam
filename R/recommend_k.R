@@ -141,7 +141,7 @@ recommend_k <- function (
         k_step = 5,
         criterion = c("waic", "loo"),
         knee_method = c("geometric_smooth", "geometric"),
-        loess_span = 0.75,
+        loess_span = 0.5,
         verbose = TRUE
         ) {
 
@@ -430,13 +430,6 @@ recommend_k <- function (
                 xintercept = recommended_k,
                 linetype = 2
                 ) +
-            # ggplot2::geom_text(
-            #     data = subset(comparison, k == recommended_k),
-            #     ggplot2::aes(
-            #         label = paste0("knee: k = ", recommended_k)
-            #     ),
-            #     vjust = -1
-            #     ) +
             ggplot2::theme_bw() +
             ggplot2::labs(
                 x = "Smooth basis dimension (k)",
@@ -515,28 +508,6 @@ print.recommend_k_results <- function (x, digits = 3, ...) {
     # recommended k
     rec_k <- x$recommended_k
     cat("Recommended k (knee)     : ", rec_k, "\n", sep = "")
-
-    # if we can, show the comparison row for the recommended k
-    # if (!is.null(x$comparison) &&
-    #     !is.null(rec_k) &&
-    #     !is.na(rec_k) &&
-    #     "k" %in% names(x$comparison) ) {
-    #
-    #     rec_row <- x$comparison[x$comparison$k == rec_k, , drop = FALSE]
-    #
-    #     if (nrow(rec_row) == 1L) {
-    #
-    #         cat("\nSummary for recommended k:\n\n")
-    #
-    #         num_cols <- vapply(rec_row, is.numeric, logical(1L))
-    #         rec_row[num_cols] <- lapply(rec_row[num_cols], round, digits = digits)
-    #
-    #         print(rec_row, row.names = FALSE)
-    #
-    #     }
-    #
-    # }
-
     cat("\n=================================================================\n")
     invisible(x)
 
@@ -565,7 +536,7 @@ summary.recommend_k_results <- function (object, digits = 3, ...) {
 
     }
 
-    cat("\n==== Summary of k recommendation ================================\n\n")
+    cat("\n==== Summary of k recommendation ===================================\n\n")
 
     n_models <- if (!is.null(object$models) ) length(object$models) else NA_integer_
     k_vals <- object$k_values %||% NA_real_
@@ -626,7 +597,7 @@ summary.recommend_k_results <- function (object, digits = 3, ...) {
 
     }
 
-    cat("\n=================================================================\n")
+    cat("\n====================================================================\n")
     invisible(object)
 
 }

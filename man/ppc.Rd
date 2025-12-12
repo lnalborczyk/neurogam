@@ -2,13 +2,13 @@
 % Please edit documentation in R/testing_through_time.R
 \name{ppc}
 \alias{ppc}
-\title{Posterior predictive checks for time-resolved BGAMMs}
+\title{Posterior predictive checks for \code{clusters_results} objects}
 \usage{
 ppc(
   object,
-  ndraws_time = 100,
-  ndraws_stat = 100,
-  stat = c("mean", "sd"),
+  prefix = c("ppc", "ppd"),
+  ppc_type = "ribbon_grouped",
+  ndraws = 100,
   group_var = NULL,
   ...
 )
@@ -18,56 +18,45 @@ ppc(
 \code{\link{testing_through_time}}. The object must contain a fitted
 \pkg{brms} model in its \code{$model} slot.}
 
-\item{ndraws_time}{Integer; number of posterior draws used for the
-distribution-level PPC (density overlay). Defaults to \code{100}.}
+\item{prefix}{Character; passed to \code{\link[brms]{pp_check}} to control
+whether the function uses posterior predictive checks (\code{"ppc"}) or
+posterior predictive distributions (\code{"ppd"}). One of \code{"ppc"}
+(default) or \code{"ppd"}.}
 
-\item{ndraws_stat}{Integer; number of posterior draws used for the
-statistic-level PPC (mean/SD). Defaults to \code{500}.}
+\item{ppc_type}{Character; the type of check passed to \code{\link[brms]{pp_check}}
+(default: \code{"ribbon_grouped"}). See \pkg{brms} documentation for
+available PPC/PPD types.}
 
-\item{stat}{A character vector of summary statistics to use for the
-\code{"stat_2d"} PPC. Passed to \code{\link[brms]{pp_check}} as the
-\code{stat} argument. Defaults to \code{c("mean", "sd")}.}
+\item{ndraws}{Numeric; number of posterior draws used to generate the PPC/PPD
+(default: \code{100}).}
 
-\item{group_var}{Optional character scalar specifying the name of the
-grouping variable for the grouped PPC. If \code{NULL} (default), the
-function automatically uses \code{"predictor"} when that column exists in
-the model data and has exactly two levels (binary predictor). When a
-grouping variable is used, the density PPC employs
-\code{type = "dens_overlay_grouped"}; otherwise, \code{type = "dens_overlay"}.}
+\item{group_var}{Optional character; name of the grouping variable to use for
+grouped PPCs. If \code{NULL} (default), the function uses \code{"predictor"}
+when present in \code{model$data} and binary (two levels). Otherwise it
+falls back to \code{"participant"}.}
 
-\item{...}{Currently ignored. Included for future extensibility.}
+\item{...}{Additional arguments passed to \code{\link[brms]{pp_check}}.}
 }
 \value{
-A \pkg{patchwork} / \pkg{ggplot2} object containing the combined
-  posterior predictive checks. The plot is also printed as a side effect.
+A single \pkg{ggplot2} object (invisibly). The plot is also printed as
+  a side effect.
 }
 \description{
-Generates posterior predictive checks (PPCs) for the \pkg{brms} model stored
-inside a \code{"clusters_results"} object, displaying:
-\enumerate{
-  \item a PPC of the predicted outcome distribution (densities), and
-  \item a PPC of summary statistics (mean and standard deviation).
-}
+Generates a posterior predictive check for the \pkg{brms} model stored
+inside a \code{"clusters_results"} object.
+The function is a thin wrapper around \code{\link[brms]{pp_check}} that
+automatically chooses a grouping variable when possible.
 }
 \details{
-This function is a convenience wrapper around \code{\link[brms]{pp_check}}
-and \pkg{patchwork}. It first tries to detect whether the model contains a
-binary grouping variable (by default, a column named \code{"predictor"} in
-\code{model$data}). If such a variable is found (or if \code{group_var} is
-explicitly provided), the distribution-level PPC is produced using
-\code{type = "dens_overlay_grouped"}, which compares predicted and observed
-densities within each group. Otherwise, a standard
-\code{type = "dens_overlay"} PPC is drawn.
+If \code{group_var} is \code{NULL}, the function attempts to detect whether
+the model data contain a binary grouping variable named \code{"predictor"}.
+If so, it produces a grouped PPC using \code{group = "predictor"}; otherwise
+it uses \code{group = "participant"}.
 
-The second panel uses \code{type = "stat_2d"} with the supplied \code{stat}
-argument (by default, mean and standard deviation), allowing inspection of
-how well the posterior predictive distribution reproduces key summary
-statistics of the data.
-
-The two PPC plots are combined side-by-side using
-\code{\link[patchwork]{wrap_plots}}, and the resulting combined plot is
-returned (and can be further modified using standard \pkg{ggplot2} or
-\pkg{patchwork} operations).
+The check is performed over \code{x = "time"} and uses \code{re_formula = NA}
+when the grouping variable is \code{"predictor"} (i.e., group-level PPC). When
+falling back to participant-level grouping, random effects are included by
+default (unless overridden via \code{...}).
 }
 \examples{
 \dontrun{
@@ -86,15 +75,11 @@ res <- testing_through_time(
   multilevel = "summary"
   )
 
-# posterior predictive checks (combined plot)
+# posterior predictive checks
 ppc(res)
 }
 
 }
 \seealso{
-\code{\link{testing_through_time}},
-  \code{\link{print.clusters_results}},
-  \code{\link{summary.clusters_results}},
-  \code{\link[brms]{pp_check}},
-  \code{\link[patchwork]{wrap_plots}}
+\code{\link{testing_through_time}}, \code{\link[brms]{pp_check}}
 }

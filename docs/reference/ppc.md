@@ -1,20 +1,18 @@
-# Posterior predictive checks for time-resolved BGAMMs
+# Posterior predictive checks for `clusters_results` objects
 
-Generates posterior predictive checks (PPCs) for the brms model stored
-inside a `"clusters_results"` object, displaying:
-
-1.  a PPC of the predicted outcome distribution (densities), and
-
-2.  a PPC of summary statistics (mean and standard deviation).
+Generates a posterior predictive check for the brms model stored inside
+a `"clusters_results"` object. The function is a thin wrapper around
+[`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html) that
+automatically chooses a grouping variable when possible.
 
 ## Usage
 
 ``` r
 ppc(
   object,
-  ndraws_time = 100,
-  ndraws_stat = 100,
-  stat = c("mean", "sd"),
+  prefix = c("ppc", "ppd"),
+  ppc_type = "ribbon_grouped",
+  ndraws = 100,
   group_var = NULL,
   ...
 )
@@ -28,70 +26,59 @@ ppc(
   [`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
   The object must contain a fitted brms model in its `$model` slot.
 
-- ndraws_time:
+- prefix:
 
-  Integer; number of posterior draws used for the distribution-level PPC
-  (density overlay). Defaults to `100`.
+  Character; passed to
+  [`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html) to
+  control whether the function uses posterior predictive checks
+  (`"ppc"`) or posterior predictive distributions (`"ppd"`). One of
+  `"ppc"` (default) or `"ppd"`.
 
-- ndraws_stat:
+- ppc_type:
 
-  Integer; number of posterior draws used for the statistic-level PPC
-  (mean/SD). Defaults to `500`.
+  Character; the type of check passed to
+  [`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html)
+  (default: `"ribbon_grouped"`). See brms documentation for available
+  PPC/PPD types.
 
-- stat:
+- ndraws:
 
-  A character vector of summary statistics to use for the `"stat_2d"`
-  PPC. Passed to
-  [`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html) as
-  the `stat` argument. Defaults to `c("mean", "sd")`.
+  Numeric; number of posterior draws used to generate the PPC/PPD
+  (default: `100`).
 
 - group_var:
 
-  Optional character scalar specifying the name of the grouping variable
-  for the grouped PPC. If `NULL` (default), the function automatically
-  uses `"predictor"` when that column exists in the model data and has
-  exactly two levels (binary predictor). When a grouping variable is
-  used, the density PPC employs `type = "dens_overlay_grouped"`;
-  otherwise, `type = "dens_overlay"`.
+  Optional character; name of the grouping variable to use for grouped
+  PPCs. If `NULL` (default), the function uses `"predictor"` when
+  present in `model$data` and binary (two levels). Otherwise it falls
+  back to `"participant"`.
 
 - ...:
 
-  Currently ignored. Included for future extensibility.
+  Additional arguments passed to
+  [`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html).
 
 ## Value
 
-A patchwork / ggplot2 object containing the combined posterior
-predictive checks. The plot is also printed as a side effect.
+A single ggplot2 object (invisibly). The plot is also printed as a side
+effect.
 
 ## Details
 
-This function is a convenience wrapper around
-[`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html) and
-patchwork. It first tries to detect whether the model contains a binary
-grouping variable (by default, a column named `"predictor"` in
-`model$data`). If such a variable is found (or if `group_var` is
-explicitly provided), the distribution-level PPC is produced using
-`type = "dens_overlay_grouped"`, which compares predicted and observed
-densities within each group. Otherwise, a standard
-`type = "dens_overlay"` PPC is drawn.
+If `group_var` is `NULL`, the function attempts to detect whether the
+model data contain a binary grouping variable named `"predictor"`. If
+so, it produces a grouped PPC using `group = "predictor"`; otherwise it
+uses `group = "participant"`.
 
-The second panel uses `type = "stat_2d"` with the supplied `stat`
-argument (by default, mean and standard deviation), allowing inspection
-of how well the posterior predictive distribution reproduces key summary
-statistics of the data.
-
-The two PPC plots are combined side-by-side using
-[`wrap_plots`](https://patchwork.data-imaginist.com/reference/wrap_plots.html),
-and the resulting combined plot is returned (and can be further modified
-using standard ggplot2 or patchwork operations).
+The check is performed over `x = "time"` and uses `re_formula = NA` when
+the grouping variable is `"predictor"` (i.e., group-level PPC). When
+falling back to participant-level grouping, random effects are included
+by default (unless overridden via `...`).
 
 ## See also
 
 [`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md),
-[`print.clusters_results`](https://lnalborczyk.github.io/neurogam/reference/print.clusters_results.md),
-[`summary.clusters_results`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results.md),
-[`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html),
-[`wrap_plots`](https://patchwork.data-imaginist.com/reference/wrap_plots.html)
+[`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html)
 
 ## Examples
 
@@ -112,7 +99,7 @@ res <- testing_through_time(
   multilevel = "summary"
   )
 
-# posterior predictive checks (combined plot)
+# posterior predictive checks
 ppc(res)
 } # }
 ```

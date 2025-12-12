@@ -3,12 +3,12 @@
 ## New features
 
 * Implementing the `recommend_k()` function, running model comparison with varying basis dimension (k).
-* Implementing a `ppc()` methods for `cluster_results` objects.
+* Implementing a `ppc()` method for `cluster_results` objects.
 
 <!--
 
 * Supporting continuous predictors in `testing_through_time()`.
-* Checking the ppc() method.
+* Adding support for effect sizes
 
 -->
 

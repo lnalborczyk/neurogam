@@ -926,65 +926,46 @@ summary.clusters_results <- function (object, digits = 3, ...) {
 
 }
 
-#' Posterior predictive checks for time-resolved BGAMMs
+#' Posterior predictive checks for \code{clusters_results} objects
 #'
-#' Generates posterior predictive checks (PPCs) for the \pkg{brms} model stored
-#' inside a \code{"clusters_results"} object, displaying:
-#' \enumerate{
-#'   \item a PPC of the predicted outcome distribution (densities), and
-#'   \item a PPC of summary statistics (mean and standard deviation).
-#' }
+#' Generates a posterior predictive check for the \pkg{brms} model stored
+#' inside a \code{"clusters_results"} object.
+#' The function is a thin wrapper around \code{\link[brms]{pp_check}} that
+#' automatically chooses a grouping variable when possible.
 #'
 #' @param object An object of class \code{"clusters_results"} as returned by
 #'   \code{\link{testing_through_time}}. The object must contain a fitted
 #'   \pkg{brms} model in its \code{$model} slot.
-#' @param ndraws_time Integer; number of posterior draws used for the
-#'   distribution-level PPC (density overlay). Defaults to \code{100}.
-#' @param ndraws_stat Integer; number of posterior draws used for the
-#'   statistic-level PPC (mean/SD). Defaults to \code{500}.
-#' @param stat A character vector of summary statistics to use for the
-#'   \code{"stat_2d"} PPC. Passed to \code{\link[brms]{pp_check}} as the
-#'   \code{stat} argument. Defaults to \code{c("mean", "sd")}.
-#' @param group_var Optional character scalar specifying the name of the
-#'   grouping variable for the grouped PPC. If \code{NULL} (default), the
-#'   function automatically uses \code{"predictor"} when that column exists in
-#'   the model data and has exactly two levels (binary predictor). When a
-#'   grouping variable is used, the density PPC employs
-#'   \code{type = "dens_overlay_grouped"}; otherwise, \code{type = "dens_overlay"}.
-#' @param ... Currently ignored. Included for future extensibility.
+#' @param prefix Character; passed to \code{\link[brms]{pp_check}} to control
+#'   whether the function uses posterior predictive checks (\code{"ppc"}) or
+#'   posterior predictive distributions (\code{"ppd"}). One of \code{"ppc"}
+#'   (default) or \code{"ppd"}.
+#' @param ppc_type Character; the type of check passed to \code{\link[brms]{pp_check}}
+#'   (default: \code{"ribbon_grouped"}). See \pkg{brms} documentation for
+#'   available PPC/PPD types.
+#' @param ndraws Numeric; number of posterior draws used to generate the PPC/PPD
+#'   (default: \code{100}).
+#' @param group_var Optional character; name of the grouping variable to use for
+#'   grouped PPCs. If \code{NULL} (default), the function uses \code{"predictor"}
+#'   when present in \code{model$data} and binary (two levels). Otherwise it
+#'   falls back to \code{"participant"}.
+#' @param ... Additional arguments passed to \code{\link[brms]{pp_check}}.
 #'
 #' @details
-#' This function is a convenience wrapper around \code{\link[brms]{pp_check}}
-#' and \pkg{patchwork}. It first tries to detect whether the model contains a
-#' binary grouping variable (by default, a column named \code{"predictor"} in
-#' \code{model$data}). If such a variable is found (or if \code{group_var} is
-#' explicitly provided), the distribution-level PPC is produced using
-#' \code{type = "dens_overlay_grouped"}, which compares predicted and observed
-#' densities within each group. Otherwise, a standard
-#' \code{type = "dens_overlay"} PPC is drawn.
+#' If \code{group_var} is \code{NULL}, the function attempts to detect whether
+#' the model data contain a binary grouping variable named \code{"predictor"}.
+#' If so, it produces a grouped PPC using \code{group = "predictor"}; otherwise
+#' it uses \code{group = "participant"}.
 #'
-#' The second panel uses \code{type = "stat_2d"} with the supplied \code{stat}
-#' argument (by default, mean and standard deviation), allowing inspection of
-#' how well the posterior predictive distribution reproduces key summary
-#' statistics of the data.
+#' The check is performed over \code{x = "time"} and uses \code{re_formula = NA}
+#' when the grouping variable is \code{"predictor"} (i.e., group-level PPC). When
+#' falling back to participant-level grouping, random effects are included by
+#' default (unless overridden via \code{...}).
 #'
-#' The two PPC plots are combined side-by-side using
-#' \code{\link[patchwork]{wrap_plots}}, and the resulting combined plot is
-#' returned (and can be further modified using standard \pkg{ggplot2} or
-#' \pkg{patchwork} operations).
+#' @return A single \pkg{ggplot2} object (invisibly). The plot is also printed as
+#'   a side effect.
 #'
-#' @return A \pkg{patchwork} / \pkg{ggplot2} object containing the combined
-#'   posterior predictive checks. The plot is also printed as a side effect.
-#'
-#' @seealso
-#'   \code{\link{testing_through_time}},
-#'   \code{\link{print.clusters_results}},
-#'   \code{\link{summary.clusters_results}},
-#'   \code{\link[brms]{pp_check}},
-#'   \code{\link[patchwork]{wrap_plots}}
-#'
-#' @importFrom brms pp_check
-#' @importFrom patchwork wrap_plots
+#' @seealso \code{\link{testing_through_time}}, \code{\link[brms]{pp_check}}
 #'
 #' @examples
 #' \dontrun{
@@ -1003,27 +984,29 @@ summary.clusters_results <- function (object, digits = 3, ...) {
 #'   multilevel = "summary"
 #'   )
 #'
-#' # posterior predictive checks (combined plot)
+#' # posterior predictive checks
 #' ppc(res)
 #' }
 #'
 #' @export
 ppc <- function (
         object,
-        ndraws_time = 100,
-        ndraws_stat = 100,
-        stat = c("mean", "sd"),
+        prefix = c("ppc", "ppd"),
+        ppc_type = "ribbon_grouped",
+        ndraws = 100,
         group_var = NULL,
+        newdata = NULL,
         ...
         ) {
+
+    fit <- object$model
+    prefix <- match.arg(prefix)
 
     if (!inherits(object, "clusters_results") ) {
 
         stop ("`object` must be of class 'clusters_results'.", call. = FALSE)
 
     }
-
-    fit <- object$model
 
     if (is.null(fit) || !inherits(fit, "brmsfit") ) {
 
@@ -1081,48 +1064,36 @@ ppc <- function (
 
         p1 <- brms::pp_check(
             object = fit,
-            ndraws = ndraws_time,
-            type = "ribbon_grouped",
+            prefix = prefix,
+            ndraws = ndraws,
+            type = ppc_type,
             x = "time",
             group = group_var,
             prob = 0.5,
-            prob_outer = 0.95,
+            prob_outer = 0.8,
             alpha = 0.2,
-            re_formula = NA
+            re_formula = NA,
+            newdata = newdata
             ) +
             ggplot2::theme_bw()
 
-    } else { # PPC per participant
+    } else { # or PPC per participant
 
         p1 <- brms::pp_check(
             object = fit,
-            ndraws = ndraws_time,
-            type = "ribbon_grouped",
+            prefix = prefix,
+            ndraws = ndraws,
+            type = ppc_type,
             x = "time",
             group = "participant",
             prob = 0.5,
-            prob_outer = 0.95,
+            prob_outer = 0.8,
             alpha = 0.2,
+            newdata = newdata
             ) +
             ggplot2::theme_bw()
 
     }
-
-    # PPC on summary statistics (mean / SD)
-    # p2 <- brms::pp_check(
-    #     object = fit,
-    #     ndraws = ndraws_stat,
-    #     type = "stat_2d",
-    #     stat = stat,
-    #     group = "participant",
-    #     re_formula = NA
-    #     ) +
-    #     ggplot2::theme_bw()
-
-    # combine with patchwork
-    # combined <- patchwork::wrap_plots(p1, p2, ncol = 2)
-    # print(combined)
-    # invisible(combined)
 
     # returning the plot
     print(p1)
