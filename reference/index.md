@@ -9,7 +9,8 @@
   : Find contiguous clusters in a time series
 
 - [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md) :
-  Posterior predictive checks for time-resolved BGAMMs
+
+  Posterior predictive checks for `clusters_results` objects
 
 - [`print(`*`<clusters_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/print.clusters_results.md)
   :

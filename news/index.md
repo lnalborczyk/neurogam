@@ -9,7 +9,7 @@
   function, running model comparison with varying basis dimension (k).
 - Implementing a
   [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md)
-  methods for `cluster_results` objects.
+  method for `cluster_results` objects.
 
 ### Other changes
 

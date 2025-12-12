@@ -17,7 +17,7 @@ recommend_k(
   k_step = 5,
   criterion = c("waic", "loo"),
   knee_method = c("geometric_smooth", "geometric"),
-  loess_span = 0.75,
+  loess_span = 0.5,
   verbose = TRUE
 )
 ```
