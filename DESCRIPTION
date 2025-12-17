@@ -2,7 +2,7 @@ Package: neurogam
 Type: Package
 Title: Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
 Version: 0.0.3
-Date: 2025-12-12
+Date: 2025-12-16
 Authors@R:
     c(
     person(
@@ -16,17 +16,22 @@ Authors@R:
     role = c("ctb"),
     email = "paul.buerkner@gmail.com"
     ) )
-Description: Providing utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved data (e.g., M/EEG, pupillometry, mouse-tracking, etc) and identifying clusters.
+Description: Provides utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved data (e.g., M/EEG, pupillometry, mouse-tracking, etc) and identifying clusters.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
+    akima,
     assertthat,
+    bayesplot,
     brms,
     dplyr,
+    FNN,
     ggplot2,
+    ggrepel,
     glue,
     rlang,
+    scales,
     tidybayes,
     tidyr
 Depends: 
@@ -34,3 +39,10 @@ Depends:
 RoxygenNote: 7.3.3
 URL: https://github.com/lnalborczyk/neurogam, https://lnalborczyk.github.io/neurogam/
 BugReports: https://github.com/lnalborczyk/neurogam/issues
+Suggests: 
+    eegkit,
+    knitr,
+    quarto,
+    testthat (>= 3.0.0)
+VignetteBuilder: quarto
+Config/testthat/edition: 3

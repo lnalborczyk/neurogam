@@ -1,0 +1,157 @@
+---
+title: "Application to 1D temporal EEG data"
+author: "Ladislas Nalborczyk"
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Application to spatio-temporal EEG data}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{quarto::html}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+    cache = TRUE,
+    collapse = TRUE,
+    warning = FALSE,
+    message = FALSE,
+    comment = "#>",
+    out.width = "100%",
+    dev = "png",
+    dpi = 200
+    )
+```
+
+## Importing and visualising EEG data
+
+Below we import and reshape EEG data from the [`eegkit` package](https://cran.r-project.org/web/packages/eegkit/index.html).
+
+```{r data-import, fig.height = 12, fig.width = 12}
+library(neurogam)
+library(ggplot2)
+library(eegkit)
+library(dplyr)
+
+# retrieving some EEG data
+data(eegdata)
+head(eegdata)
+
+# plotting the average ERP per group and channel
+eegdata |>
+    summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
+    ggplot(aes(x = time, y = voltage, colour = group) ) +
+    geom_line() +
+    facet_wrap(~channel) +
+    theme_bw()
+```
+
+```{r data-reshape}
+# reshape the data
+eeg_data <- eegdata |>
+    # keeping only one channel
+    dplyr::filter(channel == "PZ") |>
+    # converting timesteps to seconds
+    mutate(time = (time + 1) / 256) |>
+    # rounding numeric variables
+    mutate(across(is.numeric, ~round(.x, 4) ) ) |>
+    # removing NAs
+    na.omit()
+
+# show a few rows
+head(eeg_data)
+```
+
+## Fitting the model
+
+```{r clusters, results = "hide"}
+# fitting the BGAMM to identify clusters (around 20-30 min on a recent laptop)
+results <- testing_through_time(
+    # EEG data
+    data = eeg_data,
+    # participant column
+    participant_id = "subject",
+    # EEG column
+    outcome_id = "voltage",
+    # name of predictor in data
+    predictor_id = "group",
+    # basis dimension
+    kvalue = 30,
+    # we recommend fitting the GAMM with summary statistics (mean and SD)
+    multilevel = "summary",
+    # threshold on posterior odds
+    threshold = 10,
+    # number of MCMCs
+    chains = 4,
+    # number of parallel cores
+    cores = 4
+    )
+```
+
+### Visualising the results
+
+```{r print-clusters}
+# displaying the identified clusters
+print(results)
+```
+
+```{r fig-clusters, fig.asp = 0.5, dev = "png", dpi = 300}
+# plotting the data, model's predictions, and clusters
+plot(results)
+```
+
+### Computing clusters at the participant-level
+
+Below we fit a new model, specifying `predictor_id = NA` (because `group` varies across participants) and `by_ppt = TRUE` to return clusters at the participant level.
+
+```{r clusters-ppt, results = "hide"}
+# fitting the BGAMM to identify clusters (around 20-30 min on 4 laptop apple M4 cores)
+results <- testing_through_time(
+    # EEG data
+    data = eeg_data,
+    # participant column
+    participant_id = "subject",
+    # EEG column
+    outcome_id = "voltage",
+    # here we use no predictor (because group varies across participants)
+    predictor_id = NA,
+    # basis dimension (for both the group and participant levels)
+    kvalue = 30,
+    # we recommend fitting the GAMM with summary statistics (mean and SD)
+    multilevel = "summary",
+    # return clusters at both the group and participant levels
+    by_ppt = TRUE,
+    # threshold on posterior odds
+    threshold = 10,
+    # number of MCMCs
+    chains = 4,
+    # number of parallel cores
+    cores = 4
+    )
+```
+
+### Visualising the results
+
+```{r print-clusters-ppt}
+# displaying the identified clusters
+print(results)
+```
+
+```{r fig-clusters-ppt, fig.width = 12, fig.height = 9}
+# plotting the data, model's predictions, and clusters
+plot(results)
+```
+
+### Posterior predictive checks
+
+We recommend visually assessing the predictions of the model against the observed data (for each participant). We provide a lightweight `ppc()` method, but you can conduct various PPCs with `brms::pp_check(results$model, ...)` (for all available PPCs, see <https://mc-stan.org/bayesplot/reference/PPC-overview.html>).
+
+```{r fig-ppc1, fig.width = 12, fig.height = 6}
+# posterior predictive checks (PPCs) at the group level
+ppc(object = results, ppc_type = "group")
+```
+
+```{r fig-ppc2, fig.width = 12, fig.height = 9}
+# posterior predictive checks (PPCs) at the participant level
+ppc(object = results, ppc_type = "participant")
+```

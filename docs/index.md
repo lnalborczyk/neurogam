@@ -24,12 +24,13 @@ remotes::install_github(
 
 ### Model fitting
 
-Below we fit a Bayesian generalised additive multilevel model (BGAMM) to
-estimate the onset and offset of a difference between conditions (in
-simulated EEG data). Note that we recommend fitting the BGAMM on
-time-resolved summary statistics (mean and SD) as the full (i.e.,
-trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e.,
-no random/varying effect) may provide too liberal cluster estimates.
+Below we fit a Bayesian generalised additive multilevel model (BGAMM)
+with varying intercept, slope, and smooth (per participant) to estimate
+the onset and offset of a difference between conditions. Note that we
+recommend fitting the BGAMM on time-resolved summary statistics (mean
+and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and
+the group-level BGAM (i.e., no random/varying effect) may provide too
+liberal cluster estimates.
 
 ``` r
 # loading the neurogam package
@@ -50,7 +51,7 @@ head(eeg_data)
 ```
 
 ``` r
-# fitting the BGAMM to identify clusters
+# fitting the BGAMM to identify clusters (around 10 minutes on a recent laptop)
 results <- testing_through_time(
     # simulated EEG data
     data = eeg_data,
@@ -73,9 +74,9 @@ results <- testing_through_time(
 # displaying the identified clusters
 print(results)
 #> 
-#> ==== Time-resolved Bayesian GAMM Results ======================
+#> ==== Time-resolved GAMM results ===============================
 #> 
-#> Clusters found: 1
+#> Clusters found: 
 #> 
 #>  cluster_id cluster_onset cluster_offset duration
 #>           1         0.162          0.348    0.186
@@ -93,32 +94,32 @@ plot(results)
 ### Posterior predictive checks
 
 We recommend visually assessing the predictions of the model against the
-observed data. We provide the
+observed data. We provide a lightweight
 [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md)
-method, but you can conduct your own custom PPCs with
+method, but you can conduct various PPCs with
 `brms::pp_check(results$model, ...)` (for all available PPCs, see
 <https://mc-stan.org/bayesplot/reference/PPC-overview.html>).
 
 ``` r
 # posterior predictive checks (PPCs)
-ppc(results)
+ppc(object = results, ppc_type = "participant")
 ```
 
 ![](reference/figures/README-fig-ppc-1.png)
 
 ### How to define the basis dimension?
 
-There is no universal recommendation for choosing the optimal value of
-$`k`$, as it depends on several factors, including the sampling rate,
-preprocessing steps (e.g., signal-to-noise ratio, low-pass filtering),
-and the underlying temporal dynamics of the effect of interest. One
-strategy is to set $`k`$ as high as computational constraints allow
-(acknowledging that the $`k`$-value only provides an upper bound on the
-*effective* basis dimension). Alternatively, one can fit a series of
-models with different $`k`$ values and compare these models using
-information criteria such as LOOIC or WAIC, alongside with posterior
-predictive checks (PPCs), to select the model that best captures the
-structure of the data. We illustrate this approach below.
+We cannot provide a single universal recommendation for choosing the
+optimal value of $`k`$, as it depends on several factors, including the
+sampling rate, preprocessing steps (e.g., signal-to-noise ratio,
+low-pass filtering), and the underlying temporal dynamics of the effect
+of interest. One strategy is to set $`k`$ as high as computational
+constraints allow (acknowledging that the $`k`$-value only provides an
+upper bound on the *effective* basis dimension). Alternatively, one can
+fit a series of models with different $`k`$ values and compare these
+models using information criteria such as LOOIC or WAIC, alongside with
+posterior predictive checks (PPCs), to select the model that best
+captures the structure of the data. We illustrate this approach below.
 
 ``` r
 # recommend an optimal smooth basis dimension k
@@ -148,15 +149,62 @@ summary(k_res)
 #> Comparison table (rounded):
 #> 
 #>   k   model waic_elpd waic_elpd_se p_waic p_waic_se     waic p_waic_smooth
-#>  10 gam_k10 -4702.775        5.397  0.116     0.002 9405.549         0.116
-#>  15 gam_k15 -4703.098        5.397  0.124     0.002 9406.196         0.124
-#>  20 gam_k20 -4703.206        5.397  0.126     0.002 9406.411         0.126
-#>  25 gam_k25 -4703.276        5.397  0.127     0.003 9406.552         0.127
-#>  30 gam_k30 -4703.279        5.397  0.128     0.003 9406.559         0.128
-#>  35 gam_k35 -4703.296        5.397  0.128     0.003 9406.591         0.128
-#>  40 gam_k40 -4703.303        5.397  0.128     0.003 9406.606         0.128
+#>  10 gam_k10 -4703.605        5.394  0.145     0.003 9407.211         0.145
+#>  15 gam_k15 -4703.905        5.395  0.154     0.003 9407.809         0.154
+#>  20 gam_k20 -4704.028        5.395  0.156     0.003 9408.056         0.156
+#>  25 gam_k25 -4704.070        5.395  0.157     0.003 9408.140         0.157
+#>  30 gam_k30 -4704.071        5.395  0.157     0.003 9408.141         0.157
+#>  40 gam_k40 -4704.118        5.395  0.158     0.003 9408.236         0.158
+#>  35 gam_k35 -4704.143        5.395  0.158     0.003 9408.286         0.158
 #> 
 #> ====================================================================
+```
+
+## Polyglot use of `neurogam`
+
+To use `neurogam` functions in Python (e.g., on MNE epochs), we
+recommend using the `rpy2` interface (<https://github.com/rpy2/rpy2>),
+as shown below. It simply requires reshaping MNE epochs into long format
+(one trial/observation per row) (see for instance
+`epochs.to_data_frame(long_format=True)`,
+<https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame>).
+
+``` python
+# loading the Python modules
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+from rpy2.robjects.conversion import localconverter
+
+# importing the "neurogam" R package
+neurogam = importr("neurogam")
+
+# reshaping epochs into long format
+# long_df = epochs.to_data_frame(long_format=True)
+
+# assuming long_df is some M/EEG data reshaped in long format
+with localconverter(robjects.default_converter + pandas2ri.converter):
+    
+    long_df_r = robjects.conversion.py2rpy(long_df)
+    
+
+# using the testing_through_time() function from the neurogam package
+results = neurogam.testing_through_time(data=long_df_r, threshold=10)
+```
+
+To use `neurogam` functions in Julia (e.g., on MNE epochs), we recommend
+using the `RCall` package
+(<https://juliainterop.github.io/RCall.jl/stable/>) (thanks to Benedikt
+Ehinger for sharing this code snippet).
+
+``` r
+# loading the RCall module
+using RCall
+
+# importing the neurogam R package
+@rimport neurogam
+
+# assuming long_df is some M/EEG data reshaped in long format
+results = neurogam.testing_through_time(data=long_df, threshold=10)
 ```
 
 ## Citation

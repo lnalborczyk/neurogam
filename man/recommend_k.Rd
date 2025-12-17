@@ -12,6 +12,7 @@ recommend_k(
   criterion = c("waic", "loo"),
   knee_method = c("geometric_smooth", "geometric"),
   loess_span = 0.5,
+  cores = 4,
   verbose = TRUE
 )
 }
@@ -46,6 +47,8 @@ The sequence of tested values is \code{seq(k_min, k_max, by = k_step)}.}
 \item{loess_span}{Numeric; smoothing parameter passed to
 \code{\link[stats]{loess}} when \code{knee_method = "geometric_smooth"}.
 Defaults to \code{0.75}.}
+
+\item{cores}{Numeric; number of parallel cores to use.}
 
 \item{verbose}{Logical; if \code{TRUE} (default), prints progress messages
 while refitting models for different \code{k} values.}
@@ -131,8 +134,7 @@ k_res <- recommend_k(
   object = res,
   k_min = 10,
   k_max = 40,
-  k_step = 5,
-  criterion = "waic"
+  k_step = 5
   )
 
 # print summary in the console

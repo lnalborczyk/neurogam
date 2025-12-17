@@ -1,8 +1,10 @@
 pandoc: 3.6.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
-articles: {}
-last_built: 2025-12-12T08:40Z
+articles:
+  eeg_spatio_temporal: eeg_spatio_temporal.html
+  eeg_temporal: eeg_temporal.html
+last_built: 2025-12-17T06:50Z
 urls:
   reference: https://lnalborczyk.github.io/neurogam/reference
   article: https://lnalborczyk.github.io/neurogam/articles

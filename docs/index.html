@@ -16,8 +16,8 @@
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models">
-<meta name="description" content="Providing utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved data (e.g., M/EEG, pupillometry, mouse-tracking, etc) and identifying clusters.">
-<meta property="og:description" content="Providing utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved data (e.g., M/EEG, pupillometry, mouse-tracking, etc) and identifying clusters.">
+<meta name="description" content="Provides utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved data (e.g., M/EEG, pupillometry, mouse-tracking, etc) and identifying clusters.">
+<meta property="og:description" content="Provides utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved data (e.g., M/EEG, pupillometry, mouse-tracking, etc) and identifying clusters.">
 <meta property="og:image" content="https://lnalborczyk.github.io/neurogam/logo.png">
 </head>
 <body>
@@ -38,6 +38,13 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="articles/eeg_spatio_temporal.html">Application to spatio-temporal EEG data (in progress)</a></li>
+    <li><a class="dropdown-item" href="articles/eeg_temporal.html">Application to 1D temporal EEG data</a></li>
+  </ul>
+</li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -58,6 +65,8 @@
 <a class="anchor" aria-label="anchor" href="#modelling-time-resolved-electrophysiological-data-with-bayesian-generalised-additive-multilevel-models-"></a>
 </h1>
 </div>
+<!-- badges: start -->
+
 <p>The goal of <code>neurogam</code> is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses) but will be extended in the near future to support 2D temporal or spatiotemporal data.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -77,7 +86,7 @@
 <div class="section level3">
 <h3 id="model-fitting">Model fitting<a class="anchor" aria-label="anchor" href="#model-fitting"></a>
 </h3>
-<p>Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of a difference between conditions (in simulated EEG data). Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide too liberal cluster estimates.</p>
+<p>Below we fit a Bayesian generalised additive multilevel model (BGAMM) with varying intercept, slope, and smooth (per participant) to estimate the onset and offset of a difference between conditions. Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide too liberal cluster estimates.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># loading the neurogam package</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/lnalborczyk/neurogam" class="external-link">neurogam</a></span><span class="op">)</span></span>
@@ -95,7 +104,7 @@
 <span><span class="co">#&gt; 5 participant_01     cond1     1 0.008 0.6499553</span></span>
 <span><span class="co">#&gt; 6 participant_01     cond1     1 0.010 0.1548358</span></span></code></pre></div>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># fitting the BGAMM to identify clusters</span></span>
+<code class="sourceCode R"><span><span class="co"># fitting the BGAMM to identify clusters (around 10 minutes on a recent laptop)</span></span>
 <span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/testing_through_time.html">testing_through_time</a></span><span class="op">(</span></span>
 <span>    <span class="co"># simulated EEG data</span></span>
 <span>    data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
@@ -118,9 +127,9 @@
 <code class="sourceCode R"><span><span class="co"># displaying the identified clusters</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; ==== Time-resolved Bayesian GAMM Results ======================</span></span>
+<span><span class="co">#&gt; ==== Time-resolved GAMM results ===============================</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Clusters found: 1</span></span>
+<span><span class="co">#&gt; Clusters found: </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  cluster_id cluster_onset cluster_offset duration</span></span>
 <span><span class="co">#&gt;           1         0.162          0.348    0.186</span></span>
@@ -134,16 +143,16 @@
 <div class="section level3">
 <h3 id="posterior-predictive-checks">Posterior predictive checks<a class="anchor" aria-label="anchor" href="#posterior-predictive-checks"></a>
 </h3>
-<p>We recommend visually assessing the predictions of the model against the observed data. We provide the <code><a href="reference/ppc.html">ppc()</a></code> method, but you can conduct your own custom PPCs with <code>brms::pp_check(results$model, ...)</code> (for all available PPCs, see <a href="https://mc-stan.org/bayesplot/reference/PPC-overview.html" class="external-link uri">https://mc-stan.org/bayesplot/reference/PPC-overview.html</a>).</p>
+<p>We recommend visually assessing the predictions of the model against the observed data. We provide a lightweight <code><a href="reference/ppc.html">ppc()</a></code> method, but you can conduct various PPCs with <code>brms::pp_check(results$model, ...)</code> (for all available PPCs, see <a href="https://mc-stan.org/bayesplot/reference/PPC-overview.html" class="external-link uri">https://mc-stan.org/bayesplot/reference/PPC-overview.html</a>).</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># posterior predictive checks (PPCs)</span></span>
-<span><span class="fu"><a href="reference/ppc.html">ppc</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/ppc.html">ppc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">results</span>, ppc_type <span class="op">=</span> <span class="st">"participant"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-fig-ppc-1.png" width="100%"></p>
 </div>
 <div class="section level3">
 <h3 id="how-to-define-the-basis-dimension">How to define the basis dimension?<a class="anchor" aria-label="anchor" href="#how-to-define-the-basis-dimension"></a>
 </h3>
-<p>There is no universal recommendation for choosing the optimal value of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>, as it depends on several factors, including the sampling rate, preprocessing steps (e.g., signal-to-noise ratio, low-pass filtering), and the underlying temporal dynamics of the effect of interest. One strategy is to set <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> as high as computational constraints allow (acknowledging that the <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-value only provides an upper bound on the <em>effective</em> basis dimension). Alternatively, one can fit a series of models with different <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> values and compare these models using information criteria such as LOOIC or WAIC, alongside with posterior predictive checks (PPCs), to select the model that best captures the structure of the data. We illustrate this approach below.</p>
+<p>We cannot provide a single universal recommendation for choosing the optimal value of <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>, as it depends on several factors, including the sampling rate, preprocessing steps (e.g., signal-to-noise ratio, low-pass filtering), and the underlying temporal dynamics of the effect of interest. One strategy is to set <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> as high as computational constraints allow (acknowledging that the <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>-value only provides an upper bound on the <em>effective</em> basis dimension). Alternatively, one can fit a series of models with different <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math> values and compare these models using information criteria such as LOOIC or WAIC, alongside with posterior predictive checks (PPCs), to select the model that best captures the structure of the data. We illustrate this approach below.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># recommend an optimal smooth basis dimension k</span></span>
 <span><span class="va">k_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/recommend_k.html">recommend_k</a></span><span class="op">(</span></span>
@@ -169,16 +178,50 @@
 <span><span class="co">#&gt; Comparison table (rounded):</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   k   model waic_elpd waic_elpd_se p_waic p_waic_se     waic p_waic_smooth</span></span>
-<span><span class="co">#&gt;  10 gam_k10 -4702.775        5.397  0.116     0.002 9405.549         0.116</span></span>
-<span><span class="co">#&gt;  15 gam_k15 -4703.098        5.397  0.124     0.002 9406.196         0.124</span></span>
-<span><span class="co">#&gt;  20 gam_k20 -4703.206        5.397  0.126     0.002 9406.411         0.126</span></span>
-<span><span class="co">#&gt;  25 gam_k25 -4703.276        5.397  0.127     0.003 9406.552         0.127</span></span>
-<span><span class="co">#&gt;  30 gam_k30 -4703.279        5.397  0.128     0.003 9406.559         0.128</span></span>
-<span><span class="co">#&gt;  35 gam_k35 -4703.296        5.397  0.128     0.003 9406.591         0.128</span></span>
-<span><span class="co">#&gt;  40 gam_k40 -4703.303        5.397  0.128     0.003 9406.606         0.128</span></span>
+<span><span class="co">#&gt;  10 gam_k10 -4703.605        5.394  0.145     0.003 9407.211         0.145</span></span>
+<span><span class="co">#&gt;  15 gam_k15 -4703.905        5.395  0.154     0.003 9407.809         0.154</span></span>
+<span><span class="co">#&gt;  20 gam_k20 -4704.028        5.395  0.156     0.003 9408.056         0.156</span></span>
+<span><span class="co">#&gt;  25 gam_k25 -4704.070        5.395  0.157     0.003 9408.140         0.157</span></span>
+<span><span class="co">#&gt;  30 gam_k30 -4704.071        5.395  0.157     0.003 9408.141         0.157</span></span>
+<span><span class="co">#&gt;  40 gam_k40 -4704.118        5.395  0.158     0.003 9408.236         0.158</span></span>
+<span><span class="co">#&gt;  35 gam_k35 -4704.143        5.395  0.158     0.003 9408.286         0.158</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ====================================================================</span></span></code></pre></div>
 </div>
+</div>
+<div class="section level2">
+<h2 id="polyglot-use-of-neurogam">Polyglot use of <code>neurogam</code>
+<a class="anchor" aria-label="anchor" href="#polyglot-use-of-neurogam"></a>
+</h2>
+<p>To use <code>neurogam</code> functions in Python (e.g., on MNE epochs), we recommend using the <code>rpy2</code> interface (<a href="https://github.com/rpy2/rpy2" class="external-link uri">https://github.com/rpy2/rpy2</a>), as shown below. It simply requires reshaping MNE epochs into long format (one trial/observation per row) (see for instance <code>epochs.to_data_frame(long_format=True)</code>, <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame" class="external-link uri">https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame</a>).</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># loading the Python modules</span></span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="im">import</span> rpy2.robjects <span class="im">as</span> robjects</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.packages <span class="im">import</span> importr</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.conversion <span class="im">import</span> localconverter</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co"># importing the "neurogam" R package</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>neurogam <span class="op">=</span> importr(<span class="st">"neurogam"</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co"># reshaping epochs into long format</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co"># long_df = epochs.to_data_frame(long_format=True)</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="cf">with</span> localconverter(robjects.default_converter <span class="op">+</span> pandas2ri.converter):</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>    </span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>    long_df_r <span class="op">=</span> robjects.conversion.py2rpy(long_df)</span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>    </span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co"># using the testing_through_time() function from the neurogam package</span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>results <span class="op">=</span> neurogam.testing_through_time(data<span class="op">=</span>long_df_r, threshold<span class="op">=</span><span class="dv">10</span>)</span></code></pre></div>
+<p>To use <code>neurogam</code> functions in Julia (e.g., on MNE epochs), we recommend using the <code>RCall</code> package (<a href="https://juliainterop.github.io/RCall.jl/stable/" class="external-link uri">https://juliainterop.github.io/RCall.jl/stable/</a>) (thanks to Benedikt Ehinger for sharing this code snippet).</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># loading the RCall module</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>using RCall</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co"># importing the neurogam R package</span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="sc">@</span>rimport neurogam</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">neurogam.testing_through_time</span>(<span class="at">data=</span>long_df, <span class="at">threshold=</span><span class="dv">10</span>)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
@@ -232,7 +275,14 @@
 </ul>
 </div>
 
-
+<div class="dev-status">
+<h2 data-toc-skip>Dev status</h2>
+<ul class="list-unstyled">
+<li><a href="http://www.repostatus.org/#wip" class="external-link"><img src="http://www.repostatus.org/badges/latest/wip.svg" alt="Repo status"></a></li>
+<li><a href="https://github.com/lnalborczyk/neurogam" class="external-link"><img src="https://img.shields.io/github/repo-size/lnalborczyk/neurogam" alt="Repo size"></a></li>
+<li><a href="https://github.com/lnalborczyk/neurogam" class="external-link"><img src="https://img.shields.io/github/last-commit/lnalborczyk/neurogam" alt="Last commit"></a></li>
+</ul>
+</div>
 
   </aside>
 </div>

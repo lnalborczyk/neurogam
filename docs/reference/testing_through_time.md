@@ -18,7 +18,8 @@ testing_through_time(
   family = gaussian(),
   kvalue = 20,
   bs = "tp",
-  multilevel = c("summary", "full", "group"),
+  multilevel = c("summary", "group"),
+  by_ppt = FALSE,
   warmup = 1000,
   iter = 2000,
   chains = 4,
@@ -89,13 +90,15 @@ testing_through_time(
 
   Character; which model to fit. One of
 
-  - `"full"`: Full GAMM with participant-level random/varying effects;
-
   - `"summary"`: GAMM fitted to participant-level summary statistics
     (mean outcome and its standard deviation);
 
   - `"group"`: Group-level GAM fitted to participant-averaged data (no
     random/varying effects).
+
+- by_ppt:
+
+  Logical; should we return clusters at the participant-level.
 
 - warmup:
 

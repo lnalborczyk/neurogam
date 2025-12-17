@@ -4,55 +4,111 @@
 \alias{find_clusters}
 \title{Find contiguous clusters in a time series}
 \usage{
-find_clusters(data, threshold = 10, above_threshold = TRUE)
+find_clusters(
+  data,
+  threshold = 10,
+  group = NULL,
+  above_threshold = TRUE,
+  both_signs = TRUE
+)
 }
 \arguments{
 \item{data}{A data frame containing at least two columns named
-\code{"time"} and \code{"value"}. Additional columns are ignored.}
+\code{"time"} and \code{"value"}. If \code{group} is not \code{NULL},
+\code{data} must also contain that grouping column.}
 
-\item{threshold}{Numeric scalar; threshold used to define clusters.
-When \code{above_threshold = TRUE}, clusters are defined where
-\code{value >= threshold}. When \code{above_threshold = FALSE},
-clusters are defined where \code{value <= threshold}.}
+\item{threshold}{Numeric scalar specifying the (positive) threshold used to
+define clusters. Positive clusters are defined where
+\code{value >= threshold}, and negative clusters where
+\code{value <= -threshold}. Must be non-negative when
+\code{both_signs = TRUE}.}
 
-\item{above_threshold}{Logical scalar; if \code{TRUE} (default), clusters
-are formed where \code{value >= threshold}. If \code{FALSE}, clusters
-are formed where \code{value <= threshold}.}
+\item{group}{Optional grouping column name (character scalar) used to find
+clusters independently within each group level (e.g.,
+\code{"participant"}). Set to \code{NULL} (default) to ignore grouping.}
+
+\item{above_threshold}{Logical scalar used only when
+\code{both_signs = FALSE}. If \code{TRUE} (default), clusters are formed
+where \code{value >= threshold}; if \code{FALSE}, clusters are formed
+where \code{value <= threshold}.}
+
+\item{both_signs}{Logical scalar indicating whether to detect both positive
+and negative clusters in a single call (default: \code{TRUE}). When
+\code{TRUE}, \code{above_threshold} is ignored.}
 }
 \value{
 A data frame with one row per detected cluster and columns:
   \itemize{
-    \item \code{cluster_id}: integer cluster index (starting at 1);
+    \item \code{cluster_id}: integer cluster index (starting at 1). When
+      \code{group} is provided, \code{cluster_id} restarts at 1 within each
+      group level;
     \item \code{cluster_onset}: time of the first point in the cluster;
     \item \code{cluster_offset}: time of the last point in the cluster;
-    \item \code{n_points}: number of time points in the cluster.
+    \item \code{n_points}: number of time points in the cluster;
+    \item \code{sign}: character indicating cluster sign
+      (\code{"positive"} or \code{"negative"}).
   }
-  If no clusters are found, an empty data frame with these columns is
-  returned.
+
+  If \code{group} is not \code{NULL}, the returned data frame also contains
+  the grouping column (named as in \code{group}).
+
+  If no clusters are found, an empty data frame with the same column structure
+  is returned.
 }
 \description{
 Identify contiguous clusters of time points in a time series where a
-variable exceeds (or falls below) a given threshold. Clusters are defined
-as consecutive time points where the thresholding condition holds.
+variable exceeds a positive threshold or falls below a negative threshold.
+Clusters are defined as consecutive time points satisfying the thresholding
+condition.
 }
 \details{
+By default, the function detects \strong{both positive and negative clusters}
+in a single call and returns a column indicating the cluster sign.
+
+If a grouping variable is provided (e.g., \code{"participant"}), clusters
+are detected independently within each group level.
+
+
 The function assumes that the \code{time} variable is numeric and that
-consecutive rows correspond to consecutive time points. Internally, the
-data are first arranged by \code{time} and any rows with \code{NA} in
-\code{time} or \code{value} are removed.
+consecutive rows correspond to consecutive time points (within each group
+if grouping is used). Internally, the data are:
+\enumerate{
+  \item filtered to remove rows with missing values;
+  \item arranged by \code{time} (and by \code{group} then \code{time}, if used);
+  \item thresholded to identify positive and/or negative excursions;
+  \item segmented into runs of consecutive threshold-exceeding values,
+        which define clusters.
+}
 }
 \examples{
-\dontrun{
 set.seed(666)
 df <- data.frame(
-  time  = seq(0, 1, length.out = 100),
-  value = c(rnorm(40, 0, 1), rnorm(20, 5, 1), rnorm(40, 0, 1))
+  time = seq(0, 1, length.out = 100),
+  value = c(
+    rnorm(30, 0, 1),
+    rnorm(20,  4, 1), # positive cluster
+    rnorm(20, -4, 1), # negative cluster
+    rnorm(30, 0, 1)
+    )
   )
 
-# find clusters where value >= 3
-cl <- find_clusters(data = df, threshold = 3, above_threshold = TRUE)
-cl
-}
+# Detect both positive and negative clusters
+find_clusters(data = df, threshold = 3)
+
+# One-sided detection (positive only)
+find_clusters(data = df, threshold = 3, both_signs = FALSE, above_threshold = TRUE)
+
+# Grouped example (e.g., per participant)
+df_g <- rbind(
+  transform(df, participant = "P01"),
+  transform(df, participant = "P02")
+  )
+
+find_clusters(
+  data = df_g,
+  threshold = 3,
+  group = "participant"
+  )
 
 }
 \author{

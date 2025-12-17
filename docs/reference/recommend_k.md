@@ -18,6 +18,7 @@ recommend_k(
   criterion = c("waic", "loo"),
   knee_method = c("geometric_smooth", "geometric"),
   loess_span = 0.5,
+  cores = 4,
   verbose = TRUE
 )
 ```
@@ -64,6 +65,10 @@ recommend_k(
   Numeric; smoothing parameter passed to
   [`loess`](https://rdrr.io/r/stats/loess.html) when
   `knee_method = "geometric_smooth"`. Defaults to `0.75`.
+
+- cores:
+
+  Numeric; number of parallel cores to use.
 
 - verbose:
 
@@ -164,8 +169,7 @@ k_res <- recommend_k(
   object = res,
   k_min = 10,
   k_max = 40,
-  k_step = 5,
-  criterion = "waic"
+  k_step = 5
   )
 
 # print summary in the console

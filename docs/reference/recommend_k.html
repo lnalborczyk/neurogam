@@ -26,6 +26,11 @@ effective number of parameters (either p_loo or p_waic).'><meta property="og:ima
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eeg_spatio_temporal.html">Application to spatio-temporal EEG data (in progress)</a></li>
+    <li><a class="dropdown-item" href="../articles/eeg_temporal.html">Application to 1D temporal EEG data</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -61,6 +66,7 @@ effective number of parameters (either <code>p_loo</code> or <code>p_waic</code>
 <span>  criterion <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"waic"</span>, <span class="st">"loo"</span><span class="op">)</span>,</span>
 <span>  knee_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"geometric_smooth"</span>, <span class="st">"geometric"</span><span class="op">)</span>,</span>
 <span>  loess_span <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  cores <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -110,6 +116,10 @@ The sequence of tested values is <code>seq(k_min, k_max, by = k_step)</code>.</p
 <dd><p>Numeric; smoothing parameter passed to
 <code><a href="https://rdrr.io/r/stats/loess.html" class="external-link">loess</a></code> when <code>knee_method = "geometric_smooth"</code>.
 Defaults to <code>0.75</code>.</p></dd>
+
+
+<dt id="arg-cores">cores<a class="anchor" aria-label="anchor" href="#arg-cores"></a></dt>
+<dd><p>Numeric; number of parallel cores to use.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
@@ -191,8 +201,7 @@ an elbow (knee) method:</p><ul><li><p><code>knee_method = "geometric"</code> app
 <span class="r-in"><span>  object <span class="op">=</span> <span class="va">res</span>,</span></span>
 <span class="r-in"><span>  k_min <span class="op">=</span> <span class="fl">10</span>,</span></span>
 <span class="r-in"><span>  k_max <span class="op">=</span> <span class="fl">40</span>,</span></span>
-<span class="r-in"><span>  k_step <span class="op">=</span> <span class="fl">5</span>,</span></span>
-<span class="r-in"><span>  criterion <span class="op">=</span> <span class="st">"waic"</span></span></span>
+<span class="r-in"><span>  k_step <span class="op">=</span> <span class="fl">5</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># print summary in the console</span></span></span>

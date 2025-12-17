@@ -1,20 +1,30 @@
+<!--
+
+TO-DO
+
+* Supporting continuous predictors in `testing_through_time()`.
+* Adding support for effect sizes...
+
+-->
+
 # neurogam 0.0.3
 
 ## New features
 
 * Implementing the `recommend_k()` function, running model comparison with varying basis dimension (k).
 * Implementing a `ppc()` method for `cluster_results` objects.
-
-<!--
-
-* Supporting continuous predictors in `testing_through_time()`.
-* Adding support for effect sizes
-
--->
+* New `plot_sensors()` and `plot_eeg()` functions to visualise EEG sensors grid, EEG raw data, and GAM predictions.
+* Adding support for returning participant-level onsets in `testing_through_time()`, `find_clusters()`, and related methods such as `summary()` and `plot()`.
 
 ## Other changes
 
 * Improved documentation for `print()` and `summary()` methods.
+* Removed the `multilevel = "full"` option (too slow).
+* Now returns clusters with both positive and negative signs in `find_clusters()`.
+
+## Bug fixes
+
+* Fixing aberrant PPCs in the `ppc()` method (and simplifying arguments with `ppc_type = c("group", "participant")`).
 
 # neurogam 0.0.2
 

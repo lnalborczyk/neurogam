@@ -2,84 +2,80 @@
 % Please edit documentation in R/testing_through_time.R
 \name{ppc}
 \alias{ppc}
-\title{Posterior predictive checks for \code{clusters_results} objects}
+\title{Posterior predictive checks}
 \usage{
 ppc(
   object,
-  prefix = c("ppc", "ppd"),
-  ppc_type = "ribbon_grouped",
-  ndraws = 100,
+  ppc_type = c("group", "participant"),
+  ndraws = 500,
   group_var = NULL,
+  cores = 4,
   ...
 )
 }
 \arguments{
-\item{object}{An object of class \code{"clusters_results"} as returned by
-\code{\link{testing_through_time}}. The object must contain a fitted
-\pkg{brms} model in its \code{$model} slot.}
+\item{object}{A \code{clusters_results} object containing a fitted
+\code{\link[brms]{brmsfit}} model in \code{object$model}.}
 
-\item{prefix}{Character; passed to \code{\link[brms]{pp_check}} to control
-whether the function uses posterior predictive checks (\code{"ppc"}) or
-posterior predictive distributions (\code{"ppd"}). One of \code{"ppc"}
-(default) or \code{"ppd"}.}
+\item{ppc_type}{Character string specifying the type of PPC to generate.
+Either \code{"group"} (default) for group-level PPCs (ignoring participant
+identity) or \code{"participant"} for participant-wise PPCs.}
 
-\item{ppc_type}{Character; the type of check passed to \code{\link[brms]{pp_check}}
-(default: \code{"ribbon_grouped"}). See \pkg{brms} documentation for
-available PPC/PPD types.}
-
-\item{ndraws}{Numeric; number of posterior draws used to generate the PPC/PPD
-(default: \code{100}).}
+\item{ndraws}{Integer specifying the number of posterior draws to use for
+the PPC. Defaults to 500.}
 
 \item{group_var}{Optional character; name of the grouping variable to use for
-grouped PPCs. If \code{NULL} (default), the function uses \code{"predictor"}
-when present in \code{model$data} and binary (two levels). Otherwise it
-falls back to \code{"participant"}.}
+grouped PPCs at the group level. If NULL (default), the function uses
+"predictor" when present in model$data and binary (two levels).}
 
-\item{...}{Additional arguments passed to \code{\link[brms]{pp_check}}.}
+\item{cores}{Numeric; number of parallel cores to use (only used when \code{ppc_type = "participant"}).}
+
+\item{...}{Currently unused. Included for future extensions.}
 }
 \value{
-A single \pkg{ggplot2} object (invisibly). The plot is also printed as
-  a side effect.
+A \code{ggplot} object visualising the posterior predictive check.
+The plot is printed to the active graphics device and also returned invisibly.
 }
 \description{
-Generates a posterior predictive check for the \pkg{brms} model stored
-inside a \code{"clusters_results"} object.
-The function is a thin wrapper around \code{\link[brms]{pp_check}} that
-automatically chooses a grouping variable when possible.
+Generate posterior predictive checks (PPCs) from a fitted Bayesian
+time-resolved GAMM stored in a \code{clusters_results} object.
+PPCs can be produced either at the group level or separately for each participant.
 }
 \details{
-If \code{group_var} is \code{NULL}, the function attempts to detect whether
-the model data contain a binary grouping variable named \code{"predictor"}.
-If so, it produces a grouped PPC using \code{group = "predictor"}; otherwise
-it uses \code{group = "participant"}.
+At the group level, predictions are obtained by simulating from the posterior
+using \code{\link[brms]{posterior_predict}} with \code{re_formula = NA},
+after collapsing the original data across participants (by time).
+At the participant level, PPCs are generated using
+\code{\link[brms]{pp_check}} with grouped ribbons.
 
-The check is performed over \code{x = "time"} and uses \code{re_formula = NA}
-when the grouping variable is \code{"predictor"} (i.e., group-level PPC). When
-falling back to participant-level grouping, random effects are included by
-default (unless overridden via \code{...}).
+
+\itemize{
+  \item \strong{Group-level PPCs} are computed by averaging numeric variables
+  across participants at each time point, and simulating posterior predictive
+  draws with random effects excluded (\code{re_formula = NA}).
+  This provides a marginal, population-level posterior predictive check.
+
+  \item \strong{Participant-level PPCs} are computed using grouped ribbon
+  plots, showing posterior predictive distributions separately for each
+  participant.
+}
+
+The returned object is a \code{ggplot2} object produced by
+\code{\link[bayesplot]{ppc_ribbon}} or \code{\link[brms]{pp_check}},
+depending on the selected \code{ppc_type}.
 }
 \examples{
 \dontrun{
-# import some simulated EEG data
-data(eeg_data)
-head(eeg_data)
+# Group-level PPC
+ppc(object = res, ppc_type = "group")
 
-# fit time-resolved model (one-sample test)
-res <- testing_through_time(
-  data = eeg_data,
-  participant_id = "participant",
-  outcome_id = "eeg",
-  time_id = "time",
-  predictor_id = NA,
-  kvalue = 10,
-  multilevel = "summary"
-  )
-
-# posterior predictive checks
-ppc(res)
+# Participant-level PPC
+ppc(object = res, ppc_type = "participant")
 }
 
 }
 \seealso{
-\code{\link{testing_through_time}}, \code{\link[brms]{pp_check}}
+\code{\link[brms]{pp_check}},
+\code{\link[brms]{posterior_predict}},
+\code{\link[bayesplot]{ppc_ribbon}}
 }

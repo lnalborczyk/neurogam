@@ -18,6 +18,12 @@ knitr::opts_chunk$set(
 
 # Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models <a href="https://lnalborczyk.github.io/neurogam/"><img src="man/figures/logo.png" align="right" height="139" alt="neurogam website" /></a>
 
+<!-- badges: start -->
+[![Repo status](http://www.repostatus.org/badges/latest/wip.svg)](http://www.repostatus.org/#wip)
+[![Repo size](https://img.shields.io/github/repo-size/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
+[![Last commit](https://img.shields.io/github/last-commit/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
+ <!-- badges: end -->
+
 The goal of `neurogam` is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses) but will be extended in the near future to support 2D temporal or spatiotemporal data.
 
 ## Installation
@@ -37,7 +43,7 @@ remotes::install_github(
 
 ### Model fitting
 
-Below we fit a Bayesian generalised additive multilevel model (BGAMM) to estimate the onset and offset of a difference between conditions (in simulated EEG data). Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide too liberal cluster estimates.
+Below we fit a Bayesian generalised additive multilevel model (BGAMM) with varying intercept, slope, and smooth (per participant) to estimate the onset and offset of a difference between conditions. Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide too liberal cluster estimates.
 
 ```{r data}
 # loading the neurogam package
@@ -51,7 +57,7 @@ head(eeg_data)
 ```
 
 ```{r clusters, results = "hide"}
-# fitting the BGAMM to identify clusters
+# fitting the BGAMM to identify clusters (around 10 minutes on a recent laptop)
 results <- testing_through_time(
     # simulated EEG data
     data = eeg_data,
@@ -86,7 +92,7 @@ We recommend visually assessing the predictions of the model against the observe
 
 ```{r fig-ppc, fig.asp = 0.5, fig.width = 12, dev = "png", dpi = 300}
 # posterior predictive checks (PPCs)
-ppc(results)
+ppc(object = results, ppc_type = "participant")
 ```
 
 ### How to define the basis dimension?
@@ -107,6 +113,45 @@ k_res <- recommend_k(
 ```{r fig-reco-k_summary}
 # results summary
 summary(k_res)
+```
+
+## Polyglot use of `neurogam`
+
+To use `neurogam` functions in Python (e.g., on MNE epochs), we recommend using the `rpy2` interface (<https://github.com/rpy2/rpy2>), as shown below. It simply requires reshaping MNE epochs into long format (one trial/observation per row) (see for instance `epochs.to_data_frame(long_format=True)`, <https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame>).
+
+```{python, eval = FALSE, echo = TRUE}
+# loading the Python modules
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+from rpy2.robjects.conversion import localconverter
+
+# importing the "neurogam" R package
+neurogam = importr("neurogam")
+
+# reshaping epochs into long format
+# long_df = epochs.to_data_frame(long_format=True)
+
+# assuming long_df is some M/EEG data reshaped in long format
+with localconverter(robjects.default_converter + pandas2ri.converter):
+    
+    long_df_r = robjects.conversion.py2rpy(long_df)
+    
+
+# using the testing_through_time() function from the neurogam package
+results = neurogam.testing_through_time(data=long_df_r, threshold=10)
+```
+
+To use `neurogam` functions in Julia (e.g., on MNE epochs), we recommend using the `RCall` package (<https://juliainterop.github.io/RCall.jl/stable/>) (thanks to Benedikt Ehinger for sharing this code snippet).
+
+```{r, eval = FALSE, echo = TRUE}
+# loading the RCall module
+using RCall
+
+# importing the neurogam R package
+@rimport neurogam
+
+# assuming long_df is some M/EEG data reshaped in long format
+results = neurogam.testing_through_time(data=long_df, threshold=10)
 ```
 
 ## Citation

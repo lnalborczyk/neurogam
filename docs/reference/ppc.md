@@ -1,19 +1,18 @@
-# Posterior predictive checks for `clusters_results` objects
+# Posterior predictive checks
 
-Generates a posterior predictive check for the brms model stored inside
-a `"clusters_results"` object. The function is a thin wrapper around
-[`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html) that
-automatically chooses a grouping variable when possible.
+Generate posterior predictive checks (PPCs) from a fitted Bayesian
+time-resolved GAMM stored in a `clusters_results` object. PPCs can be
+produced either at the group level or separately for each participant.
 
 ## Usage
 
 ``` r
 ppc(
   object,
-  prefix = c("ppc", "ppd"),
-  ppc_type = "ribbon_grouped",
-  ndraws = 100,
+  ppc_type = c("group", "participant"),
+  ndraws = 500,
   group_var = NULL,
+  cores = 4,
   ...
 )
 ```
@@ -22,84 +21,80 @@ ppc(
 
 - object:
 
-  An object of class `"clusters_results"` as returned by
-  [`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
-  The object must contain a fitted brms model in its `$model` slot.
-
-- prefix:
-
-  Character; passed to
-  [`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html) to
-  control whether the function uses posterior predictive checks
-  (`"ppc"`) or posterior predictive distributions (`"ppd"`). One of
-  `"ppc"` (default) or `"ppd"`.
+  A `clusters_results` object containing a fitted
+  [`brmsfit`](https://paulbuerkner.com/brms/reference/brmsfit-class.html)
+  model in `object$model`.
 
 - ppc_type:
 
-  Character; the type of check passed to
-  [`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html)
-  (default: `"ribbon_grouped"`). See brms documentation for available
-  PPC/PPD types.
+  Character string specifying the type of PPC to generate. Either
+  `"group"` (default) for group-level PPCs (ignoring participant
+  identity) or `"participant"` for participant-wise PPCs.
 
 - ndraws:
 
-  Numeric; number of posterior draws used to generate the PPC/PPD
-  (default: `100`).
+  Integer specifying the number of posterior draws to use for the PPC.
+  Defaults to 500.
 
 - group_var:
 
   Optional character; name of the grouping variable to use for grouped
-  PPCs. If `NULL` (default), the function uses `"predictor"` when
-  present in `model$data` and binary (two levels). Otherwise it falls
-  back to `"participant"`.
+  PPCs at the group level. If NULL (default), the function uses
+  "predictor" when present in model\$data and binary (two levels).
+
+- cores:
+
+  Numeric; number of parallel cores to use (only used when
+  `ppc_type = "participant"`).
 
 - ...:
 
-  Additional arguments passed to
-  [`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html).
+  Currently unused. Included for future extensions.
 
 ## Value
 
-A single ggplot2 object (invisibly). The plot is also printed as a side
-effect.
+A `ggplot` object visualising the posterior predictive check. The plot
+is printed to the active graphics device and also returned invisibly.
 
 ## Details
 
-If `group_var` is `NULL`, the function attempts to detect whether the
-model data contain a binary grouping variable named `"predictor"`. If
-so, it produces a grouped PPC using `group = "predictor"`; otherwise it
-uses `group = "participant"`.
+At the group level, predictions are obtained by simulating from the
+posterior using
+[`posterior_predict`](https://mc-stan.org/rstantools/reference/posterior_predict.html)
+with `re_formula = NA`, after collapsing the original data across
+participants (by time). At the participant level, PPCs are generated
+using
+[`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html) with
+grouped ribbons.
 
-The check is performed over `x = "time"` and uses `re_formula = NA` when
-the grouping variable is `"predictor"` (i.e., group-level PPC). When
-falling back to participant-level grouping, random effects are included
-by default (unless overridden via `...`).
+- **Group-level PPCs** are computed by averaging numeric variables
+  across participants at each time point, and simulating posterior
+  predictive draws with random effects excluded (`re_formula = NA`).
+  This provides a marginal, population-level posterior predictive check.
+
+- **Participant-level PPCs** are computed using grouped ribbon plots,
+  showing posterior predictive distributions separately for each
+  participant.
+
+The returned object is a `ggplot2` object produced by
+[`ppc_ribbon`](https://mc-stan.org/bayesplot/reference/PPC-intervals.html)
+or [`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html),
+depending on the selected `ppc_type`.
 
 ## See also
 
-[`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md),
-[`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html)
+[`pp_check`](https://mc-stan.org/bayesplot/reference/pp_check.html),
+[`posterior_predict`](https://mc-stan.org/rstantools/reference/posterior_predict.html),
+[`ppc_ribbon`](https://mc-stan.org/bayesplot/reference/PPC-intervals.html)
 
 ## Examples
 
 ``` r
 if (FALSE) { # \dontrun{
-# import some simulated EEG data
-data(eeg_data)
-head(eeg_data)
+# Group-level PPC
+ppc(object = res, ppc_type = "group")
 
-# fit time-resolved model (one-sample test)
-res <- testing_through_time(
-  data = eeg_data,
-  participant_id = "participant",
-  outcome_id = "eeg",
-  time_id = "time",
-  predictor_id = NA,
-  kvalue = 10,
-  multilevel = "summary"
-  )
-
-# posterior predictive checks
-ppc(res)
+# Participant-level PPC
+ppc(object = res, ppc_type = "participant")
 } # }
 ```

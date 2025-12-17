@@ -16,6 +16,11 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eeg_spatio_temporal.html">Application to spatio-temporal EEG data (in progress)</a></li>
+    <li><a class="dropdown-item" href="../articles/eeg_temporal.html">Application to 1D temporal EEG data</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -37,15 +42,18 @@
 <h3 id="new-features-0-0-3">New features<a class="anchor" aria-label="anchor" href="#new-features-0-0-3"></a></h3>
 <ul><li>Implementing the <code><a href="../reference/recommend_k.html">recommend_k()</a></code> function, running model comparison with varying basis dimension (k).</li>
 <li>Implementing a <code><a href="../reference/ppc.html">ppc()</a></code> method for <code>cluster_results</code> objects.</li>
-</ul><!--
-
-* Supporting continuous predictors in `testing_through_time()`.
-* Adding support for effect sizes
-
---></div>
+<li>New <code><a href="../reference/plot_sensors.html">plot_sensors()</a></code> and <code><a href="../reference/plot_eeg.html">plot_eeg()</a></code> functions to visualise EEG sensors grid, EEG raw data, and GAM predictions.</li>
+<li>Adding support for returning participant-level onsets in <code><a href="../reference/testing_through_time.html">testing_through_time()</a></code>, <code><a href="../reference/find_clusters.html">find_clusters()</a></code>, and related methods such as <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</li>
+</ul></div>
 <div class="section level3">
 <h3 id="other-changes-0-0-3">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-0-3"></a></h3>
 <ul><li>Improved documentation for <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> and <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> methods.</li>
+<li>Removed the <code>multilevel = "full"</code> option (too slow).</li>
+<li>Now returns clusters with both positive and negative signs in <code><a href="../reference/find_clusters.html">find_clusters()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-0-3">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-0-3"></a></h3>
+<ul><li>Fixing aberrant PPCs in the <code><a href="../reference/ppc.html">ppc()</a></code> method (and simplifying arguments with <code>ppc_type = c("group", "participant")</code>).</li>
 </ul></div>
 </div>
     <div class="section level2">

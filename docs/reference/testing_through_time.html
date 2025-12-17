@@ -24,6 +24,11 @@ groups/conditions."><meta property="og:image" content="https://lnalborczyk.githu
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eeg_spatio_temporal.html">Application to spatio-temporal EEG data (in progress)</a></li>
+    <li><a class="dropdown-item" href="../articles/eeg_temporal.html">Application to 1D temporal EEG data</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -59,7 +64,8 @@ groups/conditions.</p>
 <span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  kvalue <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  bs <span class="op">=</span> <span class="st">"tp"</span>,</span>
-<span>  multilevel <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"full"</span>, <span class="st">"group"</span><span class="op">)</span>,</span>
+<span>  multilevel <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"group"</span><span class="op">)</span>,</span>
+<span>  by_ppt <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  warmup <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  iter <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>  chains <span class="op">=</span> <span class="fl">4</span>,</span>
@@ -128,12 +134,15 @@ distribution to be used in the model (defaults to <code><a href="https://rdrr.io
 
 
 <dt id="arg-multilevel">multilevel<a class="anchor" aria-label="anchor" href="#arg-multilevel"></a></dt>
-<dd><p>Character; which model to fit. One of</p><ul><li><p><code>"full"</code>: Full GAMM with participant-level random/varying effects;</p></li>
-<li><p><code>"summary"</code>: GAMM fitted to participant-level summary
+<dd><p>Character; which model to fit. One of</p><ul><li><p><code>"summary"</code>: GAMM fitted to participant-level summary
     statistics (mean outcome and its standard deviation);</p></li>
 <li><p><code>"group"</code>: Group-level GAM fitted to participant-averaged
     data (no random/varying effects).</p></li>
 </ul></dd>
+
+
+<dt id="arg-by-ppt">by_ppt<a class="anchor" aria-label="anchor" href="#arg-by-ppt"></a></dt>
+<dd><p>Logical; should we return clusters at the participant-level.</p></dd>
 
 
 <dt id="arg-warmup">warmup<a class="anchor" aria-label="anchor" href="#arg-warmup"></a></dt>

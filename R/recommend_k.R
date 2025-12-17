@@ -31,6 +31,7 @@
 #' @param loess_span Numeric; smoothing parameter passed to
 #'   \code{\link[stats]{loess}} when \code{knee_method = "geometric_smooth"}.
 #'   Defaults to \code{0.75}.
+#' @param cores Numeric; number of parallel cores to use.
 #' @param verbose Logical; if \code{TRUE} (default), prints progress messages
 #'   while refitting models for different \code{k} values.
 #'
@@ -106,8 +107,7 @@
 #'   object = res,
 #'   k_min = 10,
 #'   k_max = 40,
-#'   k_step = 5,
-#'   criterion = "waic"
+#'   k_step = 5
 #'   )
 #'
 #' # print summary in the console
@@ -142,6 +142,7 @@ recommend_k <- function (
         criterion = c("waic", "loo"),
         knee_method = c("geometric_smooth", "geometric"),
         loess_span = 0.5,
+        cores = 4,
         verbose = TRUE
         ) {
 
@@ -219,10 +220,10 @@ recommend_k <- function (
         rhs <- f_core[[3L]]
 
         rhs_new <- .update_s_k(rhs, new_k)
-        f_new  <- as.formula(call("~", lhs, rhs_new) )
+        f_new <- as.formula(call("~", lhs, rhs_new) )
 
         # update the brms model
-        update(fit, formula. = f_new)
+        update(object = fit, formula. = f_new, cores = cores)
 
     }
 
@@ -332,6 +333,7 @@ recommend_k <- function (
 
             # weights = 1 / SE^2 when SE available & > 0, otherwise 1
             w <- rep(1, length(y) )
+
             if (!all(is.na(y_se) ) ) {
 
                 ok_se <- !is.na(y_se) & y_se > 0

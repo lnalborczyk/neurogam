@@ -1,0 +1,129 @@
+---
+title: "Application to spatio-temporal EEG data (in progress)"
+author: "Ladislas Nalborczyk"
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Application to spatio-temporal EEG data}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{quarto::html}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+    cache = TRUE,
+    collapse = TRUE,
+    warning = FALSE,
+    message = FALSE,
+    comment = "#>",
+    out.width = "100%",
+    dev = "png",
+    dpi = 200
+    )
+```
+
+## Importing and visualising EEG data
+
+Below we import and reshape EEG data from the [`eegkit` package](https://cran.r-project.org/web/packages/eegkit/index.html).
+
+```{r data-import, fig.height = 12, fig.width = 12}
+library(neurogam)
+library(ggplot2)
+library(eegkit)
+library(dplyr)
+
+# retrieving some EEG data
+data(eegdata)
+head(eegdata)
+
+# plotting the average ERP per group and channel
+eegdata |>
+    summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
+    ggplot(aes(x = time, y = voltage, colour = group) ) +
+    geom_line() +
+    facet_wrap(~channel) +
+    theme_bw()
+```
+
+```{r data-summary}
+# retrieving sensors x and y coordinates
+data(eegcoord)
+enames <- rownames(eegcoord)
+
+# merging the data
+eeg_coords <- eegcoord |>
+    mutate(channel = enames) |>
+    select(channel, xproj, yproj)
+
+# summarising the data
+eeg_data <- eegdata |>
+    summarise(voltage = mean(voltage), .by = c(subject, channel, time) ) |>
+    left_join(eeg_coords, by = "channel") |>
+    # converting timesteps to seconds
+    mutate(time = (time + 1) / 256) |>
+    # rounding numeric variables
+    mutate(across(is.numeric, ~round(.x, 4) ) ) |>
+    # removing NAs
+    na.omit() |>
+    # scaling the variables before fitting
+    mutate(
+        xproj = xproj / sd(xproj),
+        yproj = yproj / sd(yproj),
+        voltage = voltage / sd(voltage)
+        )
+
+# sensors: one row per channel with columns xproj, yproj
+sensors <- unique(eeg_data[, c("channel", "xproj", "yproj")])
+
+# show a few rows
+head(sensors)
+```
+
+We visualise the sensors grid using the `plot_sensors()` function.
+
+```{r plot-sensors, fig.height = 6, fig.width = 12}
+# plotting the sensors grid
+plot_sensors(
+    sensors,
+    show_points = TRUE,
+    show_labels = TRUE,
+    label_col = "channel",
+    label_repel = FALSE,
+    highlight = c("C1", "CZ", "C2"),
+    label_only_highlight = FALSE,
+    dim_others = TRUE,
+    head_expand = 1.1
+    )
+```
+
+We visualise the average EEG topography through time using the `plot_eeg()` function. 
+
+```{r plot-eeg, fig.height = 6, fig.width = 12}
+# retrieving the first 100 unique timesteps
+time_steps <- unique(eeg_data$time)[1:100]
+
+# taking 8 equally spaced timesteps
+time_steps_discrete <- st_take_n_times(time_vec = time_steps, N = 8)
+
+# averaging EEG data per channel and timestep
+eeg_data_summary <- eeg_data %>%
+    summarise(voltage = mean(voltage), .by = c(channel, time, xproj, yproj) ) |>
+    dplyr::filter(time %in% time_steps_discrete)
+
+# topoplot of summary data
+plot_eeg(
+    x = eeg_data_summary,
+    type = "topo",
+    sensors = sensors,
+    times = time_steps_discrete,
+    grid_res = 200,
+    value_col = "voltage",
+    facet_nrow = 2,
+    fill_limits = "global_quantile"
+    )
+```
+
+## Spatio-temporal modelling with BGAMs
+
+In progress...

@@ -13,7 +13,8 @@ testing_through_time(
   family = gaussian(),
   kvalue = 20,
   bs = "tp",
-  multilevel = c("summary", "full", "group"),
+  multilevel = c("summary", "group"),
+  by_ppt = FALSE,
   warmup = 1000,
   iter = 2000,
   chains = 4,
@@ -65,12 +66,13 @@ distribution to be used in the model (defaults to \code{gaussian()}).}
 
 \item{multilevel}{Character; which model to fit. One of
 \itemize{
-  \item \code{"full"}: Full GAMM with participant-level random/varying effects;
   \item \code{"summary"}: GAMM fitted to participant-level summary
     statistics (mean outcome and its standard deviation);
   \item \code{"group"}: Group-level GAM fitted to participant-averaged
     data (no random/varying effects).
 }}
+
+\item{by_ppt}{Logical; should we return clusters at the participant-level.}
 
 \item{warmup}{Numeric; number of warm-up iterations per chain.}
 
