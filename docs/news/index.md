@@ -10,6 +10,9 @@
 - Implementing a
   [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md)
   method for `cluster_results` objects.
+- Implementing the
+  [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
+  function to visualise auto-correlation of the residuals.
 - New
   [`plot_sensors()`](https://lnalborczyk.github.io/neurogam/reference/plot_sensors.md)
   and
@@ -24,6 +27,8 @@
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html).
 - Adding support for [`binomial()`](https://rdrr.io/r/stats/family.html)
   responses.
+- Supporting continuous predictors in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
 
 ### Other changes
 

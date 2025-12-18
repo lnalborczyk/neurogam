@@ -15,6 +15,7 @@ testing_through_time(
   kvalue = 20,
   bs = "tp",
   multilevel = c("summary", "group"),
+  include_ar_term = FALSE,
   participant_clusters = FALSE,
   varying_smooth = TRUE,
   warmup = 1000,
@@ -47,11 +48,12 @@ containing either:
 \itemize{
   \item A \emph{binary} categorical predictor (e.g., group or condition),
     in which case the function tests, at each time point, whether the
-    difference between the two levels exceeds
+    difference between the two levels differs from
     \code{chance_level};
   \item A \emph{continuous} numeric predictor, in which case the function
-    tests, at each time point, whether the \emph{slope} of the outcome
-    with respect to the predictor differs from \code{chance_level}
+    tests, at each time point, whether the difference between the average
+    value of the predictor +1SD and the average value -1SD differs from
+    \code{chance_level}
     (typically with \code{chance_level = 0}).
   \item If \code{predictor_id = NA}, the function tests whether the outcome differs
     from \code{chance_level} over time (useful for decoding accuracies,
@@ -79,6 +81,11 @@ distribution to be used in the model (defaults to \code{gaussian()}).}
   \item \code{"group"}: Group-level GAM fitted to participant-averaged
     data (no random/varying effects).
 }}
+
+\item{include_ar_term}{Logical; if \code{TRUE}, adds an AR(1) autocorrelation
+structure within participant via
+\code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)}.
+Note that this is usually not necessary when using multilevel = "summary".}
 
 \item{participant_clusters}{Logical; should we return clusters at the participant-level.}
 

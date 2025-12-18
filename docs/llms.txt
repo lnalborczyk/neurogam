@@ -238,11 +238,21 @@ minimal reproducible example on
 
 ## All functions
 
+- [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
+  :
+
+  Check and visualise residual autocorrelation in a fitted brms model
+
 - [`eeg_data`](https://lnalborczyk.github.io/neurogam/reference/eeg_data.md)
   : Simulated EEG data
 
 - [`find_clusters()`](https://lnalborczyk.github.io/neurogam/reference/find_clusters.md)
   : Find contiguous clusters in a time series
+
+- [`make_bgam_formula()`](https://lnalborczyk.github.io/neurogam/reference/make_bgam_formula.md)
+  :
+
+  Build a brms formula for time-resolved BGAMMs
 
 - [`plot_eeg()`](https://lnalborczyk.github.io/neurogam/reference/plot_eeg.md)
   : Plot spatio-temporal EEG data as topographies or 2D surfaces

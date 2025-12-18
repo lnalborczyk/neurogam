@@ -8,10 +8,13 @@
 <url><loc>https://lnalborczyk.github.io/neurogam/authors.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/index.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/news/index.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/check_within_between.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/eeg_data.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/find_clusters.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/index.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/make_bgam_formula.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/make_summary_data.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/plot_eeg.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/plot_sensors.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/ppc.html</loc></url>

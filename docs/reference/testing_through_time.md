@@ -20,6 +20,7 @@ testing_through_time(
   kvalue = 20,
   bs = "tp",
   multilevel = c("summary", "group"),
+  include_ar_term = FALSE,
   participant_clusters = FALSE,
   varying_smooth = TRUE,
   warmup = 1000,
@@ -62,12 +63,12 @@ testing_through_time(
 
   - A *binary* categorical predictor (e.g., group or condition), in
     which case the function tests, at each time point, whether the
-    difference between the two levels exceeds `chance_level`;
+    difference between the two levels differs from `chance_level`;
 
   - A *continuous* numeric predictor, in which case the function tests,
-    at each time point, whether the *slope* of the outcome with respect
-    to the predictor differs from `chance_level` (typically with
-    `chance_level = 0`).
+    at each time point, whether the difference between the average value
+    of the predictor +1SD and the average value -1SD differs from
+    `chance_level` (typically with `chance_level = 0`).
 
   - If `predictor_id = NA`, the function tests whether the outcome
     differs from `chance_level` over time (useful for decoding
@@ -105,6 +106,14 @@ testing_through_time(
 
   - `"group"`: Group-level GAM fitted to participant-averaged data (no
     random/varying effects).
+
+- include_ar_term:
+
+  Logical; if `TRUE`, adds an AR(1) autocorrelation structure within
+  participant via
+  `autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)`.
+  Note that this is usually not necessary when using multilevel =
+  "summary".
 
 - participant_clusters:
 

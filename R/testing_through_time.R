@@ -18,11 +18,12 @@
 #'   \itemize{
 #'     \item A \emph{binary} categorical predictor (e.g., group or condition),
 #'       in which case the function tests, at each time point, whether the
-#'       difference between the two levels exceeds
+#'       difference between the two levels differs from
 #'       \code{chance_level};
 #'     \item A \emph{continuous} numeric predictor, in which case the function
-#'       tests, at each time point, whether the \emph{slope} of the outcome
-#'       with respect to the predictor differs from \code{chance_level}
+#'       tests, at each time point, whether the difference between the average
+#'       value of the predictor +1SD and the average value -1SD differs from
+#'       \code{chance_level}
 #'       (typically with \code{chance_level = 0}).
 #'     \item If \code{predictor_id = NA}, the function tests whether the outcome differs
 #'       from \code{chance_level} over time (useful for decoding accuracies,
@@ -45,6 +46,10 @@
 #'     \item \code{"group"}: Group-level GAM fitted to participant-averaged
 #'       data (no random/varying effects).
 #'   }
+#' @param include_ar_term Logical; if \code{TRUE}, adds an AR(1) autocorrelation
+#'   structure within participant via
+#'   \code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)}.
+#'   Note that this is usually not necessary when using multilevel = "summary".
 #' @param varying_smooth Logical; should we include a varying smooth. Default is
 #' TRUE. If FALSE, we only include a varying intercept and slope.
 #' @param participant_clusters Logical; should we return clusters at the participant-level.
@@ -133,6 +138,7 @@ testing_through_time <- function (
         trials_id = NULL,
         family = gaussian(), kvalue = 20, bs = "tp",
         multilevel = c("summary", "group"),
+        include_ar_term = FALSE,
         participant_clusters = FALSE, varying_smooth = TRUE,
         warmup = 1000, iter = 2000, chains = 4, cores = 4,
         backend = c("cmdstanr", "rstan"),
@@ -181,6 +187,15 @@ testing_through_time <- function (
             stop ("`n_post_samples` must be NULL or a positive numeric scalar.", call. = FALSE)
 
         }
+
+    }
+
+    if (include_ar_term && multilevel == "summary") {
+
+        stop (
+            "`include_ar_term` not yet implemented for multilevel = 'summary'... try multilevel = 'group'.",
+            call. = FALSE
+            )
 
     }
 
@@ -284,8 +299,6 @@ testing_through_time <- function (
 
             predictor_type <- "continuous"
 
-            stop ("Continuous predictors are not yet supported, please use brms.", call. = FALSE)
-
         } else {
 
             predictor_type <- "categorical"
@@ -303,207 +316,49 @@ testing_through_time <- function (
 
     if (multilevel == "summary") {
 
-        # build LHS of model formula
-        formula_lhs <- if (is_binom) {
+        # summarise the data appropriately
+        ms <- make_summary_data(
+            data = data,
+            participant_id = participant_id,
+            outcome_id = outcome_id,
+            time_id = time_id,
+            predictor_id = predictor_id,
+            trials_id = trials_id,
+            family = family,
+            multilevel = multilevel
+            )
 
-            "success | trials(trials)"
+        summary_data <- ms$data
+        within_between <- ms$within_betwee
 
-        } else {
+        # define the model formula
+        formula_obj <- make_bgam_formula(
+            family = family,
+            multilevel = multilevel,
+            predictor_type = predictor_type,
+            within_between = if (!is.na(predictor_id) ) within_between$classification else NA,
+            kvalue = kvalue,
+            bs = bs,
+            include_ar_term = include_ar_term,
+            varying_smooth = varying_smooth
+            )
 
-            "outcome_mean | se(outcome_sd)"
+        # include new predictor in data
+        if (include_ar_term) {
 
-        }
+            if (!is.na(predictor_id) ) {
 
-        # construct the smooth term dynamically
-        if (is.na(predictor_id) ) {
-
-            # define the smooth terms
-            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
-            varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
-
-            if (is_binom) {
-
-                if (is.null(trials_id) ) {
-
-                    # reshape and summarising the data
-                    summary_data <- data |>
-                        # reshape the original variables
-                        dplyr::mutate(participant = .data[[participant_id]]) |>
-                        dplyr::mutate(outcome = .data[[outcome_id]]) |>
-                        dplyr::mutate(time = .data[[time_id]]) |>
-                        # summarise per participant
-                        dplyr::summarise(
-                            success = sum(.data$outcome),
-                            trials = dplyr::n(.data$outcome),
-                            .by = c(.data$participant, .data$time)
-                            )
-
-                } else {
-
-                    # reshape and summarising the data
-                    summary_data <- data |>
-                        # reshape the original variables
-                        dplyr::mutate(
-                            participant = .data[[participant_id]],
-                            time = .data[[time_id]],
-                            success = .data[[outcome_id]],
-                            trials = .data[[trials_id]],
-                            .keep = "none"
-                            ) |>
-                        # summarise per participant
-                        dplyr::summarise(
-                            success = sum(.data$success),
-                            trials = sum(.data$trials),
-                            .by = c(.data$participant, .data$time)
-                            )
-
-                }
+                summary_data <- summary_data |>
+                    dplyr::mutate(ar_series = interaction(.data$participant, .data$predictor) )
 
             } else {
 
-                # reshape and summarising the data
-                summary_data <- data |>
-                    # reshape the original variables
-                    dplyr::mutate(participant = .data[[participant_id]]) |>
-                    dplyr::mutate(outcome = .data[[outcome_id]]) |>
-                    dplyr::mutate(time = .data[[time_id]]) |>
-                    # summarise per participant
-                    dplyr::summarise(
-                        outcome_mean = mean(.data$outcome),
-                        outcome_sd = stats::sd(.data$outcome),
-                        .by = c(.data$participant, .data$time)
-                        )
-
-            }
-
-        } else { # is predictor_id is not NA
-
-            # define the smooth terms
-            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
-            varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
-
-            if (is_binom) {
-
-                if (is.null(trials_id) ) {
-
-                    # reshape and summarising the data
-                    summary_data <- data |>
-                        # reshape the original variables
-                        dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) ) |>
-                        dplyr::mutate(participant = .data[[participant_id]]) |>
-                        dplyr::mutate(outcome = .data[[outcome_id]]) |>
-                        dplyr::mutate(time = .data[[time_id]]) |>
-                        # summarise per participant
-                        dplyr::summarise(
-                            success = sum(.data$outcome),
-                            trials = dplyr::n(.data$outcome),
-                            .by = c(.data$participant, .data$predictor, .data$time)
-                            )
-
-                } else {
-
-                    # reshape and summarising the data
-                    summary_data <- data |>
-                        # reshape the original variables
-                        dplyr::mutate(
-                            predictor = as.factor(.data[[predictor_id]]),
-                            participant = .data[[participant_id]],
-                            time = .data[[time_id]],
-                            success = .data[[outcome_id]],
-                            trials = .data[[trials_id]],
-                            .keep = "none"
-                            )
-
-                }
-
-            } else {
-
-                # reshape and summarising the data
-                summary_data <- data |>
-                    # reshape the original variables
-                    dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) ) |>
-                    dplyr::mutate(participant = .data[[participant_id]]) |>
-                    dplyr::mutate(outcome = .data[[outcome_id]]) |>
-                    dplyr::mutate(time = .data[[time_id]]) |>
-                    # summarise per participant
-                    dplyr::summarise(
-                        outcome_mean = mean(.data$outcome),
-                        outcome_sd = stats::sd(.data$outcome),
-                        .by = c(.data$participant, .data$predictor, .data$time)
-                        )
-
-            }
-
-            # test whether predictor is varying within or between participant
-            within_between <- check_within_between(
-                data = summary_data,
-                participant = "participant",
-                predictor = "predictor"
-                )
-
-        }
-
-        # full formula
-        if (is.na(predictor_id) ) {
-
-            # varying_intercept <- glue::glue("s(participant, bs = 're')")
-            # varying_slope <- glue::glue("s(participant, time, bs = 're')")
-            # varying_smooth <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
-            # formula_str <- glue::glue("outcome_mean | se(outcome_sd) ~ 1 + {smooth_term} + {varying_intercept} + {varying_slope}")
-            # formula_str <- glue::glue("outcome_mean | se(outcome_sd) ~ 1 + {smooth_term} + {varying_intercept} + {varying_slope} + {varying_smooth}")
-
-            if (varying_smooth) {
-
-                formula_str <- glue::glue("{formula_lhs} ~ 1 + (1 | participant) + {smooth_term} + {varying_smooth_term}")
-
-            } else {
-
-                formula_str <- glue::glue("{formula_lhs} ~ 1 + (1 | participant) + {smooth_term}")
-
-            }
-
-
-        } else {
-
-            if (within_between$classification == "between-subject") {
-
-                if (varying_smooth) {
-
-                    formula_str <- glue::glue(
-                        "{formula_lhs} ~ 1 + predictor + (1 | participant) + {smooth_term} + {varying_smooth_term}"
-                        )
-
-                } else {
-
-                    formula_str <- glue::glue(
-                        "{formula_lhs} ~ 1 + predictor + (1 | participant) + {smooth_term}"
-                        )
-
-                }
-
-            } else if (within_between$classification == "within-subject") {
-
-                if (varying_smooth) {
-
-
-                    formula_str <- glue::glue(
-                        "{formula_lhs} ~ 1 + predictor + (1 + predictor | participant) + {smooth_term} + {varying_smooth_term}"
-                        )
-
-                } else {
-
-                    formula_str <- glue::glue(
-                        "{formula_lhs} ~ 1 + predictor + (1 + predictor | participant) + {smooth_term}"
-                        )
-
-                }
+                summary_data <- summary_data |>
+                    dplyr::mutate(ar_series = .data$participant)
 
             }
 
         }
-
-        # convert to formula
-        formula_obj <- brms::bf(formula_str)
 
         ####################################################
         # fit the model
@@ -519,12 +374,6 @@ testing_through_time <- function (
             backend = backend,
             control = stan_control
             # speedup
-            # running on 2x4 cores
-            # threads = brms::threading(threads = 2),
-            # stan_model_args = list(
-            #     stanc_options = list("O1"),
-            #     cpp_options = list(stan_threads = TRUE)
-            #     )
             # stan_model_args = list(stanc_options = list("O1") )
             )
 
@@ -544,9 +393,8 @@ testing_through_time <- function (
                     time = sort(unique(brms_gam$data$time) ),
                     participant = sort(unique(brms_gam$data$participant) )
                     ) |>
-                    # dummy outcome_sd to satisfy | se(outcome_sd)
-                    # dplyr::mutate(outcome_sd = 1)
-                    .add_required_dummy(is_binom = is_binom)
+                    # add appropriate dummy to satisfy validate_data()
+                    add_required_dummy(is_binom = is_binom)
 
                 # retrieving posterior predictions (draws)
                 post_draws <- tidybayes::add_epred_draws(
@@ -563,9 +411,8 @@ testing_through_time <- function (
                 newdata_grid <- tidyr::crossing(
                     time = sort(unique(brms_gam$data$time) )
                     ) |>
-                    # dummy outcome_sd to satisfy | se(outcome_sd)
-                    # dplyr::mutate(outcome_sd = 1) |>
-                    .add_required_dummy(is_binom = is_binom) |>
+                    # add appropriate dummy to satisfy validate_data()
+                    add_required_dummy(is_binom = is_binom) |>
                     # NA participant to satisfy validate_data()
                     dplyr::mutate(participant = NA)
 
@@ -592,8 +439,8 @@ testing_through_time <- function (
                         predictor = levels(brms_gam$data$predictor),
                         participant = sort(unique(brms_gam$data$participant) )
                         ) |>
-                        # dummy outcome_sd or trials validate_data()
-                        .add_required_dummy(is_binom = is_binom)
+                        # add appropriate dummy to satisfy validate_data()
+                        add_required_dummy(is_binom = is_binom)
 
                     # retrieving posterior predictions (draws)
                     post_draws <- tidybayes::add_epred_draws(
@@ -621,11 +468,10 @@ testing_through_time <- function (
                     time = sort(unique(brms_gam$data$time) ),
                     predictor = levels(brms_gam$data$predictor)
                     ) |>
-                    # dummy outcome_sd to satisfy | se(outcome_sd) in validate_data()
-                    # dplyr::mutate(outcome_sd = 1) |>
-                    .add_required_dummy(is_binom = is_binom)
+                    # add appropriate dummy to satisfy validate_data()
+                    add_required_dummy(is_binom = is_binom) |>
                     # NA participant to satisfy validate_data()
-                    # dplyr::mutate(participant = NA)
+                    dplyr::mutate(participant = NA)
 
                 # retrieving posterior predictions (draws)
                 post_draws <- tidybayes::add_epred_draws(
@@ -640,69 +486,100 @@ testing_through_time <- function (
 
         } else if (predictor_type == "continuous") {
 
-            # TO-DO...
+            if (participant_clusters) {
+
+                # newdata grid over time and predictor +/-1 SD
+                predictor_mean <- mean(brms_gam$data$predictor)
+                predictor_sd <- sd(brms_gam$data$predictor)
+                newdata_grid <- tidyr::crossing(
+                    time = sort(unique(brms_gam$data$time) ),
+                    predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd),
+                    participant = sort(unique(brms_gam$data$participant) )
+                    ) |>
+                    # add appropriate dummy to satisfy validate_data()
+                    add_required_dummy(is_binom = is_binom)
+
+                # retrieving posterior predictions (draws)
+                post_draws <- tidybayes::add_epred_draws(
+                    object = brms_gam,
+                    newdata = newdata_grid,
+                    ndraws = n_post_samples,
+                    re_formula = NULL
+                    ) |>
+                    data.frame()
+
+            } else {
+
+                # newdata grid over time and predictor +/-1 SD
+                predictor_mean <- mean(brms_gam$data$predictor)
+                predictor_sd <- sd(brms_gam$data$predictor)
+                newdata_grid <- tidyr::crossing(
+                    time = sort(unique(brms_gam$data$time) ),
+                    predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)
+                    ) |>
+                    # add appropriate dummy to satisfy validate_data()
+                    add_required_dummy(is_binom = is_binom) |>
+                    # NA participant to satisfy validate_data()
+                    dplyr::mutate(participant = NA)
+
+                # retrieving posterior predictions (draws)
+                post_draws <- tidybayes::add_epred_draws(
+                    object = brms_gam,
+                    newdata = newdata_grid,
+                    ndraws = n_post_samples,
+                    re_formula = NA
+                    ) |>
+                    data.frame()
+
+            }
 
         }
 
     } else if (multilevel == "group") {
 
-        # construct the smooth term dynamically
-        if (is.na(predictor_id) ) {
+        # summarise the data appropriately
+        ms <- make_summary_data(
+            data = data,
+            participant_id = participant_id,
+            outcome_id = outcome_id,
+            time_id = time_id,
+            predictor_id = predictor_id,
+            trials_id = trials_id,
+            family = family,
+            multilevel = multilevel
+            )
 
-            # reshaping and summarising the data
-            summary_data <- data |>
-                # reshaping the original variables
-                dplyr::mutate(participant = .data[[participant_id]]) |>
-                dplyr::mutate(outcome = .data[[outcome_id]]) |>
-                dplyr::mutate(time = .data[[time_id]]) |>
-                # summarising per participant
-                dplyr::summarise(
-                    outcome_mean = mean(.data$outcome),
-                    outcome_sd = stats::sd(.data$outcome),
-                    .by = c(.data$participant, .data$time)
-                    )
+        summary_data <- ms$data
+        within_between <- ms$within_betwee
 
-            # define the smooth term
-            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
+        # define the model formula
+        formula_obj <- make_bgam_formula(
+            family = family,
+            multilevel = multilevel,
+            predictor_type = predictor_type,
+            within_between = if (!is.na(predictor_id) ) within_between$classification else NA,
+            kvalue = kvalue,
+            bs = bs,
+            include_ar_term = include_ar_term,
+            varying_smooth = varying_smooth
+            )
 
-        } else if (predictor_type == "categorical") {
+        # include new predictor in data
+        if (include_ar_term) {
 
-            # reshape and summarising the data
-            summary_data <- data |>
-                # reshape the original variables
-                dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) ) |>
-                dplyr::mutate(participant = .data[[participant_id]]) |>
-                dplyr::mutate(outcome = .data[[outcome_id]]) |>
-                dplyr::mutate(time = .data[[time_id]]) |>
-                # summarise per participant
-                dplyr::summarise(
-                    outcome_mean = mean(.data$outcome),
-                    outcome_sd = stats::sd(.data$outcome),
-                    .by = c(.data$participant, .data$predictor, .data$time)
-                    )
+            if (!is.na(predictor_id) ) {
 
-            # define the smooth term
-            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
+                summary_data <- summary_data |>
+                    dplyr::mutate(ar_series = interaction(.data$participant, .data$predictor) )
 
-        } else if (predictor_type == "continuous") {
+            } else {
 
-            # TO-DO...
+                summary_data <- summary_data |>
+                    dplyr::mutate(ar_series = .data$participant)
 
-        }
-
-        # full formula
-        if (is.na(predictor_id) ) {
-
-            formula_str <- glue::glue("outcome_mean ~ 1 + {smooth_term}")
-
-        } else {
-
-            formula_str <- glue::glue("outcome_mean ~ 1 + predictor + {smooth_term}")
+            }
 
         }
-
-        # convert to formula
-        formula_obj <- brms::bf(formula_str)
 
         ####################################################
         # fit the model
@@ -759,7 +636,22 @@ testing_through_time <- function (
 
         } else if (predictor_type == "continuous") {
 
-            # TO-DO...
+            # newdata grid over time and predictor +/-1 SD
+            predictor_mean <- mean(brms_gam$data$predictor)
+            predictor_sd <- sd(brms_gam$data$predictor)
+            newdata_grid <- tidyr::crossing(
+                time = sort(unique(brms_gam$data$time) ),
+                predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)
+                )
+
+            # retrieving posterior predictions (draws)
+            post_draws <- tidybayes::add_epred_draws(
+                object = brms_gam,
+                newdata = newdata_grid,
+                ndraws = n_post_samples,
+                re_formula = NA
+                ) |>
+                data.frame()
 
         }
 
@@ -768,7 +660,7 @@ testing_through_time <- function (
     # compute the posterior odds
     if (is.na(predictor_id) ) {
 
-        prob_y_above <- .compute_one_sample_prob(
+        prob_y_above <- compute_one_sample_prob(
             post_draws = post_draws,
             participant_clusters = participant_clusters,
             threshold = chance_level,
@@ -776,20 +668,17 @@ testing_through_time <- function (
             credible_interval = credible_interval
             )
 
-    } else if (predictor_type == "categorical") {
+    } else {
 
-        prob_y_above <- .compute_two_sample_prob(
+        prob_y_above <- compute_two_sample_prob(
             post_draws = post_draws,
             participant_clusters = participant_clusters,
             # when comparing two groups, null value should be 0
             threshold = 0,
             n_post_samples = n_post_samples,
-            credible_interval = credible_interval
+            credible_interval = credible_interval,
+            predictor_type = predictor_type
             )
-
-    } else if (predictor_type == "continuous") {
-
-        # TO-DO...
 
     }
 
@@ -831,200 +720,6 @@ testing_through_time <- function (
 
 }
 
-.add_required_dummy <- function (df, is_binom) {
-
-    if (is_binom) {
-
-        # required by success | trials(trials)
-        if (!"trials" %in% names(df) ) df <- dplyr::mutate(df, trials = 1)
-
-    } else {
-
-        # required by outcome_mean | se(outcome_sd)
-        if (!"outcome_sd" %in% names(df) ) df <- dplyr::mutate(df, outcome_sd = 1)
-
-    }
-
-    return (df)
-
-}
-
-.compute_one_sample_prob <- function (
-        post_draws, threshold, participant_clusters, n_post_samples, credible_interval
-        ) {
-
-    # validate credible interval
-    if (!is.numeric(credible_interval) ||
-
-        length(credible_interval) != 1L ||
-        credible_interval <= 0 || credible_interval >= 1) {
-
-        stop ("`credible_interval` must be a number strictly between 0 and 1.")
-
-    }
-
-    alpha <- (1 - credible_interval) / 2
-    lower_q <- alpha
-    upper_q <- 1 - alpha
-
-    if (participant_clusters) {
-
-        prob_y_above <- post_draws |>
-            dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(prob_above = mean(.data$.epred > threshold) ) |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            # dplyr::ungroup() |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                # prob_ratio = min(.data$prob_ratio, n_post_samples),
-                # prob_ratio = max(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            dplyr::ungroup() |>
-            data.frame()
-
-        post_prob_slope <- post_draws |>
-            dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
-                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
-                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE)
-                ) |>
-            dplyr::ungroup()
-
-        results <- dplyr::left_join(
-            prob_y_above, post_prob_slope, by = c("time", "participant")
-            )
-
-    } else {
-
-        prob_y_above <- post_draws |>
-            dplyr::group_by(.data$time) |>
-            dplyr::summarise(
-                prob_above = mean(.data$.epred > threshold)
-                ) |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            dplyr::ungroup() |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
-
-        post_prob_slope <- post_draws |>
-            dplyr::group_by(.data$time) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
-                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
-                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE)
-                ) |>
-            dplyr::ungroup()
-
-        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
-
-    }
-
-    return (results)
-
-}
-
-.compute_two_sample_prob <- function (
-        post_draws, threshold, participant_clusters, n_post_samples, credible_interval
-        ) {
-
-    # validate credible interval
-    if (!is.numeric(credible_interval) ||
-
-        length(credible_interval) != 1L ||
-        credible_interval <= 0 || credible_interval >= 1) {
-
-        stop ("`credible_interval` must be a number strictly between 0 and 1.")
-
-    }
-
-    alpha <- (1 - credible_interval) / 2
-    lower_q <- alpha
-    upper_q <- 1 - alpha
-
-    cond1 <- unique(post_draws$predictor)[1]
-    cond2 <- unique(post_draws$predictor)[2]
-
-    if (participant_clusters) {
-
-        post_diff <- post_draws |>
-            dplyr::select(
-                .data$time, .data$predictor, .data$participant,
-                .data$.epred, .data$.draw
-                ) |>
-            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
-
-        prob_y_above <- post_diff |>
-            dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(
-                prob_above = mean(.data$epred_diff > threshold)
-                ) |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            dplyr::ungroup() |>
-            dplyr::mutate(
-                # prob_ratio = min(.data$prob_ratio, n_post_samples),
-                # prob_ratio = max(.data$prob_ratio, 1 / n_post_samples)
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
-
-        post_prob_slope <- post_diff |>
-            dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(.data$epred_diff, probs = 0.5),
-                lower = stats::quantile(.data$epred_diff, probs = lower_q),
-                upper = stats::quantile(.data$epred_diff, probs = upper_q)
-                ) |>
-            dplyr::ungroup()
-
-        results <- dplyr::left_join(
-            prob_y_above, post_prob_slope,
-            by = c("time", "participant")
-            )
-
-    } else {
-
-        post_diff <- post_draws |>
-            dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
-            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
-
-        prob_y_above <- post_diff |>
-            dplyr::group_by(.data$time) |>
-            dplyr::summarise(
-                prob_above = mean(.data$epred_diff > threshold)
-                ) |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            dplyr::ungroup() |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
-
-        post_prob_slope <- post_diff |>
-            dplyr::group_by(.data$time) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(.data$epred_diff, probs = 0.5),
-                lower = stats::quantile(.data$epred_diff, probs = lower_q),
-                upper = stats::quantile(.data$epred_diff, probs = upper_q)
-                ) |>
-            dplyr::ungroup()
-
-        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
-
-    }
-
-    return (results)
-
-}
-
 #' @export
 plot.clusters_results <- function (
         x, null_value = 0,
@@ -1045,8 +740,16 @@ plot.clusters_results <- function (
 
         if ("predictor" %in% names(emp_data) ) {
 
-            cond1 <- levels(emp_data$predictor)[1]
-            cond2 <- levels(emp_data$predictor)[2]
+            if (is.numeric(emp_data$predictor) ) {
+
+                stop ("plot.cluster_results() is not implemented for continuous predictors yet.")
+
+            } else {
+
+                cond1 <- levels(emp_data$predictor)[1]
+                cond2 <- levels(emp_data$predictor)[2]
+
+            }
 
             reshaped_data <- emp_data |>
                 dplyr::summarise(
@@ -1582,7 +1285,7 @@ ppc <- function (
 
                 # observed y on that same grid
                 newdata <- tidyr::crossing(predictor = data_fit$predictor, time = data_fit$time) |>
-                    .add_required_dummy(is_binom = is_binom)
+                    add_required_dummy(is_binom = is_binom)
 
                 y_obs <- data_fit |>
                     dplyr::mutate(emp_prob = .data$success / .data$trials) |>

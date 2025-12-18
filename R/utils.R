@@ -1,3 +1,463 @@
+#' Summarise trial-level data for \code{testing_through_time()}
+#' @keywords internal
+# make_summary_data <- function (
+#         data,
+#         participant_id = "participant",
+#         outcome_id = "eeg",
+#         time_id = "time",
+#         predictor_id = NA,
+#         trials_id = NULL,
+#         family = gaussian(),
+#         multilevel = c("summary", "group"),
+#         na_rm = TRUE
+#         ) {
+#
+#     multilevel <- match.arg(multilevel)
+#
+#     # family name (same robust approach you already use)
+#     fam_name <- tryCatch({
+#
+#         if (is.list(family) && !is.null(family$family)) as.character(family$family) else stop ("not a family object")
+#
+#     }, error = function(e) {
+#
+#         stop ("`family` must be a valid family object (see ?brm).", call. = FALSE)
+#
+#     })
+#
+#     allowed_families <- c("gaussian", "binomial")
+#
+#     if (!fam_name %in% allowed_families) {
+#
+#         stop (
+#             "Unsupported `family`: '", fam_name, "'. ",
+#             "Currently supported families are: gaussian() and binomial().",
+#             call. = FALSE
+#             )
+#
+#     }
+#
+#     is_binom <- identical(fam_name, "binomial")
+#
+#     # column existence checks
+#     required <- c(participant_id, outcome_id, time_id)
+#     if (!is.na(predictor_id) ) required <- c(required, predictor_id)
+#     if (is_binom && !is.null(trials_id) ) required <- c(required, trials_id)
+#
+#     missing_cols <- setdiff(required, names(data) )
+#
+#     if (length(missing_cols) > 0) {
+#
+#         stop ("Missing columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+#
+#     }
+#
+#     # build internal columns
+#     df <- data |>
+#         dplyr::mutate(
+#             participant = .data[[participant_id]],
+#             time = .data[[time_id]]
+#             )
+#
+#     if (!is.na(predictor_id) ) {
+#
+#         df <- df |> dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) )
+#
+#     }
+#
+#     # summarise depending on family
+#     within_between <- NULL
+#
+#     if (is_binom) {
+#
+#         # Case A: trial-level 0/1 (or TRUE/FALSE)
+#         if (is.null(trials_id) ) {
+#
+#             y <- df[[outcome_id]]
+#
+#             ok <- all(is.na(y) | y %in% c(0, 1, FALSE, TRUE) )
+#
+#             if (!ok) {
+#
+#                 stop (
+#                     "For binomial() with trials_id = NULL, `", outcome_id,
+#                     "` must contain trial-level 0/1 (or TRUE/FALSE).",
+#                     call. = FALSE
+#                     )
+#
+#             }
+#
+#             df <- df |> dplyr::mutate(outcome_bin = as.integer(.data[[outcome_id]]) )
+#
+#             grp <- c("participant", "time")
+#             if (!is.na(predictor_id)) grp <- c(grp, "predictor")
+#
+#             summary_data <- df |>
+#                 dplyr::group_by(dplyr::across(dplyr::all_of(grp) ) ) |>
+#                 dplyr::summarise(
+#                     success = sum(.data$outcome_bin, na.rm = na_rm),
+#                     trials  = if (na_rm) sum(!is.na(.data$outcome_bin)) else dplyr::n(),
+#                     .groups = "drop"
+#                     )
+#
+#         } else {
+#
+#             # Case B: pre-aggregated counts (success + trials columns)
+#             df <- df |>
+#                 dplyr::mutate(
+#                     success_in = .data[[outcome_id]],
+#                     trials_in  = .data[[trials_id]]
+#                     )
+#
+#             # basic validation
+#             if (!is.numeric(df$success_in) || !is.numeric(df$trials_in) ) {
+#
+#                 stop ("For binomial() with trials_id provided, both success and trials must be numeric.", call. = FALSE)
+#
+#             }
+#
+#             grp <- c("participant", "time")
+#             if (!is.na(predictor_id) ) grp <- c(grp, "predictor")
+#
+#             summary_data <- df |>
+#                 dplyr::group_by(dplyr::across(dplyr::all_of(grp) ) ) |>
+#                 dplyr::summarise(
+#                     success = sum(.data$success_in, na.rm = na_rm),
+#                     trials  = sum(.data$trials_in,  na.rm = na_rm),
+#                     .groups = "drop"
+#                     )
+#
+#         }
+#
+#         # sanity: success within [0, trials]
+#         if (any(summary_data$trials < 0, na.rm = TRUE) ) {
+#
+#             stop ("Computed `trials` contains negative values.", call. = FALSE)
+#
+#         }
+#
+#         if (any(summary_data$success < 0, na.rm = TRUE) ) {
+#
+#             stop ("Computed `success` contains negative values.", call. = FALSE)
+#
+#         }
+#
+#         if (any(summary_data$success > summary_data$trials, na.rm = TRUE) ) {
+#
+#             stop ("Some cells have success > trials after summarisation.", call. = FALSE)
+#
+#         }
+#
+#     } else {
+#
+#         df <- df |> dplyr::mutate(outcome = .data[[outcome_id]])
+#
+#         grp <- c("participant", "time")
+#         if (!is.na(predictor_id) ) grp <- c(grp, "predictor")
+#
+#         summary_data <- df |>
+#             dplyr::group_by(dplyr::across(dplyr::all_of(grp) ) ) |>
+#             dplyr::summarise(
+#                 outcome_mean = mean(.data$outcome, na.rm = na_rm),
+#                 outcome_sd   = stats::sd(.data$outcome, na.rm = na_rm),
+#                 .groups = "drop"
+#                 )
+#
+#     }
+#
+#     # within/between classification (only when predictor is present)
+#     if (!is.na(predictor_id) ) {
+#
+#         if (exists("check_within_between", mode = "function") ) {
+#
+#             within_between <- check_within_between(
+#                 data = summary_data,
+#                 participant = "participant",
+#                 predictor = "predictor"
+#                 )
+#
+#         } else {
+#
+#             within_between <- NULL
+#
+#         }
+#
+#     }
+#
+#     return (
+#         list(
+#             data = summary_data,
+#             within_between = within_between
+#             )
+#         )
+#
+# }
+
+make_summary_data <- function (
+        data,
+        participant_id = "participant",
+        outcome_id = "eeg",
+        time_id = "time",
+        predictor_id = NA,
+        trials_id = NULL,
+        family = gaussian(),
+        multilevel = c("summary", "group"),
+        na_rm = TRUE,
+        # how to aggregate continuous predictors within (participant, time)
+        continuous_agg = c("mean", "first")
+        ) {
+
+    multilevel <- match.arg(multilevel)
+    continuous_agg <- match.arg(continuous_agg)
+
+    # family name (robust)
+    fam_name <- tryCatch({
+
+        if (is.list(family) && !is.null(family$family) ) as.character(family$family) else stop("not a family object")
+
+    }, error = function(e) {
+
+        stop ("`family` must be a valid family object (see ?brm).", call. = FALSE)
+
+    })
+
+    allowed_families <- c("gaussian", "binomial")
+
+    if (!fam_name %in% allowed_families) {
+
+        stop (
+            "Unsupported `family`: '", fam_name, "'. ",
+            "Currently supported families are: gaussian() and binomial().",
+            call. = FALSE
+            )
+
+    }
+
+    is_binom <- identical(fam_name, "binomial")
+
+    # column existence checks
+    required <- c(participant_id, outcome_id, time_id)
+
+    if (!is.na(predictor_id) ) required <- c(required, predictor_id)
+    if (is_binom && !is.null(trials_id) ) required <- c(required, trials_id)
+
+    missing_cols <- setdiff(required, names(data) )
+
+    if (length(missing_cols) > 0) {
+
+        stop ("Missing columns: ", paste(missing_cols, collapse = ", "), call. = FALSE)
+
+    }
+
+    # internal columns
+    df <- data |>
+        dplyr::mutate(
+            participant = .data[[participant_id]],
+            time = .data[[time_id]]
+            )
+
+    predictor_type <- "none"
+
+    if (!is.na(predictor_id) ) {
+
+        pred_raw <- df[[predictor_id]]
+
+        if (is.numeric(pred_raw) ) {
+
+            predictor_type <- "continuous"
+            df <- df |> dplyr::mutate(predictor = as.numeric(.data[[predictor_id]]) )
+
+        } else {
+
+            predictor_type <- "categorical"
+            df <- df |> dplyr::mutate(predictor = as.factor(.data[[predictor_id]]) )
+
+        }
+
+    }
+
+    # helper for aggregating continuous predictors within (participant, time, ...)
+    agg_continuous <- function (x) {
+
+        if (continuous_agg == "first") {
+
+            # "first" non-NA (or NA if all NA)
+            x2 <- x[!is.na(x)]
+
+            if (length(x2) == 0L) NA_real_ else x2[[1]]
+
+        } else {
+
+            mean(x, na.rm = na_rm)
+
+        }
+
+    }
+
+    within_between <- NULL
+
+    # choose grouping keys for the outcome
+    # - categorical predictor: group by predictor
+    # - continuous predictor: DO NOT group by predictor; keep as a covariate column
+    grp_outcome <- c("participant", "time")
+    if (predictor_type == "categorical") grp_outcome <- c(grp_outcome, "predictor")
+
+    if (is_binom) {
+
+        # A) trial-level 0/1 outcome
+        if (is.null(trials_id) ) {
+
+            y <- df[[outcome_id]]
+            ok <- all(is.na(y) | y %in% c(0, 1, FALSE, TRUE) )
+
+            if (!ok) {
+
+                stop (
+                    "For binomial() with trials_id = NULL, `", outcome_id,
+                    "` must contain trial-level 0/1 (or TRUE/FALSE).",
+                    call. = FALSE
+                    )
+
+            }
+
+            df <- df |> dplyr::mutate(outcome_bin = as.integer(.data[[outcome_id]]) )
+
+            summary_data <- df |>
+                dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
+                dplyr::summarise(
+                    success = sum(.data$outcome_bin, na.rm = na_rm),
+                    trials  = if (na_rm) sum(!is.na(.data$outcome_bin)) else dplyr::n(),
+                    # carry continuous predictor if needed
+                    predictor = if (predictor_type == "continuous") agg_continuous(.data$predictor) else dplyr::first(.data$predictor),
+                    .groups = "drop"
+                    ) |>
+                # drop the redundant predictor column for categorical case (already grouped)
+                dplyr::mutate(predictor = if (predictor_type == "categorical") .data$predictor else .data$predictor)
+
+            if (predictor_type == "categorical") {
+
+                # predictor already exists via grouping; keep as is
+
+            } else if (predictor_type == "none") {
+
+                summary_data <- summary_data |> dplyr::select(-dplyr::any_of("predictor") )
+
+            }
+
+        } else {
+
+            # B) pre-aggregated success + trials in the raw data
+            df <- df |>
+                dplyr::mutate(
+                    success_in = .data[[outcome_id]],
+                    trials_in  = .data[[trials_id]]
+                    )
+
+            if (!is.numeric(df$success_in) || !is.numeric(df$trials_in) ) {
+
+                stop ("For binomial() with trials_id provided, both success and trials must be numeric.", call. = FALSE)
+
+            }
+
+            summary_data <- df |>
+                dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
+                dplyr::summarise(
+                    success = sum(.data$success_in, na.rm = na_rm),
+                    trials  = sum(.data$trials_in,  na.rm = na_rm),
+                    predictor = if (predictor_type == "continuous") agg_continuous(.data$predictor) else dplyr::first(.data$predictor),
+                    .groups = "drop"
+                    )
+
+            if (predictor_type == "categorical") {
+
+                # OK
+
+            } else if (predictor_type == "none") {
+
+                summary_data <- summary_data |> dplyr::select(-dplyr::any_of("predictor") )
+
+            }
+
+        }
+
+        # sanity checks
+        if (any(summary_data$trials < 0, na.rm = TRUE) ) stop ("Computed `trials` contains negative values.", call. = FALSE)
+        if (any(summary_data$success < 0, na.rm = TRUE) ) stop ("Computed `success` contains negative values.", call. = FALSE)
+        if (any(summary_data$success > summary_data$trials, na.rm = TRUE) ) stop ("Some cells have success > trials after summarisation.", call. = FALSE)
+
+    } else {
+
+        # gaussian summary
+        df <- df |> dplyr::mutate(outcome = .data[[outcome_id]])
+
+        summary_data <- df |>
+            dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
+            dplyr::summarise(
+                outcome_mean = mean(.data$outcome, na.rm = na_rm),
+                outcome_sd   = stats::sd(.data$outcome, na.rm = na_rm),
+                predictor = if (predictor_type == "continuous") agg_continuous(.data$predictor) else dplyr::first(.data$predictor),
+                .groups = "drop"
+                )
+
+        if (predictor_type == "categorical") {
+
+            # predictor is already grouped; keep
+
+        } else if (predictor_type == "none") {
+
+            summary_data <- summary_data |> dplyr::select(-dplyr::any_of("predictor"))
+
+        }
+
+    }
+
+    # within/between classification (extended to continuous predictors)
+    if (!is.na(predictor_id) ) {
+
+        if (predictor_type == "categorical") {
+
+            if (exists("check_within_between", mode = "function")) {
+                within_between <- check_within_between(
+                    data = summary_data,
+                    participant = "participant",
+                    predictor = "predictor"
+                    )
+
+            } else {
+
+                within_between <- NULL
+
+            }
+
+        } else if (predictor_type == "continuous") {
+
+            # between-subject if each participant has ~1 unique value (ignoring NA)
+            wb <- summary_data |>
+                dplyr::group_by(.data$participant) |>
+                dplyr::summarise(
+                    n_unique = dplyr::n_distinct(.data$predictor[!is.na(.data$predictor)]),
+                    .groups = "drop"
+                    )
+
+            within_between <- list(
+                classification = if (all(wb$n_unique <= 1) ) "between-subject" else "within-subject",
+                predictor_type = "continuous"
+                )
+
+        }
+
+    }
+
+    return (
+        list(
+            data = summary_data,
+            within_between = within_between,
+            predictor_type = predictor_type
+            )
+        )
+
+}
+
 #' Select approximately equally spaced times
 #' @param time_vec Numeric vector.
 #' @param N Integer number of points.
@@ -344,5 +804,205 @@ st_interp_to_grid <- function (
     }
 
     return (out)
+
+}
+
+#' @keywords internal
+compute_one_sample_prob <- function (
+        post_draws, threshold, participant_clusters, n_post_samples, credible_interval
+        ) {
+
+    # validate credible interval
+    if (!is.numeric(credible_interval) ||
+
+        length(credible_interval) != 1 ||
+        credible_interval <= 0 || credible_interval >= 1) {
+
+        stop ("`credible_interval` must be a number strictly between 0 and 1.")
+
+    }
+
+    alpha <- (1 - credible_interval) / 2
+    lower_q <- alpha
+    upper_q <- 1 - alpha
+
+    if (participant_clusters) {
+
+        prob_y_above <- post_draws |>
+            dplyr::group_by(.data$time, .data$participant) |>
+            dplyr::summarise(prob_above = mean(.data$.epred > threshold) ) |>
+            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+            dplyr::mutate(
+                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+                ) |>
+            dplyr::ungroup() |>
+            data.frame()
+
+        post_prob_slope <- post_draws |>
+            dplyr::group_by(.data$time, .data$participant) |>
+            dplyr::summarise(
+                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
+                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
+                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE)
+                ) |>
+            dplyr::ungroup()
+
+        results <- dplyr::left_join(
+            prob_y_above, post_prob_slope, by = c("time", "participant")
+            )
+
+    } else {
+
+        prob_y_above <- post_draws |>
+            dplyr::group_by(.data$time) |>
+            dplyr::summarise(
+                prob_above = mean(.data$.epred > threshold)
+                ) |>
+            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+            dplyr::ungroup() |>
+            dplyr::mutate(
+                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+                ) |>
+            data.frame()
+
+        post_prob_slope <- post_draws |>
+            dplyr::group_by(.data$time) |>
+            dplyr::summarise(
+                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
+                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
+                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE)
+                ) |>
+            dplyr::ungroup()
+
+        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+
+    }
+
+    return (results)
+
+}
+
+#' @keywords internal
+compute_two_sample_prob <- function (
+        post_draws, threshold, participant_clusters, n_post_samples,
+        credible_interval, predictor_type
+        ) {
+
+    # validate credible interval
+    if (!is.numeric(credible_interval) ||
+
+        length(credible_interval) != 1 ||
+        credible_interval <= 0 || credible_interval >= 1) {
+
+        stop ("`credible_interval` must be a number strictly between 0 and 1.")
+
+    }
+
+    # convert continuous predictor to factor
+    if (predictor_type == "continuous") {
+
+        post_draws$predictor <- as.character(round(x = post_draws$predictor, digits = 3) )
+
+    }
+
+    alpha <- (1 - credible_interval) / 2
+    lower_q <- alpha
+    upper_q <- 1 - alpha
+
+    cond1 <- unique(post_draws$predictor)[1]
+    cond2 <- unique(post_draws$predictor)[2]
+
+    if (participant_clusters) {
+
+        post_diff <- post_draws |>
+            dplyr::select(
+                .data$time, .data$predictor, .data$participant,
+                .data$.epred, .data$.draw
+                ) |>
+            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
+
+        prob_y_above <- post_diff |>
+            dplyr::group_by(.data$time, .data$participant) |>
+            dplyr::summarise(
+                prob_above = mean(.data$epred_diff > threshold)
+                ) |>
+            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+            dplyr::ungroup() |>
+            dplyr::mutate(
+                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+                ) |>
+            data.frame()
+
+        post_prob_slope <- post_diff |>
+            dplyr::group_by(.data$time, .data$participant) |>
+            dplyr::summarise(
+                post_prob = stats::quantile(.data$epred_diff, probs = 0.5),
+                lower = stats::quantile(.data$epred_diff, probs = lower_q),
+                upper = stats::quantile(.data$epred_diff, probs = upper_q)
+                ) |>
+            dplyr::ungroup()
+
+        results <- dplyr::left_join(
+            prob_y_above, post_prob_slope,
+            by = c("time", "participant")
+            )
+
+    } else {
+
+        post_diff <- post_draws |>
+            dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
+            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
+
+        prob_y_above <- post_diff |>
+            dplyr::group_by(.data$time) |>
+            dplyr::summarise(
+                prob_above = mean(.data$epred_diff > threshold)
+                ) |>
+            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+            dplyr::ungroup() |>
+            dplyr::mutate(
+                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+                ) |>
+            data.frame()
+
+        post_prob_slope <- post_diff |>
+            dplyr::group_by(.data$time) |>
+            dplyr::summarise(
+                post_prob = stats::quantile(.data$epred_diff, probs = 0.5),
+                lower = stats::quantile(.data$epred_diff, probs = lower_q),
+                upper = stats::quantile(.data$epred_diff, probs = upper_q)
+                ) |>
+            dplyr::ungroup()
+
+        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
+
+    }
+
+    return (results)
+
+}
+
+#' @keywords internal
+add_required_dummy <- function (df, is_binom) {
+
+    if (is_binom) {
+
+        # required by success | trials(trials)
+        if (!"trials" %in% names(df) ) df <- dplyr::mutate(df, trials = 1)
+
+    } else {
+
+        # required by outcome_mean | se(outcome_sd)
+        if (!"outcome_sd" %in% names(df) ) df <- dplyr::mutate(df, outcome_sd = 1)
+
+    }
+
+    return (df)
 
 }
