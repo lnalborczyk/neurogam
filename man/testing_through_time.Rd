@@ -10,20 +10,23 @@ testing_through_time(
   outcome_id = "eeg",
   time_id = "time",
   predictor_id = "condition",
+  trials_id = NULL,
   family = gaussian(),
   kvalue = 20,
   bs = "tp",
   multilevel = c("summary", "group"),
-  by_ppt = FALSE,
+  participant_clusters = FALSE,
+  varying_smooth = TRUE,
   warmup = 1000,
   iter = 2000,
   chains = 4,
   cores = 4,
-  backend = "cmdstanr",
-  threshold = 10,
+  backend = c("cmdstanr", "rstan"),
+  stan_control = NULL,
   n_post_samples = NULL,
-  chance_level = 0,
-  sesoi = 0,
+  threshold = 10,
+  threshold_type = c("both", "above", "below"),
+  chance_level = NULL,
   credible_interval = 0.95
 )
 }
@@ -45,15 +48,20 @@ containing either:
   \item A \emph{binary} categorical predictor (e.g., group or condition),
     in which case the function tests, at each time point, whether the
     difference between the two levels exceeds
-    \code{chance_level + sesoi};
+    \code{chance_level};
   \item A \emph{continuous} numeric predictor, in which case the function
     tests, at each time point, whether the \emph{slope} of the outcome
-    with respect to the predictor differs from \code{chance_level + sesoi}
+    with respect to the predictor differs from \code{chance_level}
     (typically with \code{chance_level = 0}).
   \item If \code{predictor_id = NA}, the function tests whether the outcome differs
-    from \code{chance_level + sesoi} over time (useful for decoding accuracies,
+    from \code{chance_level} over time (useful for decoding accuracies,
     for instance).
 }}
+
+\item{trials_id}{Character; name of the column in \code{data}
+containing the number of trials when using \code{family = binomial()}
+and summary data. If NULL (default), the function internally summarise binary
+data into "successes" and total number of "trials".}
 
 \item{family}{A \pkg{brms} family object describing the response
 distribution to be used in the model (defaults to \code{gaussian()}).}
@@ -72,7 +80,10 @@ distribution to be used in the model (defaults to \code{gaussian()}).}
     data (no random/varying effects).
 }}
 
-\item{by_ppt}{Logical; should we return clusters at the participant-level.}
+\item{participant_clusters}{Logical; should we return clusters at the participant-level.}
+
+\item{varying_smooth}{Logical; should we include a varying smooth. Default is
+TRUE. If FALSE, we only include a varying intercept and slope.}
 
 \item{warmup}{Numeric; number of warm-up iterations per chain.}
 
@@ -85,23 +96,26 @@ distribution to be used in the model (defaults to \code{gaussian()}).}
 \item{backend}{Character; package to use as the backend for fitting the
 Stan model. One of \code{"cmdstanr"} (default) or \code{"rstan"}.}
 
-\item{threshold}{Numeric; threshold on the posterior odds
-(\code{prob_ratio}) used to define contiguous temporal clusters. Values
-greater than 1 favour the hypothesis that the effect exceeds
-\code{chance_level + sesoi}.}
+\item{stan_control}{List; parameters to control the MCMC behaviour, using
+default parameters when NULL. See \code{?brm} for more details.}
 
 \item{n_post_samples}{Numeric; number of posterior draws used to compute
 posterior probabilities. If \code{NULL} (default), all available draws
 from the fitted model are used.}
 
-\item{chance_level}{Numeric; reference value for the outcome (e.g., 0.5 for
-decoding accuracy). Only used when testing against a constant (i.e.,
-when there is no \code{predictor_id} or when the effect is a difference
-from chance).}
+\item{threshold}{Numeric; threshold on the posterior odds used to define
+contiguous temporal clusters. Values greater than 1 favour the hypothesis
+that the effect exceeds \code{chance_level}.}
 
-\item{sesoi}{Numeric; smallest effect size of interest (SESOI). The
-posterior probability is computed for the effect being strictly larger
-than \code{chance_level + sesoi}.}
+\item{threshold_type}{Character scalar controlling which clusters are
+detected. Must be one of \code{"above"}, \code{"below"}, or \code{"both"}
+(default). When \code{"above"}, clusters are formed where
+\code{value >= threshold}. When \code{"below"}, clusters are formed where
+\code{value <= 1/threshold}. When \code{"both"}, both types are detected
+and the returned data include a \code{sign} column.}
+
+\item{chance_level}{Numeric; null value for the outcome (e.g., 0.5 for
+decoding accuracy).}
 
 \item{credible_interval}{Numeric; width of the credible (quantile) interval.}
 }
@@ -138,7 +152,7 @@ Internally, the function:
   \item fits a \pkg{brms} model according to \code{multilevel};
   \item uses \pkg{tidybayes} to extract posterior predictions over time;
   \item computes, at each time point, the posterior probability that the
-    effect (or condition difference) exceeds \code{chance_level + sesoi};
+    effect (or condition difference) exceeds \code{chance_level};
   \item converts this into posterior odds (\code{prob_ratio}) and applies
     a clustering procedure (\code{find_clusters()}) over time.
 }
@@ -153,9 +167,9 @@ head(eeg_data)
 results <- testing_through_time(data = eeg_data)
 
 # display the identified clusters
-print(results$clusters)
+summary(results)
 
-# plot the GAM-smoothed signal and identified clusters
+# plot the model predictions and identified clusters
 plot(results)
 }
 

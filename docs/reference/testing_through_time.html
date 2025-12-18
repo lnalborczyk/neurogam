@@ -61,20 +61,23 @@ groups/conditions.</p>
 <span>  outcome_id <span class="op">=</span> <span class="st">"eeg"</span>,</span>
 <span>  time_id <span class="op">=</span> <span class="st">"time"</span>,</span>
 <span>  predictor_id <span class="op">=</span> <span class="st">"condition"</span>,</span>
+<span>  trials_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  kvalue <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  bs <span class="op">=</span> <span class="st">"tp"</span>,</span>
 <span>  multilevel <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"group"</span><span class="op">)</span>,</span>
-<span>  by_ppt <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  participant_clusters <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  varying_smooth <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  warmup <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  iter <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>  chains <span class="op">=</span> <span class="fl">4</span>,</span>
 <span>  cores <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>  backend <span class="op">=</span> <span class="st">"cmdstanr"</span>,</span>
-<span>  threshold <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  backend <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cmdstanr"</span>, <span class="st">"rstan"</span><span class="op">)</span>,</span>
+<span>  stan_control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_post_samples <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  chance_level <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  sesoi <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  threshold <span class="op">=</span> <span class="fl">10</span>,</span>
+<span>  threshold_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"both"</span>, <span class="st">"above"</span>, <span class="st">"below"</span><span class="op">)</span>,</span>
+<span>  chance_level <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  credible_interval <span class="op">=</span> <span class="fl">0.95</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -107,15 +110,22 @@ containing time information (e.g., in seconds or samples).</p></dd>
 containing either:</p><ul><li><p>A <em>binary</em> categorical predictor (e.g., group or condition),
     in which case the function tests, at each time point, whether the
     difference between the two levels exceeds
-    <code>chance_level + sesoi</code>;</p></li>
+    <code>chance_level</code>;</p></li>
 <li><p>A <em>continuous</em> numeric predictor, in which case the function
     tests, at each time point, whether the <em>slope</em> of the outcome
-    with respect to the predictor differs from <code>chance_level + sesoi</code>
+    with respect to the predictor differs from <code>chance_level</code>
     (typically with <code>chance_level = 0</code>).</p></li>
 <li><p>If <code>predictor_id = NA</code>, the function tests whether the outcome differs
-    from <code>chance_level + sesoi</code> over time (useful for decoding accuracies,
+    from <code>chance_level</code> over time (useful for decoding accuracies,
     for instance).</p></li>
 </ul></dd>
+
+
+<dt id="arg-trials-id">trials_id<a class="anchor" aria-label="anchor" href="#arg-trials-id"></a></dt>
+<dd><p>Character; name of the column in <code>data</code>
+containing the number of trials when using <code>family = binomial()</code>
+and summary data. If NULL (default), the function internally summarise binary
+data into "successes" and total number of "trials".</p></dd>
 
 
 <dt id="arg-family">family<a class="anchor" aria-label="anchor" href="#arg-family"></a></dt>
@@ -141,8 +151,13 @@ distribution to be used in the model (defaults to <code><a href="https://rdrr.io
 </ul></dd>
 
 
-<dt id="arg-by-ppt">by_ppt<a class="anchor" aria-label="anchor" href="#arg-by-ppt"></a></dt>
+<dt id="arg-participant-clusters">participant_clusters<a class="anchor" aria-label="anchor" href="#arg-participant-clusters"></a></dt>
 <dd><p>Logical; should we return clusters at the participant-level.</p></dd>
+
+
+<dt id="arg-varying-smooth">varying_smooth<a class="anchor" aria-label="anchor" href="#arg-varying-smooth"></a></dt>
+<dd><p>Logical; should we include a varying smooth. Default is
+TRUE. If FALSE, we only include a varying intercept and slope.</p></dd>
 
 
 <dt id="arg-warmup">warmup<a class="anchor" aria-label="anchor" href="#arg-warmup"></a></dt>
@@ -166,11 +181,9 @@ distribution to be used in the model (defaults to <code><a href="https://rdrr.io
 Stan model. One of <code>"cmdstanr"</code> (default) or <code>"rstan"</code>.</p></dd>
 
 
-<dt id="arg-threshold">threshold<a class="anchor" aria-label="anchor" href="#arg-threshold"></a></dt>
-<dd><p>Numeric; threshold on the posterior odds
-(<code>prob_ratio</code>) used to define contiguous temporal clusters. Values
-greater than 1 favour the hypothesis that the effect exceeds
-<code>chance_level + sesoi</code>.</p></dd>
+<dt id="arg-stan-control">stan_control<a class="anchor" aria-label="anchor" href="#arg-stan-control"></a></dt>
+<dd><p>List; parameters to control the MCMC behaviour, using
+default parameters when NULL. See <code>?brm</code> for more details.</p></dd>
 
 
 <dt id="arg-n-post-samples">n_post_samples<a class="anchor" aria-label="anchor" href="#arg-n-post-samples"></a></dt>
@@ -179,17 +192,24 @@ posterior probabilities. If <code>NULL</code> (default), all available draws
 from the fitted model are used.</p></dd>
 
 
+<dt id="arg-threshold">threshold<a class="anchor" aria-label="anchor" href="#arg-threshold"></a></dt>
+<dd><p>Numeric; threshold on the posterior odds used to define
+contiguous temporal clusters. Values greater than 1 favour the hypothesis
+that the effect exceeds <code>chance_level</code>.</p></dd>
+
+
+<dt id="arg-threshold-type">threshold_type<a class="anchor" aria-label="anchor" href="#arg-threshold-type"></a></dt>
+<dd><p>Character scalar controlling which clusters are
+detected. Must be one of <code>"above"</code>, <code>"below"</code>, or <code>"both"</code>
+(default). When <code>"above"</code>, clusters are formed where
+<code>value &gt;= threshold</code>. When <code>"below"</code>, clusters are formed where
+<code>value &lt;= 1/threshold</code>. When <code>"both"</code>, both types are detected
+and the returned data include a <code>sign</code> column.</p></dd>
+
+
 <dt id="arg-chance-level">chance_level<a class="anchor" aria-label="anchor" href="#arg-chance-level"></a></dt>
-<dd><p>Numeric; reference value for the outcome (e.g., 0.5 for
-decoding accuracy). Only used when testing against a constant (i.e.,
-when there is no <code>predictor_id</code> or when the effect is a difference
-from chance).</p></dd>
-
-
-<dt id="arg-sesoi">sesoi<a class="anchor" aria-label="anchor" href="#arg-sesoi"></a></dt>
-<dd><p>Numeric; smallest effect size of interest (SESOI). The
-posterior probability is computed for the effect being strictly larger
-than <code>chance_level + sesoi</code>.</p></dd>
+<dd><p>Numeric; null value for the outcome (e.g., 0.5 for
+decoding accuracy).</p></dd>
 
 
 <dt id="arg-credible-interval">credible_interval<a class="anchor" aria-label="anchor" href="#arg-credible-interval"></a></dt>
@@ -218,7 +238,7 @@ than <code>chance_level + sesoi</code>.</p></dd>
 <li><p>fits a <span class="pkg">brms</span> model according to <code>multilevel</code>;</p></li>
 <li><p>uses <span class="pkg">tidybayes</span> to extract posterior predictions over time;</p></li>
 <li><p>computes, at each time point, the posterior probability that the
-    effect (or condition difference) exceeds <code>chance_level + sesoi</code>;</p></li>
+    effect (or condition difference) exceeds <code>chance_level</code>;</p></li>
 <li><p>converts this into posterior odds (<code>prob_ratio</code>) and applies
     a clustering procedure (<code><a href="find_clusters.html">find_clusters()</a></code>) over time.</p></li>
 </ol></div>
@@ -242,9 +262,9 @@ than <code>chance_level + sesoi</code>.</p></dd>
 <span class="r-in"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu">testing_through_time</span><span class="op">(</span>data <span class="op">=</span> <span class="va">eeg_data</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># display the identified clusters</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">results</span><span class="op">$</span><span class="va">clusters</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># plot the GAM-smoothed signal and identified clusters</span></span></span>
+<span class="r-in"><span><span class="co"># plot the model predictions and identified clusters</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>

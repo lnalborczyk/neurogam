@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 [![Last commit](https://img.shields.io/github/last-commit/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
  <!-- badges: end -->
 
-The goal of `neurogam` is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses) but will be extended in the near future to support 2D temporal or spatiotemporal data.
+The goal of `neurogam` is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses, pupillometry) but will be extended in the near future to support 2D temporal and 3D spatiotemporal data.
 
 ## Installation
 
@@ -43,7 +43,7 @@ remotes::install_github(
 
 ### Model fitting
 
-Below we fit a Bayesian generalised additive multilevel model (BGAMM) with varying intercept, slope, and smooth (per participant) to estimate the onset and offset of a difference between conditions. Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide too liberal cluster estimates.
+Below we fit a Bayesian generalised additive multilevel model (BGAMM) with varying intercept, slope, and smooth (per participant) to estimate the onset and offset of a difference between conditions. Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide anticonservative cluster estimates.
 
 ```{r data}
 # loading the neurogam package
@@ -141,7 +141,7 @@ with localconverter(robjects.default_converter + pandas2ri.converter):
 results = neurogam.testing_through_time(data=long_df_r, threshold=10)
 ```
 
-To use `neurogam` functions in Julia (e.g., on MNE epochs), we recommend using the `RCall` package (<https://juliainterop.github.io/RCall.jl/stable/>) (thanks to Benedikt Ehinger for sharing this code snippet).
+To use `neurogam` functions in Julia, we recommend using the `RCall` package (<https://juliainterop.github.io/RCall.jl/stable/>) (thanks to Benedikt Ehinger for sharing this code snippet).
 
 ```{r, eval = FALSE, echo = TRUE}
 # loading the RCall module

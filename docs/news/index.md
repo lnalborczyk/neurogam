@@ -22,6 +22,8 @@
   and related methods such as
   [`summary()`](https://rdrr.io/r/base/summary.html) and
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html).
+- Adding support for [`binomial()`](https://rdrr.io/r/stats/family.html)
+  responses.
 
 ### Other changes
 
@@ -38,6 +40,10 @@
   [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md)
   method (and simplifying arguments with
   `ppc_type = c("group", "participant")`).
+- Allowing “negative” clusters in `cluster_results`
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`summary()`](https://rdrr.io/r/base/summary.html), and
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) methods.
 
 ## neurogam 0.0.2
 

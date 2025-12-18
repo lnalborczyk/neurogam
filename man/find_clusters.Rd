@@ -8,8 +8,7 @@ find_clusters(
   data,
   threshold = 10,
   group = NULL,
-  above_threshold = TRUE,
-  both_signs = TRUE
+  threshold_type = c("both", "above", "below")
 )
 }
 \arguments{
@@ -20,30 +19,28 @@ find_clusters(
 \item{threshold}{Numeric scalar specifying the (positive) threshold used to
 define clusters. Positive clusters are defined where
 \code{value >= threshold}, and negative clusters where
-\code{value <= -threshold}. Must be non-negative when
-\code{both_signs = TRUE}.}
+\code{value <= 1/threshold}. Must be non-negative when
+\code{threshold_type = "both"}.}
 
 \item{group}{Optional grouping column name (character scalar) used to find
 clusters independently within each group level (e.g.,
 \code{"participant"}). Set to \code{NULL} (default) to ignore grouping.}
 
-\item{above_threshold}{Logical scalar used only when
-\code{both_signs = FALSE}. If \code{TRUE} (default), clusters are formed
-where \code{value >= threshold}; if \code{FALSE}, clusters are formed
-where \code{value <= threshold}.}
-
-\item{both_signs}{Logical scalar indicating whether to detect both positive
-and negative clusters in a single call (default: \code{TRUE}). When
-\code{TRUE}, \code{above_threshold} is ignored.}
+\item{threshold_type}{Character scalar controlling which clusters are
+detected. Must be one of \code{"above"}, \code{"below"}, or \code{"both"}
+(default). When \code{"above"}, clusters are formed where
+\code{value >= threshold}. When \code{"below"}, clusters are formed where
+\code{value <= 1/threshold}. When \code{"both"}, both types are detected
+and the returned data include a \code{sign} column.}
 }
 \value{
 A data frame with one row per detected cluster and columns:
   \itemize{
-    \item \code{cluster_id}: integer cluster index (starting at 1). When
-      \code{group} is provided, \code{cluster_id} restarts at 1 within each
+    \item \code{id}: integer cluster index (starting at 1). When
+      \code{group} is provided, \code{id} restarts at 1 within each
       group level;
-    \item \code{cluster_onset}: time of the first point in the cluster;
-    \item \code{cluster_offset}: time of the last point in the cluster;
+    \item \code{onset}: time of the first point in the cluster;
+    \item \code{offset}: time of the last point in the cluster;
     \item \code{n_points}: number of time points in the cluster;
     \item \code{sign}: character indicating cluster sign
       (\code{"positive"} or \code{"negative"}).
@@ -57,9 +54,9 @@ A data frame with one row per detected cluster and columns:
 }
 \description{
 Identify contiguous clusters of time points in a time series where a
-variable exceeds a positive threshold or falls below a negative threshold.
-Clusters are defined as consecutive time points satisfying the thresholding
-condition.
+variable exceeds a positive threshold, falls below a negative threshold,
+or both. Clusters are defined as consecutive time points satisfying the
+thresholding condition.
 }
 \details{
 By default, the function detects \strong{both positive and negative clusters}
@@ -93,10 +90,13 @@ df <- data.frame(
   )
 
 # Detect both positive and negative clusters
-find_clusters(data = df, threshold = 3)
+find_clusters(data = df, threshold = 3, threshold_type = "both")
 
 # One-sided detection (positive only)
-find_clusters(data = df, threshold = 3, both_signs = FALSE, above_threshold = TRUE)
+find_clusters(data = df, threshold = 3, threshold_type = "above")
+
+# One-sided detection (negative only)
+find_clusters(data = df, threshold = 3, threshold_type = "below")
 
 # Grouped example (e.g., per participant)
 df_g <- rbind(
@@ -107,7 +107,8 @@ df_g <- rbind(
 find_clusters(
   data = df_g,
   threshold = 3,
-  group = "participant"
+  group = "participant",
+  threshold_type = "both"
   )
 
 }

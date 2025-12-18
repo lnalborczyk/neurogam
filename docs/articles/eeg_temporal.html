@@ -63,7 +63,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Application to 1D temporal EEG data</h1>
 
       <p class="author">Ladislas Nalborczyk</p>
-      <p class="date">2025-12-17</p>
+      <p class="date">2025-12-18</p>
 
       <small class="dont-index">Source: <a href="https://github.com/lnalborczyk/neurogam/blob/HEAD/vignettes/eeg_temporal.qmd" class="external-link"><code>vignettes/eeg_temporal.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
@@ -118,7 +118,7 @@
 <span>    <span class="co"># converting timesteps to seconds</span></span>
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>time <span class="op">=</span> <span class="op">(</span><span class="va">time</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span> <span class="op">/</span> <span class="fl">256</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="co"># rounding numeric variables</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="va">is.numeric</span>, <span class="op">~</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">.x</span>, <span class="fl">4</span><span class="op">)</span> <span class="op">)</span> <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/across.html" class="external-link">across</a></span><span class="op">(</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/where.html" class="external-link">where</a></span><span class="op">(</span><span class="va">is.numeric</span><span class="op">)</span>, <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">.x</span>, <span class="fl">4</span><span class="op">)</span> <span class="op">)</span> <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="co"># removing NAs</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/stats/na.fail.html" class="external-link">na.omit</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -134,9 +134,10 @@
 </div>
 </section><section class="level2"><h2 id="fitting-the-model">Fitting the model<a class="anchor" aria-label="anchor" href="#fitting-the-model"></a>
 </h2>
+<p>We fit the model (a BGAMM) on one channel (PZ) to test for group difference at every timestep.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># fitting the BGAMM to identify clusters (around 20-30 min on a recent laptop)</span></span>
+<code class="sourceCode R"><span><span class="co"># fitting the BGAMM to identify clusters (around 30 min on 4 parallel apple M4 cores)</span></span>
 <span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/testing_through_time.html">testing_through_time</a></span><span class="op">(</span></span>
 <span>    <span class="co"># EEG data</span></span>
 <span>    data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
@@ -147,7 +148,7 @@
 <span>    <span class="co"># name of predictor in data</span></span>
 <span>    predictor_id <span class="op">=</span> <span class="st">"group"</span>,</span>
 <span>    <span class="co"># basis dimension</span></span>
-<span>    kvalue <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>    kvalue <span class="op">=</span> <span class="fl">40</span>,</span>
 <span>    <span class="co"># we recommend fitting the GAMM with summary statistics (mean and SD)</span></span>
 <span>    multilevel <span class="op">=</span> <span class="st">"summary"</span>,</span>
 <span>    <span class="co"># threshold on posterior odds</span></span>
@@ -169,8 +170,8 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clusters found: </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  cluster_id cluster_onset cluster_offset duration</span></span>
-<span><span class="co">#&gt;           1          0.27          0.438    0.168</span></span>
+<span><span class="co">#&gt;      sign id onset offset duration</span></span>
+<span><span class="co">#&gt;  positive  1 0.266  0.438    0.172</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; =================================================================</span></span></code></pre></div>
 </div>
@@ -179,22 +180,18 @@
 <code class="sourceCode R"><span><span class="co"># plotting the data, model's predictions, and clusters</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output-display">
-<div id="fig-clusters" class="quarto-float quarto-figure quarto-figure-center" width="100%">
-<figure class="quarto-float quarto-float-fig"><div aria-describedby="fig-clusters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="eeg_temporal_files/figure-html/fig-clusters-1.png" id="fig-clusters" style="width:100.0%">
-</div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-clusters-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure 1
-</figcaption></figure>
+<div>
+<figure><p><img src="eeg_temporal_files/figure-html/clusters-plot-1.png" style="width:100.0%"></p>
+</figure>
 </div>
 </div>
 </div>
 </section><section class="level3"><h3 id="computing-clusters-at-the-participant-level">Computing clusters at the participant-level<a class="anchor" aria-label="anchor" href="#computing-clusters-at-the-participant-level"></a>
 </h3>
-<p>Below we fit a new model, specifying <code>predictor_id = NA</code> (because <code>group</code> varies across participants) and <code>by_ppt = TRUE</code> to return clusters at the participant level.</p>
+<p>Below we fit a new model, specifying <code>predictor_id = NA</code> (because <code>group</code> varies across participants) and <code>by_ppt = TRUE</code> to test whether EEG amplitude (<code>voltage</code>) differs from 0 and return clusters at the participant level.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># fitting the BGAMM to identify clusters (around 20-30 min on 4 laptop apple M4 cores)</span></span>
+<code class="sourceCode R"><span><span class="co"># fitting the BGAMM to identify clusters (around 30 min on 4 parallel apple M4 cores)</span></span>
 <span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/testing_through_time.html">testing_through_time</a></span><span class="op">(</span></span>
 <span>    <span class="co"># EEG data</span></span>
 <span>    data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
@@ -205,7 +202,7 @@ Figure 1
 <span>    <span class="co"># here we use no predictor (because group varies across participants)</span></span>
 <span>    predictor_id <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>    <span class="co"># basis dimension (for both the group and participant levels)</span></span>
-<span>    kvalue <span class="op">=</span> <span class="fl">30</span>,</span>
+<span>    kvalue <span class="op">=</span> <span class="fl">40</span>,</span>
 <span>    <span class="co"># we recommend fitting the GAMM with summary statistics (mean and SD)</span></span>
 <span>    multilevel <span class="op">=</span> <span class="st">"summary"</span>,</span>
 <span>    <span class="co"># return clusters at both the group and participant levels</span></span>
@@ -229,38 +226,72 @@ Figure 1
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clusters found: </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  participant cluster_id cluster_onset cluster_offset duration</span></span>
-<span><span class="co">#&gt;  co2a0000364          1         0.336          0.398    0.062</span></span>
-<span><span class="co">#&gt;  co2a0000369          1         0.191          0.394    0.203</span></span>
-<span><span class="co">#&gt;  co2a0000370          1         0.059          0.148    0.089</span></span>
-<span><span class="co">#&gt;  co2a0000370          2         0.211          0.473    0.262</span></span>
-<span><span class="co">#&gt;  co2a0000370          3         0.566          0.660    0.094</span></span>
-<span><span class="co">#&gt;  co2a0000370          4         0.773          0.887    0.114</span></span>
-<span><span class="co">#&gt;  co2a0000372          1         0.004          0.023    0.019</span></span>
-<span><span class="co">#&gt;  co2a0000372          2         0.066          0.152    0.086</span></span>
-<span><span class="co">#&gt;  co2a0000372          3         0.301          1.000    0.699</span></span>
-<span><span class="co">#&gt;  co2a0000375          1         0.004          0.445    0.441</span></span>
-<span><span class="co">#&gt;  co2a0000375          2         0.856          0.957    0.101</span></span>
-<span><span class="co">#&gt;  co2a0000377          1         0.004          0.031    0.027</span></span>
-<span><span class="co">#&gt;  co2a0000377          2         0.113          0.148    0.035</span></span>
-<span><span class="co">#&gt;  co2a0000377          3         0.219          0.258    0.039</span></span>
-<span><span class="co">#&gt;  co2a0000377          4         0.344          0.469    0.125</span></span>
-<span><span class="co">#&gt;  co2a0000378          1         0.219          0.516    0.297</span></span>
-<span><span class="co">#&gt;  co2c0000337          1         0.086          0.109    0.023</span></span>
-<span><span class="co">#&gt;  co2c0000337          2         0.305          0.500    0.195</span></span>
-<span><span class="co">#&gt;  co2c0000340          1         0.039          0.059    0.020</span></span>
-<span><span class="co">#&gt;  co2c0000341          1         0.227          0.676    0.449</span></span>
-<span><span class="co">#&gt;  co2c0000342          1         0.004          0.156    0.152</span></span>
-<span><span class="co">#&gt;  co2c0000342          2         0.180          1.000    0.820</span></span>
-<span><span class="co">#&gt;  co2c0000344          1         0.238          0.254    0.016</span></span>
-<span><span class="co">#&gt;  co2c0000344          2         0.305          0.356    0.051</span></span>
-<span><span class="co">#&gt;  co2c0000345          1         0.004          0.086    0.082</span></span>
-<span><span class="co">#&gt;  co2c0000345          2         0.281          0.402    0.121</span></span>
-<span><span class="co">#&gt;  co2c0000345          3         0.629          0.676    0.047</span></span>
-<span><span class="co">#&gt;  co2c0000346          1         0.004          0.156    0.152</span></span>
-<span><span class="co">#&gt;  co2c0000346          2         0.188          0.461    0.273</span></span>
-<span><span class="co">#&gt;  co2c0000347          1         0.004          0.137    0.133</span></span>
-<span><span class="co">#&gt;  co2c0000347          2         0.211          0.449    0.238</span></span>
+<span><span class="co">#&gt;  participant     sign id onset offset duration</span></span>
+<span><span class="co">#&gt;  co2a0000364 positive  1 0.336  0.398    0.062</span></span>
+<span><span class="co">#&gt;  co2a0000364 negative  1 0.004  0.312    0.308</span></span>
+<span><span class="co">#&gt;  co2a0000364 negative  2 0.441  0.449    0.008</span></span>
+<span><span class="co">#&gt;  co2a0000364 negative  3 0.531  1.000    0.469</span></span>
+<span><span class="co">#&gt;  co2a0000365 negative  1 0.148  0.219    0.071</span></span>
+<span><span class="co">#&gt;  co2a0000365 negative  2 0.328  1.000    0.672</span></span>
+<span><span class="co">#&gt;  co2a0000368 negative  1 0.004  0.090    0.086</span></span>
+<span><span class="co">#&gt;  co2a0000368 negative  2 0.137  1.000    0.863</span></span>
+<span><span class="co">#&gt;  co2a0000369 positive  1 0.191  0.394    0.203</span></span>
+<span><span class="co">#&gt;  co2a0000369 negative  1 0.027  0.102    0.075</span></span>
+<span><span class="co">#&gt;  co2a0000369 negative  2 0.551  1.000    0.449</span></span>
+<span><span class="co">#&gt;  co2a0000370 positive  1 0.055  0.148    0.093</span></span>
+<span><span class="co">#&gt;  co2a0000370 positive  2 0.215  0.473    0.258</span></span>
+<span><span class="co">#&gt;  co2a0000370 positive  3 0.574  0.660    0.086</span></span>
+<span><span class="co">#&gt;  co2a0000370 positive  4 0.781  0.887    0.106</span></span>
+<span><span class="co">#&gt;  co2a0000371 negative  1 0.090  1.000    0.910</span></span>
+<span><span class="co">#&gt;  co2a0000372 positive  1 0.004  0.020    0.016</span></span>
+<span><span class="co">#&gt;  co2a0000372 positive  2 0.066  0.148    0.082</span></span>
+<span><span class="co">#&gt;  co2a0000372 positive  3 0.297  1.000    0.703</span></span>
+<span><span class="co">#&gt;  co2a0000372 negative  1 0.180  0.223    0.043</span></span>
+<span><span class="co">#&gt;  co2a0000375 positive  1 0.004  0.449    0.445</span></span>
+<span><span class="co">#&gt;  co2a0000375 positive  2 0.859  0.965    0.106</span></span>
+<span><span class="co">#&gt;  co2a0000377 positive  1 0.004  0.027    0.023</span></span>
+<span><span class="co">#&gt;  co2a0000377 positive  2 0.113  0.144    0.031</span></span>
+<span><span class="co">#&gt;  co2a0000377 positive  3 0.219  0.258    0.039</span></span>
+<span><span class="co">#&gt;  co2a0000377 positive  4 0.348  0.473    0.125</span></span>
+<span><span class="co">#&gt;  co2a0000377 negative  1 0.766  1.000    0.234</span></span>
+<span><span class="co">#&gt;  co2a0000378 positive  1 0.219  0.516    0.297</span></span>
+<span><span class="co">#&gt;  co2a0000378 negative  1 0.004  0.203    0.199</span></span>
+<span><span class="co">#&gt;  co2a0000378 negative  2 0.586  0.629    0.043</span></span>
+<span><span class="co">#&gt;  co2a0000378 negative  3 0.789  0.789    0.000</span></span>
+<span><span class="co">#&gt;  co2a0000378 negative  4 0.859  1.000    0.141</span></span>
+<span><span class="co">#&gt;  co2c0000337 positive  1 0.086  0.113    0.027</span></span>
+<span><span class="co">#&gt;  co2c0000337 positive  2 0.305  0.500    0.195</span></span>
+<span><span class="co">#&gt;  co2c0000337 negative  1 0.781  0.840    0.059</span></span>
+<span><span class="co">#&gt;  co2c0000337 negative  2 0.852  0.859    0.007</span></span>
+<span><span class="co">#&gt;  co2c0000338 negative  1 0.125  0.219    0.094</span></span>
+<span><span class="co">#&gt;  co2c0000338 negative  2 0.641  1.000    0.359</span></span>
+<span><span class="co">#&gt;  co2c0000339 negative  1 0.004  0.207    0.203</span></span>
+<span><span class="co">#&gt;  co2c0000339 negative  2 0.426  1.000    0.574</span></span>
+<span><span class="co">#&gt;  co2c0000340 positive  1 0.043  0.051    0.008</span></span>
+<span><span class="co">#&gt;  co2c0000340 negative  1 0.098  1.000    0.902</span></span>
+<span><span class="co">#&gt;  co2c0000341 positive  1 0.227  0.676    0.449</span></span>
+<span><span class="co">#&gt;  co2c0000341 negative  1 0.004  0.094    0.090</span></span>
+<span><span class="co">#&gt;  co2c0000341 negative  2 0.152  0.184    0.032</span></span>
+<span><span class="co">#&gt;  co2c0000341 negative  3 0.820  0.906    0.086</span></span>
+<span><span class="co">#&gt;  co2c0000342 positive  1 0.004  0.156    0.152</span></span>
+<span><span class="co">#&gt;  co2c0000342 positive  2 0.180  1.000    0.820</span></span>
+<span><span class="co">#&gt;  co2c0000344 positive  1 0.246  0.246    0.000</span></span>
+<span><span class="co">#&gt;  co2c0000344 positive  2 0.309  0.352    0.043</span></span>
+<span><span class="co">#&gt;  co2c0000344 negative  1 0.144  0.215    0.071</span></span>
+<span><span class="co">#&gt;  co2c0000344 negative  2 0.445  0.606    0.161</span></span>
+<span><span class="co">#&gt;  co2c0000344 negative  3 0.656  1.000    0.344</span></span>
+<span><span class="co">#&gt;  co2c0000345 positive  1 0.004  0.027    0.023</span></span>
+<span><span class="co">#&gt;  co2c0000345 positive  2 0.043  0.086    0.043</span></span>
+<span><span class="co">#&gt;  co2c0000345 positive  3 0.281  0.406    0.125</span></span>
+<span><span class="co">#&gt;  co2c0000345 positive  4 0.633  0.676    0.043</span></span>
+<span><span class="co">#&gt;  co2c0000345 negative  1 0.156  0.199    0.043</span></span>
+<span><span class="co">#&gt;  co2c0000345 negative  2 0.492  0.527    0.035</span></span>
+<span><span class="co">#&gt;  co2c0000345 negative  3 0.773  0.797    0.024</span></span>
+<span><span class="co">#&gt;  co2c0000346 positive  1 0.004  0.152    0.148</span></span>
+<span><span class="co">#&gt;  co2c0000346 positive  2 0.188  0.465    0.277</span></span>
+<span><span class="co">#&gt;  co2c0000346 negative  1 0.551  0.602    0.051</span></span>
+<span><span class="co">#&gt;  co2c0000347 positive  1 0.004  0.137    0.133</span></span>
+<span><span class="co">#&gt;  co2c0000347 positive  2 0.215  0.449    0.234</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; =================================================================</span></span></code></pre></div>
 </div>
@@ -269,13 +300,9 @@ Figure 1
 <code class="sourceCode R"><span><span class="co"># plotting the data, model's predictions, and clusters</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output-display">
-<div id="fig-clusters-ppt" class="quarto-float quarto-figure quarto-figure-center" width="100%">
-<figure class="quarto-float quarto-float-fig"><div aria-describedby="fig-clusters-ppt-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="eeg_temporal_files/figure-html/fig-clusters-ppt-1.png" id="fig-clusters-ppt" style="width:100.0%">
-</div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-clusters-ppt-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure 2
-</figcaption></figure>
+<div>
+<figure><p><img src="eeg_temporal_files/figure-html/clusters-ppt-plot-1.png" style="width:100.0%"></p>
+</figure>
 </div>
 </div>
 </div>
@@ -287,13 +314,9 @@ Figure 2
 <code class="sourceCode R"><span><span class="co"># posterior predictive checks (PPCs) at the group level</span></span>
 <span><span class="fu"><a href="../reference/ppc.html">ppc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">results</span>, ppc_type <span class="op">=</span> <span class="st">"group"</span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output-display">
-<div id="fig-ppc1" class="quarto-float quarto-figure quarto-figure-center" width="100%">
-<figure class="quarto-float quarto-float-fig"><div aria-describedby="fig-ppc1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="eeg_temporal_files/figure-html/fig-ppc1-1.png" id="fig-ppc1" style="width:100.0%">
-</div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-ppc1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure 3
-</figcaption></figure>
+<div>
+<figure><p><img src="eeg_temporal_files/figure-html/ppc1-plot-1.png" style="width:100.0%"></p>
+</figure>
 </div>
 </div>
 </div>
@@ -302,13 +325,9 @@ Figure 3
 <code class="sourceCode R"><span><span class="co"># posterior predictive checks (PPCs) at the participant level</span></span>
 <span><span class="fu"><a href="../reference/ppc.html">ppc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">results</span>, ppc_type <span class="op">=</span> <span class="st">"participant"</span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output-display">
-<div id="fig-ppc2" class="quarto-float quarto-figure quarto-figure-center" width="100%">
-<figure class="quarto-float quarto-float-fig"><div aria-describedby="fig-ppc2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-<img src="eeg_temporal_files/figure-html/fig-ppc2-1.png" id="fig-ppc2" style="width:100.0%">
-</div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-ppc2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-Figure 4
-</figcaption></figure>
+<div>
+<figure><p><img src="eeg_temporal_files/figure-html/ppc2-plot-1.png" style="width:100.0%"></p>
+</figure>
 </div>
 </div>
 </div>

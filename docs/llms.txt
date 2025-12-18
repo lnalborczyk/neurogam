@@ -4,8 +4,8 @@ The goal of `neurogam` is to provide utilities for estimating the onset
 and offset of time-resolved effects, such as those found in M/EEG,
 pupillometry, or finger/mouse-tracking data (amongst others). The
 current version only allows fitting 1D temporal data (e.g., raw M/EEG
-data or decoding timecourses) but will be extended in the near future to
-support 2D temporal or spatiotemporal data.
+data or decoding timecourses, pupillometry) but will be extended in the
+near future to support 2D temporal and 3D spatiotemporal data.
 
 ## Installation
 
@@ -29,8 +29,8 @@ with varying intercept, slope, and smooth (per participant) to estimate
 the onset and offset of a difference between conditions. Note that we
 recommend fitting the BGAMM on time-resolved summary statistics (mean
 and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and
-the group-level BGAM (i.e., no random/varying effect) may provide too
-liberal cluster estimates.
+the group-level BGAM (i.e., no random/varying effect) may provide
+anticonservative cluster estimates.
 
 ``` r
 # loading the neurogam package
@@ -78,8 +78,8 @@ print(results)
 #> 
 #> Clusters found: 
 #> 
-#>  cluster_id cluster_onset cluster_offset duration
-#>           1         0.162          0.348    0.186
+#>      sign id onset offset duration
+#>  positive  1 0.162  0.348    0.186
 #> 
 #> =================================================================
 ```
@@ -144,18 +144,18 @@ summary(k_res)
 #> k values tested          : 10, 15, 20, 25, 30, 35, 40
 #> Range of k values        : [10, 40]
 #> Knee based on            : p_waic
-#> Recommended k (knee)     : 20
+#> Recommended k (knee)     : 15
 #> 
 #> Comparison table (rounded):
 #> 
 #>   k   model waic_elpd waic_elpd_se p_waic p_waic_se     waic p_waic_smooth
-#>  10 gam_k10 -4703.605        5.394  0.145     0.003 9407.211         0.145
-#>  15 gam_k15 -4703.905        5.395  0.154     0.003 9407.809         0.154
-#>  20 gam_k20 -4704.028        5.395  0.156     0.003 9408.056         0.156
-#>  25 gam_k25 -4704.070        5.395  0.157     0.003 9408.140         0.157
-#>  30 gam_k30 -4704.071        5.395  0.157     0.003 9408.141         0.157
-#>  40 gam_k40 -4704.118        5.395  0.158     0.003 9408.236         0.158
-#>  35 gam_k35 -4704.143        5.395  0.158     0.003 9408.286         0.158
+#>  10 gam_k10 -4703.617        5.394  0.145     0.003 9407.234         0.145
+#>  15 gam_k15 -4703.966        5.395  0.155     0.003 9407.932         0.155
+#>  20 gam_k20 -4704.013        5.395  0.156     0.003 9408.026         0.156
+#>  30 gam_k30 -4704.064        5.395  0.156     0.003 9408.128         0.156
+#>  25 gam_k25 -4704.094        5.395  0.157     0.003 9408.189         0.157
+#>  35 gam_k35 -4704.104        5.395  0.157     0.003 9408.207         0.157
+#>  40 gam_k40 -4704.159        5.395  0.159     0.003 9408.319         0.159
 #> 
 #> ====================================================================
 ```
@@ -191,10 +191,9 @@ with localconverter(robjects.default_converter + pandas2ri.converter):
 results = neurogam.testing_through_time(data=long_df_r, threshold=10)
 ```
 
-To use `neurogam` functions in Julia (e.g., on MNE epochs), we recommend
-using the `RCall` package
-(<https://juliainterop.github.io/RCall.jl/stable/>) (thanks to Benedikt
-Ehinger for sharing this code snippet).
+To use `neurogam` functions in Julia, we recommend using the `RCall`
+package (<https://juliainterop.github.io/RCall.jl/stable/>) (thanks to
+Benedikt Ehinger for sharing this code snippet).
 
 ``` r
 # loading the RCall module

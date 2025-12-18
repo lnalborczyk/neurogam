@@ -44,6 +44,7 @@
 <li>Implementing a <code><a href="../reference/ppc.html">ppc()</a></code> method for <code>cluster_results</code> objects.</li>
 <li>New <code><a href="../reference/plot_sensors.html">plot_sensors()</a></code> and <code><a href="../reference/plot_eeg.html">plot_eeg()</a></code> functions to visualise EEG sensors grid, EEG raw data, and GAM predictions.</li>
 <li>Adding support for returning participant-level onsets in <code><a href="../reference/testing_through_time.html">testing_through_time()</a></code>, <code><a href="../reference/find_clusters.html">find_clusters()</a></code>, and related methods such as <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>.</li>
+<li>Adding support for <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> responses.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="other-changes-0-0-3">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-0-3"></a></h3>
@@ -54,6 +55,7 @@
 <div class="section level3">
 <h3 id="bug-fixes-0-0-3">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-0-3"></a></h3>
 <ul><li>Fixing aberrant PPCs in the <code><a href="../reference/ppc.html">ppc()</a></code> method (and simplifying arguments with <code>ppc_type = c("group", "participant")</code>).</li>
+<li>Allowing “negative” clusters in <code>cluster_results</code> <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>, <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>, and <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> methods.</li>
 </ul></div>
 </div>
     <div class="section level2">

@@ -41,7 +41,7 @@ eeg_data <- eegdata |>
     # converting timesteps to seconds
     mutate(time = (time + 1) / 256) |>
     # rounding numeric variables
-    mutate(across(is.numeric, ~round(.x, 4) ) ) |>
+    mutate(across(where(is.numeric), ~ round(.x, 4) ) ) |>
     # removing NAs
     na.omit()
 
@@ -58,8 +58,11 @@ head(eeg_data)
 
 ## Fitting the model
 
+We fit the model (a BGAMM) on one channel (PZ) to test for group
+difference at every timestep.
+
 ``` r
-# fitting the BGAMM to identify clusters (around 20-30 min on a recent laptop)
+# fitting the BGAMM to identify clusters (around 30 min on 4 parallel apple M4 cores)
 results <- testing_through_time(
     # EEG data
     data = eeg_data,
@@ -70,7 +73,7 @@ results <- testing_through_time(
     # name of predictor in data
     predictor_id = "group",
     # basis dimension
-    kvalue = 30,
+    kvalue = 40,
     # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
     # threshold on posterior odds
@@ -92,8 +95,8 @@ print(results)
 #> 
 #> Clusters found: 
 #> 
-#>  cluster_id cluster_onset cluster_offset duration
-#>           1          0.27          0.438    0.168
+#>      sign id onset offset duration
+#>  positive  1 0.266  0.438    0.172
 #> 
 #> =================================================================
 ```
@@ -103,18 +106,17 @@ print(results)
 plot(results)
 ```
 
-![](eeg_temporal_files/figure-html/fig-clusters-1.png)
-
-Figure 1
+![](eeg_temporal_files/figure-html/clusters-plot-1.png)
 
 ### Computing clusters at the participant-level
 
 Below we fit a new model, specifying `predictor_id = NA` (because
-`group` varies across participants) and `by_ppt = TRUE` to return
-clusters at the participant level.
+`group` varies across participants) and `by_ppt = TRUE` to test whether
+EEG amplitude (`voltage`) differs from 0 and return clusters at the
+participant level.
 
 ``` r
-# fitting the BGAMM to identify clusters (around 20-30 min on 4 laptop apple M4 cores)
+# fitting the BGAMM to identify clusters (around 30 min on 4 parallel apple M4 cores)
 results <- testing_through_time(
     # EEG data
     data = eeg_data,
@@ -125,7 +127,7 @@ results <- testing_through_time(
     # here we use no predictor (because group varies across participants)
     predictor_id = NA,
     # basis dimension (for both the group and participant levels)
-    kvalue = 30,
+    kvalue = 40,
     # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
     # return clusters at both the group and participant levels
@@ -149,38 +151,72 @@ print(results)
 #> 
 #> Clusters found: 
 #> 
-#>  participant cluster_id cluster_onset cluster_offset duration
-#>  co2a0000364          1         0.336          0.398    0.062
-#>  co2a0000369          1         0.191          0.394    0.203
-#>  co2a0000370          1         0.059          0.148    0.089
-#>  co2a0000370          2         0.211          0.473    0.262
-#>  co2a0000370          3         0.566          0.660    0.094
-#>  co2a0000370          4         0.773          0.887    0.114
-#>  co2a0000372          1         0.004          0.023    0.019
-#>  co2a0000372          2         0.066          0.152    0.086
-#>  co2a0000372          3         0.301          1.000    0.699
-#>  co2a0000375          1         0.004          0.445    0.441
-#>  co2a0000375          2         0.856          0.957    0.101
-#>  co2a0000377          1         0.004          0.031    0.027
-#>  co2a0000377          2         0.113          0.148    0.035
-#>  co2a0000377          3         0.219          0.258    0.039
-#>  co2a0000377          4         0.344          0.469    0.125
-#>  co2a0000378          1         0.219          0.516    0.297
-#>  co2c0000337          1         0.086          0.109    0.023
-#>  co2c0000337          2         0.305          0.500    0.195
-#>  co2c0000340          1         0.039          0.059    0.020
-#>  co2c0000341          1         0.227          0.676    0.449
-#>  co2c0000342          1         0.004          0.156    0.152
-#>  co2c0000342          2         0.180          1.000    0.820
-#>  co2c0000344          1         0.238          0.254    0.016
-#>  co2c0000344          2         0.305          0.356    0.051
-#>  co2c0000345          1         0.004          0.086    0.082
-#>  co2c0000345          2         0.281          0.402    0.121
-#>  co2c0000345          3         0.629          0.676    0.047
-#>  co2c0000346          1         0.004          0.156    0.152
-#>  co2c0000346          2         0.188          0.461    0.273
-#>  co2c0000347          1         0.004          0.137    0.133
-#>  co2c0000347          2         0.211          0.449    0.238
+#>  participant     sign id onset offset duration
+#>  co2a0000364 positive  1 0.336  0.398    0.062
+#>  co2a0000364 negative  1 0.004  0.312    0.308
+#>  co2a0000364 negative  2 0.441  0.449    0.008
+#>  co2a0000364 negative  3 0.531  1.000    0.469
+#>  co2a0000365 negative  1 0.148  0.219    0.071
+#>  co2a0000365 negative  2 0.328  1.000    0.672
+#>  co2a0000368 negative  1 0.004  0.090    0.086
+#>  co2a0000368 negative  2 0.137  1.000    0.863
+#>  co2a0000369 positive  1 0.191  0.394    0.203
+#>  co2a0000369 negative  1 0.027  0.102    0.075
+#>  co2a0000369 negative  2 0.551  1.000    0.449
+#>  co2a0000370 positive  1 0.055  0.148    0.093
+#>  co2a0000370 positive  2 0.215  0.473    0.258
+#>  co2a0000370 positive  3 0.574  0.660    0.086
+#>  co2a0000370 positive  4 0.781  0.887    0.106
+#>  co2a0000371 negative  1 0.090  1.000    0.910
+#>  co2a0000372 positive  1 0.004  0.020    0.016
+#>  co2a0000372 positive  2 0.066  0.148    0.082
+#>  co2a0000372 positive  3 0.297  1.000    0.703
+#>  co2a0000372 negative  1 0.180  0.223    0.043
+#>  co2a0000375 positive  1 0.004  0.449    0.445
+#>  co2a0000375 positive  2 0.859  0.965    0.106
+#>  co2a0000377 positive  1 0.004  0.027    0.023
+#>  co2a0000377 positive  2 0.113  0.144    0.031
+#>  co2a0000377 positive  3 0.219  0.258    0.039
+#>  co2a0000377 positive  4 0.348  0.473    0.125
+#>  co2a0000377 negative  1 0.766  1.000    0.234
+#>  co2a0000378 positive  1 0.219  0.516    0.297
+#>  co2a0000378 negative  1 0.004  0.203    0.199
+#>  co2a0000378 negative  2 0.586  0.629    0.043
+#>  co2a0000378 negative  3 0.789  0.789    0.000
+#>  co2a0000378 negative  4 0.859  1.000    0.141
+#>  co2c0000337 positive  1 0.086  0.113    0.027
+#>  co2c0000337 positive  2 0.305  0.500    0.195
+#>  co2c0000337 negative  1 0.781  0.840    0.059
+#>  co2c0000337 negative  2 0.852  0.859    0.007
+#>  co2c0000338 negative  1 0.125  0.219    0.094
+#>  co2c0000338 negative  2 0.641  1.000    0.359
+#>  co2c0000339 negative  1 0.004  0.207    0.203
+#>  co2c0000339 negative  2 0.426  1.000    0.574
+#>  co2c0000340 positive  1 0.043  0.051    0.008
+#>  co2c0000340 negative  1 0.098  1.000    0.902
+#>  co2c0000341 positive  1 0.227  0.676    0.449
+#>  co2c0000341 negative  1 0.004  0.094    0.090
+#>  co2c0000341 negative  2 0.152  0.184    0.032
+#>  co2c0000341 negative  3 0.820  0.906    0.086
+#>  co2c0000342 positive  1 0.004  0.156    0.152
+#>  co2c0000342 positive  2 0.180  1.000    0.820
+#>  co2c0000344 positive  1 0.246  0.246    0.000
+#>  co2c0000344 positive  2 0.309  0.352    0.043
+#>  co2c0000344 negative  1 0.144  0.215    0.071
+#>  co2c0000344 negative  2 0.445  0.606    0.161
+#>  co2c0000344 negative  3 0.656  1.000    0.344
+#>  co2c0000345 positive  1 0.004  0.027    0.023
+#>  co2c0000345 positive  2 0.043  0.086    0.043
+#>  co2c0000345 positive  3 0.281  0.406    0.125
+#>  co2c0000345 positive  4 0.633  0.676    0.043
+#>  co2c0000345 negative  1 0.156  0.199    0.043
+#>  co2c0000345 negative  2 0.492  0.527    0.035
+#>  co2c0000345 negative  3 0.773  0.797    0.024
+#>  co2c0000346 positive  1 0.004  0.152    0.148
+#>  co2c0000346 positive  2 0.188  0.465    0.277
+#>  co2c0000346 negative  1 0.551  0.602    0.051
+#>  co2c0000347 positive  1 0.004  0.137    0.133
+#>  co2c0000347 positive  2 0.215  0.449    0.234
 #> 
 #> =================================================================
 ```
@@ -190,9 +226,7 @@ print(results)
 plot(results)
 ```
 
-![](eeg_temporal_files/figure-html/fig-clusters-ppt-1.png)
-
-Figure 2
+![](eeg_temporal_files/figure-html/clusters-ppt-plot-1.png)
 
 ### Posterior predictive checks
 
@@ -208,15 +242,11 @@ method, but you can conduct various PPCs with
 ppc(object = results, ppc_type = "group")
 ```
 
-![](eeg_temporal_files/figure-html/fig-ppc1-1.png)
-
-Figure 3
+![](eeg_temporal_files/figure-html/ppc1-plot-1.png)
 
 ``` r
 # posterior predictive checks (PPCs) at the participant level
 ppc(object = results, ppc_type = "participant")
 ```
 
-![](eeg_temporal_files/figure-html/fig-ppc2-1.png)
-
-Figure 4
+![](eeg_temporal_files/figure-html/ppc2-plot-1.png)

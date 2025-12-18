@@ -4,6 +4,7 @@ TO-DO
 
 * Supporting continuous predictors in `testing_through_time()`.
 * Adding support for effect sizes...
+* Adding support for modelling auto-correlation...
 
 -->
 
@@ -15,6 +16,7 @@ TO-DO
 * Implementing a `ppc()` method for `cluster_results` objects.
 * New `plot_sensors()` and `plot_eeg()` functions to visualise EEG sensors grid, EEG raw data, and GAM predictions.
 * Adding support for returning participant-level onsets in `testing_through_time()`, `find_clusters()`, and related methods such as `summary()` and `plot()`.
+* Adding support for `binomial()` responses.
 
 ## Other changes
 
@@ -25,6 +27,7 @@ TO-DO
 ## Bug fixes
 
 * Fixing aberrant PPCs in the `ppc()` method (and simplifying arguments with `ppc_type = c("group", "participant")`).
+* Allowing "negative" clusters in `cluster_results` `print()`, `summary()`, and `plot()` methods.
 
 # neurogam 0.0.2
 

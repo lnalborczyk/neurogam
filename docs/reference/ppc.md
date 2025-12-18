@@ -12,7 +12,7 @@ ppc(
   ppc_type = c("group", "participant"),
   ndraws = 500,
   group_var = NULL,
-  cores = 4,
+  xlab = "Time (s)",
   ...
 )
 ```
@@ -42,10 +42,10 @@ ppc(
   PPCs at the group level. If NULL (default), the function uses
   "predictor" when present in model\$data and binary (two levels).
 
-- cores:
+- xlab:
 
-  Numeric; number of parallel cores to use (only used when
-  `ppc_type = "participant"`).
+  Character; Label for the x-axis (usually time with some appropriate
+  unit).
 
 - ...:
 
