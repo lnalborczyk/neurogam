@@ -10,12 +10,50 @@
 - Implementing a
   [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md)
   method for `cluster_results` objects.
+- Implementing the
+  [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
+  function to visualise auto-correlation of the residuals.
+- New
+  [`plot_sensors()`](https://lnalborczyk.github.io/neurogam/reference/plot_sensors.md)
+  and
+  [`plot_eeg()`](https://lnalborczyk.github.io/neurogam/reference/plot_eeg.md)
+  functions to visualise EEG sensors grid, EEG raw data, and GAM
+  predictions.
+- Adding support for returning participant-level onsets in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md),
+  [`find_clusters()`](https://lnalborczyk.github.io/neurogam/reference/find_clusters.md),
+  and related methods such as
+  [`summary()`](https://rdrr.io/r/base/summary.html) and
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html).
+- Adding support for [`binomial()`](https://rdrr.io/r/stats/family.html)
+  responses.
+- Supporting continuous predictors in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
+- Adding support for modelling auto-correlation via
+  `testing_through_time(include_ar_term == TRUE)`.
 
 ### Other changes
 
 - Improved documentation for
   [`print()`](https://rdrr.io/r/base/print.html) and
   [`summary()`](https://rdrr.io/r/base/summary.html) methods.
+- Removed the `multilevel = "full"` option (too slow).
+- Now returns clusters with both positive and negative signs in
+  [`find_clusters()`](https://lnalborczyk.github.io/neurogam/reference/find_clusters.md).
+
+### Bug fixes
+
+- Fixing aberrant PPCs in the
+  [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md)
+  method (and simplifying arguments with
+  `ppc_type = c("group", "participant")`).
+- Allowing “negative” clusters in `cluster_results`
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`summary()`](https://rdrr.io/r/base/summary.html), and
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html) methods.
+- Fixing error in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+  when `multilevel = "summary"` and `include_ar_term == TRUE`.
 
 ## neurogam 0.0.2
 
