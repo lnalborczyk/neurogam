@@ -1,4 +1,4 @@
-#' Check and visualise residual autocorrelation in a fitted \pkg{brms} model
+#' Check and visualise residual autocorrelation in a fitted \pkg{neurogam} model
 #'
 #' Computes practical diagnostics for residual autocorrelation in a fitted
 #' \pkg{brms} model, with special handling of time-resolved neurogam data where

@@ -5,7 +5,8 @@
 - [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
   :
 
-  Check and visualise residual autocorrelation in a fitted brms model
+  Check and visualise residual autocorrelation in a fitted neurogam
+  model
 
 - [`eeg_data`](https://lnalborczyk.github.io/neurogam/reference/eeg_data.md)
   : Simulated EEG data

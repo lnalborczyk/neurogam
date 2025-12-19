@@ -3,8 +3,10 @@
 #' Fits time-resolved Bayesian generalised additive (multilevel) models (BGAMMs)
 #' using \pkg{brms}, and computes posterior odds for an effect at each time
 #' point. The effect can be either i) a deviation of the outcome from a
-#' reference value (e.g., zero or a chance level), or ii) a difference between two
-#' groups/conditions.
+#' reference value (e.g., zero or a chance level), ii) a difference between two
+#' groups/conditions (varying within or between participants), or iii) whether
+#' a continuous predictor varying either within (e.g., speech formants) or
+#' between participants (e.g., age).
 #'
 #' @param data A data frame in long format containing time-resolved data.
 #' @param participant_id Character; name of the column in \code{data}
@@ -22,7 +24,7 @@
 #'       \code{chance_level};
 #'     \item A \emph{continuous} numeric predictor, in which case the function
 #'       tests, at each time point, whether the difference between the average
-#'       value of the predictor +1SD and the average value -1SD differs from
+#'       value of the predictor +1 SD and the average value -1 SD differs from
 #'       \code{chance_level}
 #'       (typically with \code{chance_level = 0}).
 #'     \item If \code{predictor_id = NA}, the function tests whether the outcome differs
@@ -49,18 +51,17 @@
 #' @param include_ar_term Logical; if \code{TRUE}, adds an AR(1) autocorrelation
 #'   structure within participant via
 #'   \code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)}.
-#'   Note that this is usually not necessary when using multilevel = "summary".
 #' @param varying_smooth Logical; should we include a varying smooth. Default is
-#' TRUE. If FALSE, we only include a varying intercept and slope.
+#' \code{TRUE}. If \code{FALSE}, we only include a varying intercept and slope.
 #' @param participant_clusters Logical; should we return clusters at the participant-level.
 #' @param warmup Numeric; number of warm-up iterations per chain.
 #' @param iter Numeric; total number of iterations per chain (including warmup).
 #' @param chains Numeric; number of MCMCs.
 #' @param cores Numeric; number of parallel cores to use.
 #' @param backend Character; package to use as the backend for fitting the
-#'   Stan model. One of \code{"cmdstanr"} (default) or \code{"rstan"}.
+#'   \code{Stan} model. One of \code{"cmdstanr"} (default) or \code{"rstan"}.
 #' @param stan_control List; parameters to control the MCMC behaviour, using
-#' default parameters when NULL. See \code{?brm} for more details.
+#'   default parameters when NULL. See \code{?brm} for more details.
 #' @param n_post_samples Numeric; number of posterior draws used to compute
 #'   posterior probabilities. If \code{NULL} (default), all available draws
 #'   from the fitted model are used.
@@ -372,9 +373,8 @@ testing_through_time <- function (
             chains = chains,
             cores = cores,
             backend = backend,
-            control = stan_control
-            # speedup
-            # stan_model_args = list(stanc_options = list("O1") )
+            control = stan_control,
+            stan_model_args = list(stanc_options = list("O1") )
             )
 
         if (is.null(n_post_samples) ) {

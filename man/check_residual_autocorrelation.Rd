@@ -2,7 +2,7 @@
 % Please edit documentation in R/check_residual_autocorrelation.R
 \name{check_residual_autocorrelation}
 \alias{check_residual_autocorrelation}
-\title{Check and visualise residual autocorrelation in a fitted \pkg{brms} model}
+\title{Check and visualise residual autocorrelation in a fitted \pkg{neurogam} model}
 \usage{
 check_residual_autocorrelation(
   fit,
@@ -25,7 +25,8 @@ check_residual_autocorrelation(
 \item{fit}{A fitted \code{\link[brms:brm]{brmsfit}} object.}
 
 \item{data}{A data frame used to fit the model (or the same rows in the same order).
-Must contain a time column and (directly or indirectly) an AR series identifier.}
+Must contain a time column and (directly or indirectly) an AR series identifier.
+If \code{NULL} (default), uses data from \code{fit}.}
 
 \item{time_id}{Character; name of the time column. Defaults to \code{"time"}.}
 

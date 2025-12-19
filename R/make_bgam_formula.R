@@ -109,7 +109,8 @@ make_bgam_formula <- function (
 
     if (isTRUE(include_ar_term) ) {
 
-        autocor_term <- ~ar(time = time, gr = ar_series, p = 1, cov = FALSE)
+        # autocor_term <- ~ar(time = time, gr = ar_series, p = 1, cov = FALSE)
+        autocor_term <- ~ar(time = time, gr = ar_series, p = 1, cov = TRUE)
 
     }
 
@@ -129,7 +130,8 @@ make_bgam_formula <- function (
         } else {
 
             # expects columns: outcome_mean, outcome_sd
-            "outcome_mean | se(outcome_sd)"
+            # "outcome_mean | se(outcome_sd)"
+            "outcome_mean | se(outcome_sd, sigma = TRUE)"
 
         }
 
@@ -192,8 +194,6 @@ make_bgam_formula <- function (
 
         formula_str <- glue::glue("{formula_lhs} ~ {rhs}")
 
-        # return (brms::bf(as.character(formula_str) ) )
-
         if (include_ar_term) {
 
             return (brms::bf(as.character(formula_str), autocor = autocor_term) )
@@ -222,8 +222,6 @@ make_bgam_formula <- function (
         }
 
         formula_str <- paste0(formula_lhs, " ~ ", paste(rhs_parts, collapse = " + ") )
-
-        # return (brms::bf(formula_str) )
 
         if (isTRUE(include_ar_term) ) {
 
@@ -261,8 +259,6 @@ make_bgam_formula <- function (
     }
 
     formula_str <- paste0(formula_lhs, " ~ ", paste(rhs_parts, collapse = " + ") )
-
-    # return (brms::bf(formula_str) )
 
     if (isTRUE(include_ar_term) ) {
 

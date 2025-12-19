@@ -40,13 +40,14 @@ jobs:
       - name: Set up Quarto
         uses: quarto-dev/quarto-actions/setup@v2
 
-      - name: Build site
+      # - name: Build site
         # run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         # run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE, quiet = FALSE)
         # run: pkgdown::build_site_github_pages(devel = TRUE, new_process = FALSE, install = FALSE, quiet = FALSE)
         # new Dec 18 (disabling vignettes)
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE, quiet = FALSE, override = list(articles = FALSE) )
-        shell: Rscript {0}
+        # run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE, quiet = FALSE, override = list(articles = FALSE) )
+        # run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE, quiet = FALSE)
+        # shell: Rscript {0}
 
       - name: Deploy to GitHub pages 🚀
         if: github.event_name != 'pull_request'

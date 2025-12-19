@@ -29,6 +29,8 @@
   responses.
 - Supporting continuous predictors in
   [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
+- Adding support for modelling auto-correlation via
+  `testing_through_time(include_ar_term == TRUE)`.
 
 ### Other changes
 
@@ -49,6 +51,9 @@
   [`print()`](https://rdrr.io/r/base/print.html),
   [`summary()`](https://rdrr.io/r/base/summary.html), and
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html) methods.
+- Fixing error in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+  when `multilevel = "summary"` and `include_ar_term == TRUE`.
 
 ## neurogam 0.0.2
 

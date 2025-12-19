@@ -110,13 +110,13 @@ ppc(object = results, ppc_type = "participant")
 ### How to define the basis dimension?
 
 We cannot provide a single universal recommendation for choosing the
-optimal value of $`k`$, as it depends on several factors, including the
+optimal value of \\k\\, as it depends on several factors, including the
 sampling rate, preprocessing steps (e.g., signal-to-noise ratio,
 low-pass filtering), and the underlying temporal dynamics of the effect
-of interest. One strategy is to set $`k`$ as high as computational
-constraints allow (acknowledging that the $`k`$-value only provides an
+of interest. One strategy is to set \\k\\ as high as computational
+constraints allow (acknowledging that the \\k\\-value only provides an
 upper bound on the *effective* basis dimension). Alternatively, one can
-fit a series of models with different $`k`$ values and compare these
+fit a series of models with different \\k\\ values and compare these
 models using information criteria such as LOOIC or WAIC, alongside with
 posterior predictive checks (PPCs), to select the model that best
 captures the structure of the data. We illustrate this approach below.

@@ -1,4 +1,4 @@
-# Check and visualise residual autocorrelation in a fitted brms model
+# Check and visualise residual autocorrelation in a fitted neurogam model
 
 Computes practical diagnostics for residual autocorrelation in a fitted
 brms model, with special handling of time-resolved neurogam data where
@@ -37,7 +37,7 @@ check_residual_autocorrelation(
 
   A data frame used to fit the model (or the same rows in the same
   order). Must contain a time column and (directly or indirectly) an AR
-  series identifier.
+  series identifier. If `NULL` (default), uses data from `fit`.
 
 - time_id:
 

@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   eeg_spatio_temporal: eeg_spatio_temporal.html
   eeg_temporal: eeg_temporal.html
-last_built: 2025-12-18T17:05Z
+last_built: 2025-12-19T12:19Z
 urls:
   reference: https://lnalborczyk.github.io/neurogam/reference
   article: https://lnalborczyk.github.io/neurogam/articles

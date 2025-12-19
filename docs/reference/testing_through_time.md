@@ -3,8 +3,10 @@
 Fits time-resolved Bayesian generalised additive (multilevel) models
 (BGAMMs) using brms, and computes posterior odds for an effect at each
 time point. The effect can be either i) a deviation of the outcome from
-a reference value (e.g., zero or a chance level), or ii) a difference
-between two groups/conditions.
+a reference value (e.g., zero or a chance level), ii) a difference
+between two groups/conditions (varying within or between participants),
+or iii) whether a continuous predictor varying either within (e.g.,
+speech formants) or between participants (e.g., age).
 
 ## Usage
 
@@ -67,7 +69,7 @@ testing_through_time(
 
   - A *continuous* numeric predictor, in which case the function tests,
     at each time point, whether the difference between the average value
-    of the predictor +1SD and the average value -1SD differs from
+    of the predictor +1 SD and the average value -1 SD differs from
     `chance_level` (typically with `chance_level = 0`).
 
   - If `predictor_id = NA`, the function tests whether the outcome
@@ -112,8 +114,6 @@ testing_through_time(
   Logical; if `TRUE`, adds an AR(1) autocorrelation structure within
   participant via
   `autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)`.
-  Note that this is usually not necessary when using multilevel =
-  "summary".
 
 - participant_clusters:
 
@@ -121,8 +121,8 @@ testing_through_time(
 
 - varying_smooth:
 
-  Logical; should we include a varying smooth. Default is TRUE. If
-  FALSE, we only include a varying intercept and slope.
+  Logical; should we include a varying smooth. Default is `TRUE`. If
+  `FALSE`, we only include a varying intercept and slope.
 
 - warmup:
 
@@ -142,7 +142,7 @@ testing_through_time(
 
 - backend:
 
-  Character; package to use as the backend for fitting the Stan model.
+  Character; package to use as the backend for fitting the `Stan` model.
   One of `"cmdstanr"` (default) or `"rstan"`.
 
 - stan_control:

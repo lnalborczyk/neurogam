@@ -128,4 +128,5 @@ plot_eeg(
 
 ## Spatio-temporal modelling with BGAMs
 
-In progress…
+In progress. For tips on speeding up such models, see
+<https://blog.mc-stan.org/2022/08/03/options-for-improving-stan-sampling-speed/>.

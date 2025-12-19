@@ -1,12 +1,3 @@
-<!--
-
-TO-DO
-
-* Adding support for modelling auto-correlation...
-* Adding support for spatio-temporal models...
-
--->
-
 # neurogam 0.0.3
 
 ## New features
@@ -18,6 +9,7 @@ TO-DO
 * Adding support for returning participant-level onsets in `testing_through_time()`, `find_clusters()`, and related methods such as `summary()` and `plot()`.
 * Adding support for `binomial()` responses.
 * Supporting continuous predictors in `testing_through_time()`.
+* Adding support for modelling auto-correlation via `testing_through_time(include_ar_term == TRUE)`.
 
 ## Other changes
 
@@ -29,6 +21,7 @@ TO-DO
 
 * Fixing aberrant PPCs in the `ppc()` method (and simplifying arguments with `ppc_type = c("group", "participant")`).
 * Allowing "negative" clusters in `cluster_results` `print()`, `summary()`, and `plot()` methods.
+* Fixing error in `testing_through_time()` when `multilevel = "summary"` and `include_ar_term == TRUE`.
 
 # neurogam 0.0.2
 
