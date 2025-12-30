@@ -125,11 +125,25 @@
 <span>    <span class="co"># number of iterations (per MCMC)</span></span>
 <span>    iter <span class="op">=</span> <span class="fl">5000</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
+<p>The <code><a href="reference/testing_through_time.html">testing_through_time()</a></code> function returns an object of class <code>clusters_results</code>, which is a list containing:</p>
+<ul>
+<li>clusters: a data frame with one row per detected cluster;</li>
+<li>predictions: a data frame with time-resolved posterior summaries;</li>
+<li>data: data used to fit the model (possibly summarised);</li>
+<li>model: the fitted model object;</li>
+<li>multilevel: the value of the argument.</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># results structure</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># model formula</span></span>
+<span><span class="va">results</span><span class="op">$</span><span class="va">model</span><span class="op">$</span><span class="va">formula</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="visualising-the-results">Visualising the results<a class="anchor" aria-label="anchor" href="#visualising-the-results"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># displaying the identified clusters</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -141,7 +155,7 @@
 <span><span class="co">#&gt;  positive  1 0.162  0.348    0.186</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; =================================================================</span></span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># plotting the data, model's predictions, and clusters</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-fig-clusters-1.png" width="100%"></p>
@@ -150,7 +164,7 @@
 <h3 id="posterior-predictive-checks">Posterior predictive checks<a class="anchor" aria-label="anchor" href="#posterior-predictive-checks"></a>
 </h3>
 <p>We recommend visually assessing the predictions of the model against the observed data. We provide a lightweight <code><a href="reference/ppc.html">ppc()</a></code> method, but you can conduct various PPCs with <code>brms::pp_check(results$model, ...)</code> (for all available PPCs, see <a href="https://mc-stan.org/bayesplot/reference/PPC-overview.html" class="external-link uri">https://mc-stan.org/bayesplot/reference/PPC-overview.html</a>).</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># posterior predictive checks (PPCs)</span></span>
 <span><span class="fu"><a href="reference/ppc.html">ppc</a></span><span class="op">(</span>object <span class="op">=</span> <span class="va">results</span>, ppc_type <span class="op">=</span> <span class="st">"participant"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-fig-ppc-1.png" width="100%"></p>
@@ -159,7 +173,7 @@
 <h3 id="how-to-define-the-basis-dimension">How to define the basis dimension?<a class="anchor" aria-label="anchor" href="#how-to-define-the-basis-dimension"></a>
 </h3>
 <p>We cannot provide a single universal recommendation for choosing the optimal value of <span class="math inline">\(k\)</span>, as it depends on several factors, including the sampling rate, preprocessing steps (e.g., signal-to-noise ratio, low-pass filtering), and the underlying temporal dynamics of the effect of interest. One strategy is to set <span class="math inline">\(k\)</span> as high as computational constraints allow (acknowledging that the <span class="math inline">\(k\)</span>-value only provides an upper bound on the <em>effective</em> basis dimension). Alternatively, one can fit a series of models with different <span class="math inline">\(k\)</span> values and compare these models using information criteria such as LOOIC or WAIC, alongside with posterior predictive checks (PPCs), to select the model that best captures the structure of the data. We illustrate this approach below.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># recommend an optimal smooth basis dimension k</span></span>
 <span><span class="va">k_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/recommend_k.html">recommend_k</a></span><span class="op">(</span></span>
 <span>    object <span class="op">=</span> <span class="va">results</span>,</span>
@@ -169,7 +183,7 @@
 <span>    criterion <span class="op">=</span> <span class="st">"waic"</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-fig-reco-k-1.png" width="100%"></p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># results summary</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">k_res</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -200,34 +214,34 @@
 <a class="anchor" aria-label="anchor" href="#polyglot-use-of-neurogam"></a>
 </h2>
 <p>To use <code>neurogam</code> functions in Python (e.g., on MNE epochs), we recommend using the <code>rpy2</code> interface (<a href="https://github.com/rpy2/rpy2" class="external-link uri">https://github.com/rpy2/rpy2</a>), as shown below. It simply requires reshaping MNE epochs into long format (one trial/observation per row) (see for instance <code>epochs.to_data_frame(long_format=True)</code>, <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame" class="external-link uri">https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame</a>).</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># loading the Python modules</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="im">import</span> rpy2.robjects <span class="im">as</span> robjects</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.packages <span class="im">import</span> importr</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.conversion <span class="im">import</span> localconverter</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a></span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co"># importing the "neurogam" R package</span></span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>neurogam <span class="op">=</span> importr(<span class="st">"neurogam"</span>)</span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co"># reshaping epochs into long format</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co"># long_df = epochs.to_data_frame(long_format=True)</span></span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="cf">with</span> localconverter(robjects.default_converter <span class="op">+</span> pandas2ri.converter):</span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>    </span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>    long_df_r <span class="op">=</span> robjects.conversion.py2rpy(long_df)</span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>    </span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a></span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co"># using the testing_through_time() function from the neurogam package</span></span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>results <span class="op">=</span> neurogam.testing_through_time(data<span class="op">=</span>long_df_r, threshold<span class="op">=</span><span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># loading the Python modules</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="im">import</span> rpy2.robjects <span class="im">as</span> robjects</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.packages <span class="im">import</span> importr</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.conversion <span class="im">import</span> localconverter</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co"># importing the "neurogam" R package</span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>neurogam <span class="op">=</span> importr(<span class="st">"neurogam"</span>)</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co"># reshaping epochs into long format</span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co"># long_df = epochs.to_data_frame(long_format=True)</span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="cf">with</span> localconverter(robjects.default_converter <span class="op">+</span> pandas2ri.converter):</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>    </span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>    long_df_r <span class="op">=</span> robjects.conversion.py2rpy(long_df)</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>    </span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co"># using the testing_through_time() function from the neurogam package</span></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>results <span class="op">=</span> neurogam.testing_through_time(data<span class="op">=</span>long_df_r, threshold<span class="op">=</span><span class="dv">10</span>)</span></code></pre></div>
 <p>To use <code>neurogam</code> functions in Julia, we recommend using the <code>RCall</code> package (<a href="https://juliainterop.github.io/RCall.jl/stable/" class="external-link uri">https://juliainterop.github.io/RCall.jl/stable/</a>) (thanks to Benedikt Ehinger for sharing this code snippet).</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># loading the RCall module</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>using RCall</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co"># importing the neurogam R package</span></span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="sc">@</span>rimport neurogam</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">neurogam.testing_through_time</span>(<span class="at">data=</span>long_df, <span class="at">threshold=</span><span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># loading the RCall module</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>using RCall</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co"># importing the neurogam R package</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="sc">@</span>rimport neurogam</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">neurogam.testing_through_time</span>(<span class="at">data=</span>long_df, <span class="at">threshold=</span><span class="dv">10</span>)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>

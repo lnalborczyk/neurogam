@@ -79,7 +79,8 @@ name or by row index), with non-highlighted sensors optionally dimmed.</p>
 <span>  dim_others <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  other_alpha <span class="op">=</span> <span class="fl">0.3</span>,</span>
 <span>  xlim <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  ylim <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  ylim <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  theme <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_void</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -174,6 +175,11 @@ sensor markers when <code>show_points = TRUE</code>.</p></dd>
 <dd><p>Optional numeric vectors of length 2 giving x and y limits.
 If <code>NULL</code>, limits are computed automatically from the head radius (if
 <code>show_head = TRUE</code>) or from the range of sensor coordinates otherwise.</p></dd>
+
+
+<dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>
+<dd><p>A <code><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></code> object
+modifying the appearance of the plots.</p></dd>
 
 </dl></div>
     <div class="section level2">
