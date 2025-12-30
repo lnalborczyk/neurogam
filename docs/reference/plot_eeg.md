@@ -36,8 +36,9 @@ plot_eeg(
   facet_scales = "fixed",
   facet_label_prefix = "Time: ",
   facet_unit = "s",
-  fill_limits = c("global_quantile", "global", "none"),
-  limit_quantiles = c(0.01, 0.99)
+  fill_limits = "global_quantile",
+  limit_quantiles = c(0.01, 0.99),
+  theme = ggplot2::theme_void()
 )
 ```
 
@@ -170,14 +171,19 @@ plot_eeg(
 
 - fill_limits:
 
-  Character; how to set colour scale limits. `"global_quantile"` uses
-  `limit_quantiles` to define robust symmetric limits, `"global"` uses
-  the full range, and `"none"` leaves limits to ggplot.
+  Either a character string or numeric vector. If character, one of
+  `"global_quantile"`, `"global"`, or `"none"`. If numeric, a vector of
+  length 2 specifying explicit colour scale limits (e.g., `c(-5, 5)`).
 
 - limit_quantiles:
 
   Numeric vector of length 2; quantiles used when
   `fill_limits = "global_quantile"`.
+
+- theme:
+
+  A [`theme`](https://ggplot2.tidyverse.org/reference/theme.html) object
+  modifying the appearance of the plots.
 
 ## Value
 
@@ -233,7 +239,9 @@ plot_eeg(
   type = "topo",
   sensors = sensors,
   times = c(0, 0.1, 0.2, 0.3),
-  ndraws = 200
+  ndraws = 200,
+  # modifying default ggplot2 theme
+  theme = theme_bw(base_size = 12, base_family = "Open Sans")
   )
 } # }
 ```

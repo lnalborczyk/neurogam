@@ -61,11 +61,15 @@
 #' @param facet_label_prefix Character; prefix used when generating facet labels (e.g., \code{"Time: "}).
 #' @param facet_unit Character; unit suffix used when generating facet labels (e.g., \code{"s"}).
 #'
-#' @param fill_limits Character; how to set colour scale limits.
-#'   \code{"global_quantile"} uses \code{limit_quantiles} to define robust symmetric limits,
-#'   \code{"global"} uses the full range, and \code{"none"} leaves limits to ggplot.
+#' @param fill_limits Either a character string or numeric vector.
+#'   If character, one of \code{"global_quantile"}, \code{"global"}, or \code{"none"}.
+#'   If numeric, a vector of length 2 specifying explicit colour scale limits
+#'   (e.g., \code{c(-5, 5)}).
 #' @param limit_quantiles Numeric vector of length 2; quantiles used when
 #'   \code{fill_limits = "global_quantile"}.
+#'
+#' @param theme A \code{\link[ggplot2:theme]{theme}} object
+#'   modifying the appearance of the plots.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -108,7 +112,9 @@
 #'   type = "topo",
 #'   sensors = sensors,
 #'   times = c(0, 0.1, 0.2, 0.3),
-#'   ndraws = 200
+#'   ndraws = 200,
+#'   # modifying default ggplot2 theme
+#'   theme = theme_bw(base_size = 12, base_family = "Open Sans")
 #'   )
 #' }
 #'
@@ -156,17 +162,39 @@ plot_eeg <- function (
         facet_unit = "s",
 
         # colour scaling
-        fill_limits = c("global_quantile", "global", "none"),
-        limit_quantiles = c(0.01, 0.99)
+        fill_limits = "global_quantile",
+        limit_quantiles = c(0.01, 0.99),
+
+        # ggplot2 theme
+        theme = ggplot2::theme_void()
         ) {
 
     type <- match.arg(type)
-    fill_limits <- match.arg(fill_limits)
+
+    if (!is.numeric(fill_limits) ) {
+
+        fill_limits <- match.arg(fill_limits, choices = c("global_quantile", "global", "none") )
+
+    } else {
+
+        if (length(fill_limits) != 2 || any(!is.finite(fill_limits) ) ) {
+
+            stop ("`fill_limits` must be a numeric vector of length 2 with finite values.", call. = FALSE)
+
+        }
+
+    }
 
     is_brms <- inherits(x, "brmsfit")
     is_df <- is.data.frame(x)
 
     if (!is_brms && !is_df) stop ("`x` must be a data.frame (raw) or a brmsfit.", call. = FALSE)
+
+    if (!ggplot2::is.theme(theme) ) {
+
+        stop ("Argument 'theme' should be a 'theme' object.")
+
+    }
 
     # get data for ranges / available times
     base_dat <- if (is_brms) x$data else x
@@ -223,8 +251,6 @@ plot_eeg <- function (
 
     # build prediction grid (for brms) or data slice (for raw)
     if (is_brms) {
-
-        # grid_xy <- st_make_grid(x_range, y_range, grid_res = grid_res)
 
         if (type == "topo") {
 
@@ -342,18 +368,27 @@ plot_eeg <- function (
     }
 
     # limits for colour scale
-    lim <- st_compute_limits(
-        plot_df, z = "Estimate",
-        limits = fill_limits,
-        limit_quantiles = limit_quantiles
-        )
+    if (is.numeric(fill_limits) ) {
+
+        lim <- fill_limits
+
+    } else {
+
+        lim <- st_compute_limits(
+            plot_df,
+            z = "Estimate",
+            limits = fill_limits,
+            limit_quantiles = limit_quantiles
+            )
+
+    }
 
     # build base plot
     p <- plot_df |>
         ggplot2::ggplot(ggplot2::aes(x = .data$xproj, y = .data$yproj) ) +
         ggplot2::geom_raster(ggplot2::aes(fill = .data$Estimate), interpolate = TRUE) +
         ggplot2::coord_equal() +
-        ggplot2::theme_void() +
+        theme +
         ggplot2::scale_fill_distiller(
             palette = palette,
             direction = -1,

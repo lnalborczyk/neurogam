@@ -72,6 +72,7 @@ condition).</p>
 <span>  n_series_plot <span class="op">=</span> <span class="fl">9</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">42</span>,</span>
 <span>  use_posterior_mean <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  theme <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -139,6 +140,11 @@ Defaults to 42.</p></dd>
 <dt id="arg-use-posterior-mean">use_posterior_mean<a class="anchor" aria-label="anchor" href="#arg-use-posterior-mean"></a></dt>
 <dd><p>Logical; if <code>TRUE</code> (default) uses posterior mean
 <code>E[y|x]</code> to compute residuals. If <code>FALSE</code>, uses median.</p></dd>
+
+
+<dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>
+<dd><p>A <code><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></code> object
+modifying the appearance of the plots.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

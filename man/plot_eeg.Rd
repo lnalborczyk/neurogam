@@ -33,8 +33,9 @@ plot_eeg(
   facet_scales = "fixed",
   facet_label_prefix = "Time: ",
   facet_unit = "s",
-  fill_limits = c("global_quantile", "global", "none"),
-  limit_quantiles = c(0.01, 0.99)
+  fill_limits = "global_quantile",
+  limit_quantiles = c(0.01, 0.99),
+  theme = ggplot2::theme_void()
 )
 }
 \arguments{
@@ -107,12 +108,16 @@ to contain \code{sensor_label_col}).}
 
 \item{facet_unit}{Character; unit suffix used when generating facet labels (e.g., \code{"s"}).}
 
-\item{fill_limits}{Character; how to set colour scale limits.
-\code{"global_quantile"} uses \code{limit_quantiles} to define robust symmetric limits,
-\code{"global"} uses the full range, and \code{"none"} leaves limits to ggplot.}
+\item{fill_limits}{Either a character string or numeric vector.
+If character, one of \code{"global_quantile"}, \code{"global"}, or \code{"none"}.
+If numeric, a vector of length 2 specifying explicit colour scale limits
+(e.g., \code{c(-5, 5)}).}
 
 \item{limit_quantiles}{Numeric vector of length 2; quantiles used when
 \code{fill_limits = "global_quantile"}.}
+
+\item{theme}{A \code{\link[ggplot2:theme]{theme}} object
+modifying the appearance of the plots.}
 }
 \value{
 A \code{ggplot} object.
@@ -164,7 +169,9 @@ plot_eeg(
   type = "topo",
   sensors = sensors,
   times = c(0, 0.1, 0.2, 0.3),
-  ndraws = 200
+  ndraws = 200,
+  # modifying default ggplot2 theme
+  theme = theme_bw(base_size = 12, base_family = "Open Sans")
   )
 }
 

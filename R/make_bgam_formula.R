@@ -82,7 +82,7 @@ make_bgam_formula <- function (
 
         } else {
 
-            stop("not a family object")
+            stop ("not a family object")
 
         }
 
@@ -109,7 +109,6 @@ make_bgam_formula <- function (
 
     if (isTRUE(include_ar_term) ) {
 
-        # autocor_term <- ~ar(time = time, gr = ar_series, p = 1, cov = FALSE)
         autocor_term <- ~ar(time = time, gr = ar_series, p = 1, cov = TRUE)
 
     }
@@ -129,9 +128,17 @@ make_bgam_formula <- function (
 
         } else {
 
-            # expects columns: outcome_mean, outcome_sd
-            # "outcome_mean | se(outcome_sd)"
-            "outcome_mean | se(outcome_sd, sigma = TRUE)"
+            if (isTRUE(include_ar_term) ) {
+
+                # expects columns: outcome_mean, outcome_sd
+                "outcome_mean | se(outcome_sd, sigma = TRUE)"
+
+            } else {
+
+                # expects columns: outcome_mean, outcome_sd
+                "outcome_mean | se(outcome_sd)"
+
+            }
 
         }
 
@@ -140,15 +147,16 @@ make_bgam_formula <- function (
     # predictor_type == "categorical"
     wb <- within_between[1]
 
-    if (is.na(wb) || !wb %in% c("within-subject", "between-subject") ) {
-
-        stop (
-            "When `predictor_type = 'categorical'` and `multilevel = 'summary'`, ",
-            "`within_between` must be either 'within-subject' or 'between-subject'.",
-            call. = FALSE
-            )
-
-    }
+    # to be checked
+    # if (is.na(wb) || !wb %in% c("within-subject", "between-subject") ) {
+    #
+    #     stop (
+    #         "When `predictor_type = 'categorical'` and `multilevel = 'summary'`, ",
+    #         "`within_between` must be either 'within-subject' or 'between-subject'.",
+    #         call. = FALSE
+    #         )
+    #
+    # }
 
     # smooth terms
     if (predictor_type == "none") {

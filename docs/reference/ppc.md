@@ -13,6 +13,7 @@ ppc(
   ndraws = 500,
   group_var = NULL,
   xlab = "Time (s)",
+  theme = ggplot2::theme_bw(),
   ...
 )
 ```
@@ -46,6 +47,11 @@ ppc(
 
   Character; Label for the x-axis (usually time with some appropriate
   unit).
+
+- theme:
+
+  A [`theme`](https://ggplot2.tidyverse.org/reference/theme.html) object
+  modifying the appearance of the plots.
 
 - ...:
 

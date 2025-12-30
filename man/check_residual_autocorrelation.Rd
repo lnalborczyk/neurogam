@@ -18,6 +18,7 @@ check_residual_autocorrelation(
   n_series_plot = 9,
   seed = 42,
   use_posterior_mean = TRUE,
+  theme = ggplot2::theme_bw(),
   verbose = TRUE
 )
 }
@@ -58,6 +59,9 @@ Defaults to 42.}
 
 \item{use_posterior_mean}{Logical; if \code{TRUE} (default) uses posterior mean
 \code{E[y|x]} to compute residuals. If \code{FALSE}, uses median.}
+
+\item{theme}{A \code{\link[ggplot2:theme]{theme}} object
+modifying the appearance of the plots.}
 
 \item{verbose}{Logical; if \code{TRUE}, emits informative messages and warnings.}
 }

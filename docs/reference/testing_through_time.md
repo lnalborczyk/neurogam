@@ -5,8 +5,8 @@ Fits time-resolved Bayesian generalised additive (multilevel) models
 time point. The effect can be either i) a deviation of the outcome from
 a reference value (e.g., zero or a chance level), ii) a difference
 between two groups/conditions (varying within or between participants),
-or iii) whether a continuous predictor varying either within (e.g.,
-speech formants) or between participants (e.g., age).
+or iii) the amplitude of a continuous predictor varying either within
+(e.g., speech formants) or between participants (e.g., age).
 
 ## Usage
 
@@ -15,6 +15,7 @@ testing_through_time(
   data,
   participant_id = "participant",
   outcome_id = "eeg",
+  outcome_sd = NULL,
   time_id = "time",
   predictor_id = "condition",
   trials_id = NULL,
@@ -53,6 +54,11 @@ testing_through_time(
 
   Character; name of the column in `data` containing the outcome values
   (e.g., M/EEG amplitude, decoding accuracy).
+
+- outcome_sd:
+
+  Character; name of the column in `data` containing the outcome SD,
+  when `outcome_id` has already been summarised (default value is NULL).
 
 - time_id:
 

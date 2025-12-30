@@ -22,6 +22,7 @@ check_residual_autocorrelation(
   n_series_plot = 9,
   seed = 42,
   use_posterior_mean = TRUE,
+  theme = ggplot2::theme_bw(),
   verbose = TRUE
 )
 ```
@@ -88,6 +89,11 @@ check_residual_autocorrelation(
 
   Logical; if `TRUE` (default) uses posterior mean `E[y|x]` to compute
   residuals. If `FALSE`, uses median.
+
+- theme:
+
+  A [`theme`](https://ggplot2.tidyverse.org/reference/theme.html) object
+  modifying the appearance of the plots.
 
 - verbose:
 

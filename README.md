@@ -79,6 +79,23 @@ results <- testing_through_time(
     )
 ```
 
+The `testing_through_time()` function returns an object of class
+`clusters_results`, which is a list containing:
+
+- clusters: a data frame with one row per detected cluster;
+- predictions: a data frame with time-resolved posterior summaries;
+- data: data used to fit the model (possibly summarised);
+- model: the fitted model object;
+- multilevel: the value of the argument.
+
+``` r
+# results structure
+str(results)
+
+# model formula
+results$model$formula
+```
+
 ### Visualising the results
 
 ``` r

@@ -30,7 +30,8 @@ plot_sensors(
   dim_others = TRUE,
   other_alpha = 0.3,
   xlim = NULL,
-  ylim = NULL
+  ylim = NULL,
+  theme = ggplot2::theme_void()
 )
 ```
 
@@ -125,6 +126,11 @@ plot_sensors(
   Optional numeric vectors of length 2 giving x and y limits. If `NULL`,
   limits are computed automatically from the head radius (if
   `show_head = TRUE`) or from the range of sensor coordinates otherwise.
+
+- theme:
+
+  A [`theme`](https://ggplot2.tidyverse.org/reference/theme.html) object
+  modifying the appearance of the plots.
 
 ## Value
 

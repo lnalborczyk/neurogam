@@ -24,7 +24,7 @@ knitr::opts_chunk$set(
 [![Last commit](https://img.shields.io/github/last-commit/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
  <!-- badges: end -->
 
-The goal of `neurogam` is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses, pupillometry) but will be extended in the near future to support 2D temporal and 3D spatiotemporal data.
+The goal of `neurogam` is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., one M/EEG channel or decoding timecourses) but will be extended in the near future to support 2D temporal (e.g., cross-temporal generalisation matrices) and 3D spatiotemporal (e.g., time x sensors M/EEG) data.
 
 ## Installation
 
@@ -43,7 +43,7 @@ remotes::install_github(
 
 ### Model fitting
 
-Below we fit a Bayesian generalised additive multilevel model (BGAMM) with varying intercept, slope, and smooth (per participant) to estimate the onset and offset of a difference between conditions. Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide anticonservative cluster estimates.
+Below we fit a Bayesian generalised additive multilevel model (BGAMM) with varying intercept, slope, and smooth (per participant) to estimate the onset and offset of a difference between conditions. Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD, computed internally) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., without random/varying effect) may provide anticonservative cluster estimates.
 
 ```{r data}
 # loading the neurogam package
@@ -72,6 +72,22 @@ results <- testing_through_time(
     # number of iterations (per MCMC)
     iter = 5000
     )
+```
+
+The `testing_through_time()` function returns an object of class `clusters_results`, which is a list containing:
+
+- clusters: a data frame with one row per detected cluster;
+- predictions: a data frame with time-resolved posterior summaries;
+- data: data used to fit the \pkg{brms} model (possibly summarised);
+- model: the fitted \pkg{brms} model object;
+- multilevel: the value of the \code{multilevel} argument.
+
+```{r print-clusters-structure, eval = FALSE}
+# results structure
+str(results)
+
+# model formula
+results$model$formula
 ```
 
 ### Visualising the results

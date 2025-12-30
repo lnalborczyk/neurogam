@@ -39,6 +39,8 @@
 #'   Defaults to 42.
 #' @param use_posterior_mean Logical; if \code{TRUE} (default) uses posterior mean
 #'   \code{E[y|x]} to compute residuals. If \code{FALSE}, uses median.
+#' @param theme A \code{\link[ggplot2:theme]{theme}} object
+#'   modifying the appearance of the plots.
 #' @param verbose Logical; if \code{TRUE}, emits informative messages and warnings.
 #'
 #' @return A named list with components:
@@ -77,12 +79,19 @@ check_residual_autocorrelation <- function (
         n_series_plot = 9,
         seed = 42,
         use_posterior_mean = TRUE,
+        theme = ggplot2::theme_bw(),
         verbose = TRUE
         ) {
 
     if (!inherits(fit, "brmsfit") ) {
 
         stop ("`fit` must be a brmsfit object.", call. = FALSE)
+
+    }
+
+    if (!ggplot2::is.theme(theme) ) {
+
+        stop ("Argument 'theme' should be a 'theme' object.")
 
     }
 
@@ -234,7 +243,7 @@ check_residual_autocorrelation <- function (
             n_time = dplyr::n(),
             rho1 = {
                 r <- .data[[".resid"]]
-                if (length(r) < 3L) NA_real_ else stats::cor(r[-1], r[-length(r)], use = "complete.obs")
+                if (length(r) < 3L) NA_real_ else stats::cor(x = r[-1], y = r[-length(r)], use = "complete.obs")
             },
             .groups = "drop"
             )
@@ -242,7 +251,6 @@ check_residual_autocorrelation <- function (
     checks$rho1_n_na <- sum(is.na(rho1_by_series$rho1) )
 
     # extract AR parameter(s), if any
-    # draws <- posterior::as_draws_df(fit)
     draws <- brms::as_draws_df(fit)
     ar_names <- names(draws)[grepl("^ar\\[", names(draws) )]
 
@@ -292,7 +300,7 @@ check_residual_autocorrelation <- function (
 
         acf_df <- do.call(
             rbind,
-            lapply(pick, function(sid) {
+            lapply(pick, function (sid) {
                 sub <- df[df[[".series"]] == sid, , drop = FALSE]
                 sub <- sub[order(sub[[time_id]]), , drop = FALSE]
                 r <- sub[[".resid"]]
@@ -328,7 +336,7 @@ check_residual_autocorrelation <- function (
             ggplot2::ggplot(ggplot2::aes(x = .data$value) ) +
             ggplot2::geom_density() +
             ggplot2::facet_wrap(~parameter, scales = "free") +
-            ggplot2::theme_bw() +
+            theme +
             ggplot2::labs(
                 title = "Posterior density of AR parameter(s)",
                 x = "AR coefficient",
@@ -341,7 +349,7 @@ check_residual_autocorrelation <- function (
     plots$rho1_hist <- rho1_by_series |>
         ggplot2::ggplot(ggplot2::aes(x = .data$rho1) ) +
         ggplot2::geom_histogram(bins = 30) +
-        ggplot2::theme_bw() +
+        theme +
         ggplot2::labs(
             title = "Lag-1 residual autocorrelation by series",
             x = "rho1 = cor(resid[t], resid[t-1])",
@@ -353,7 +361,7 @@ check_residual_autocorrelation <- function (
         ggplot2::ggplot(ggplot2::aes(x = .data$.series, y = .data$rho1) ) +
         ggplot2::geom_point() +
         ggplot2::coord_flip() +
-        ggplot2::theme_bw() +
+        theme +
         ggplot2::labs(
             title = "Lag-1 residual autocorrelation per series",
             x = "Series",
@@ -368,7 +376,7 @@ check_residual_autocorrelation <- function (
             ggplot2::geom_hline(yintercept = 0) +
             ggplot2::geom_segment(ggplot2::aes(xend = .data$lag, yend = 0) ) +
             ggplot2::facet_wrap(~.data$.series) +
-            ggplot2::theme_bw() +
+            theme +
             ggplot2::labs(
                 title = paste0("Residual ACF (posterior-", checks$epred_summary, " residuals)"),
                 x = "Lag",
@@ -381,11 +389,12 @@ check_residual_autocorrelation <- function (
     if (length(pick) > 0) {
 
         subp <- df[df[[".series"]] %in% pick, , drop = FALSE]
+
         plots$resid_time <- subp |>
             ggplot2::ggplot(ggplot2::aes(x = .data[[time_id]], y = .data[[".resid"]]) ) +
             ggplot2::geom_line() +
             ggplot2::facet_wrap(~.data$.series, scales = "free_y") +
-            ggplot2::theme_bw() +
+            theme +
             ggplot2::labs(
                 title = "Residuals through time (sampled series)",
                 x = time_id,

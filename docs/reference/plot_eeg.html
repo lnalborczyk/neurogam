@@ -84,8 +84,9 @@ ii) raw/summarised EEG data in long format (observed values).</p>
 <span>  facet_scales <span class="op">=</span> <span class="st">"fixed"</span>,</span>
 <span>  facet_label_prefix <span class="op">=</span> <span class="st">"Time: "</span>,</span>
 <span>  facet_unit <span class="op">=</span> <span class="st">"s"</span>,</span>
-<span>  fill_limits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"global_quantile"</span>, <span class="st">"global"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
-<span>  limit_quantiles <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.99</span><span class="op">)</span></span>
+<span>  fill_limits <span class="op">=</span> <span class="st">"global_quantile"</span>,</span>
+<span>  limit_quantiles <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.01</span>, <span class="fl">0.99</span><span class="op">)</span>,</span>
+<span>  theme <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_void</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -213,14 +214,20 @@ to contain <code>sensor_label_col</code>).</p></dd>
 
 
 <dt id="arg-fill-limits">fill_limits<a class="anchor" aria-label="anchor" href="#arg-fill-limits"></a></dt>
-<dd><p>Character; how to set colour scale limits.
-<code>"global_quantile"</code> uses <code>limit_quantiles</code> to define robust symmetric limits,
-<code>"global"</code> uses the full range, and <code>"none"</code> leaves limits to ggplot.</p></dd>
+<dd><p>Either a character string or numeric vector.
+If character, one of <code>"global_quantile"</code>, <code>"global"</code>, or <code>"none"</code>.
+If numeric, a vector of length 2 specifying explicit colour scale limits
+(e.g., <code>c(-5, 5)</code>).</p></dd>
 
 
 <dt id="arg-limit-quantiles">limit_quantiles<a class="anchor" aria-label="anchor" href="#arg-limit-quantiles"></a></dt>
 <dd><p>Numeric vector of length 2; quantiles used when
 <code>fill_limits = "global_quantile"</code>.</p></dd>
+
+
+<dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>
+<dd><p>A <code><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></code> object
+modifying the appearance of the plots.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -272,7 +279,9 @@ and <code>st_interp_to_grid()</code>.</p>
 <span class="r-in"><span>  type <span class="op">=</span> <span class="st">"topo"</span>,</span></span>
 <span class="r-in"><span>  sensors <span class="op">=</span> <span class="va">sensors</span>,</span></span>
 <span class="r-in"><span>  times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.3</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  ndraws <span class="op">=</span> <span class="fl">200</span></span></span>
+<span class="r-in"><span>  ndraws <span class="op">=</span> <span class="fl">200</span>,</span></span>
+<span class="r-in"><span>  <span class="co"># modifying default ggplot2 theme</span></span></span>
+<span class="r-in"><span>  theme <span class="op">=</span> <span class="fu">theme_bw</span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">12</span>, base_family <span class="op">=</span> <span class="st">"Open Sans"</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>

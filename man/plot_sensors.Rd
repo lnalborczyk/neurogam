@@ -25,7 +25,8 @@ plot_sensors(
   dim_others = TRUE,
   other_alpha = 0.3,
   xlim = NULL,
-  ylim = NULL
+  ylim = NULL,
+  theme = ggplot2::theme_void()
 )
 }
 \arguments{
@@ -79,6 +80,9 @@ sensor markers when \code{show_points = TRUE}.}
 \item{xlim, ylim}{Optional numeric vectors of length 2 giving x and y limits.
 If \code{NULL}, limits are computed automatically from the head radius (if
 \code{show_head = TRUE}) or from the range of sensor coordinates otherwise.}
+
+\item{theme}{A \code{\link[ggplot2:theme]{theme}} object
+modifying the appearance of the plots.}
 }
 \value{
 A \code{ggplot} object.

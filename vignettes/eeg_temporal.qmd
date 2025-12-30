@@ -79,7 +79,7 @@ results <- testing_through_time(
     predictor_id = "group",
     # basis dimension
     kvalue = 40,
-    # we recommend fitting the GAMM with summary statistics (mean and SD)
+    # we recommend fitting the GAMM on summary statistics (mean and SD)
     multilevel = "summary",
     # threshold on posterior odds
     threshold = 10,

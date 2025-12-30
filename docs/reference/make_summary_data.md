@@ -10,6 +10,7 @@ make_summary_data(
   data,
   participant_id = "participant",
   outcome_id = "eeg",
+  outcome_sd = NULL,
   time_id = "time",
   predictor_id = NA,
   trials_id = NULL,

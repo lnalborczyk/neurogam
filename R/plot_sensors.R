@@ -42,6 +42,8 @@
 #' @param xlim,ylim Optional numeric vectors of length 2 giving x and y limits.
 #'   If \code{NULL}, limits are computed automatically from the head radius (if
 #'   \code{show_head = TRUE}) or from the range of sensor coordinates otherwise.
+#' @param theme A \code{\link[ggplot2:theme]{theme}} object
+#'   modifying the appearance of the plots.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -109,7 +111,8 @@ plot_sensors <- function (
         other_alpha = 0.3,
 
         xlim = NULL,
-        ylim = NULL
+        ylim = NULL,
+        theme = ggplot2::theme_void()
         ) {
 
     if (!all(c(x_col, y_col) %in% names(sensors) ) ) {
@@ -121,6 +124,12 @@ plot_sensors <- function (
                 ),
             call. = FALSE
             )
+
+    }
+
+    if (!ggplot2::is.theme(theme) ) {
+
+        stop ("Argument 'theme' should be a 'theme' object.")
 
     }
 
@@ -169,7 +178,7 @@ plot_sensors <- function (
 
     p <- ggplot2::ggplot() +
         ggplot2::coord_equal() +
-        ggplot2::theme_void()
+        theme
 
     if (show_head) {
 

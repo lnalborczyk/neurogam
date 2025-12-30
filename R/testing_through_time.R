@@ -4,8 +4,8 @@
 #' using \pkg{brms}, and computes posterior odds for an effect at each time
 #' point. The effect can be either i) a deviation of the outcome from a
 #' reference value (e.g., zero or a chance level), ii) a difference between two
-#' groups/conditions (varying within or between participants), or iii) whether
-#' a continuous predictor varying either within (e.g., speech formants) or
+#' groups/conditions (varying within or between participants), or iii) the amplitude
+#' of a continuous predictor varying either within (e.g., speech formants) or
 #' between participants (e.g., age).
 #'
 #' @param data A data frame in long format containing time-resolved data.
@@ -13,6 +13,9 @@
 #' specifying participant IDs.
 #' @param outcome_id Character; name of the column in \code{data} containing
 #' the outcome values (e.g., M/EEG amplitude, decoding accuracy).
+#' @param outcome_sd Character; name of the column in \code{data} containing
+#' the outcome SD, when \code{outcome_id} has already been summarised (default
+#' value is NULL).
 #' @param time_id Character; name of the column in \code{data}
 #' containing time information (e.g., in seconds or samples).
 #' @param predictor_id Character; name of the column in \code{data}
@@ -134,9 +137,8 @@
 #' @export
 testing_through_time <- function (
         data,
-        participant_id = "participant", outcome_id = "eeg",
-        time_id = "time", predictor_id = "condition",
-        trials_id = NULL,
+        participant_id = "participant", outcome_id = "eeg", outcome_sd = NULL,
+        time_id = "time", predictor_id = "condition", trials_id = NULL,
         family = gaussian(), kvalue = 20, bs = "tp",
         multilevel = c("summary", "group"),
         include_ar_term = FALSE,
@@ -322,6 +324,7 @@ testing_through_time <- function (
             data = data,
             participant_id = participant_id,
             outcome_id = outcome_id,
+            outcome_sd = outcome_sd,
             time_id = time_id,
             predictor_id = predictor_id,
             trials_id = trials_id,
@@ -330,7 +333,7 @@ testing_through_time <- function (
             )
 
         summary_data <- ms$data
-        within_between <- ms$within_betwee
+        within_between <- ms$within_between
 
         # define the model formula
         formula_obj <- make_bgam_formula(
@@ -358,6 +361,18 @@ testing_through_time <- function (
                     dplyr::mutate(ar_series = .data$participant)
 
             }
+
+        }
+
+        # testing whether outcome_sd contains NAs
+        if (!is_binom && any(is.na(summary_data$outcome_sd) ) ) {
+
+            na_count <- sum(is.na(summary_data$outcome_sd) )
+
+            stop (
+                paste0("Internal data summary returned ", na_count, " NAs. If the input data is already summarised, please use the `outcome_sd` argument. Otherwise, make sure to input trial-by-trial data in long format (i.e., one observation/trial per row)."),
+                call. = FALSE
+                )
 
         }
 
@@ -723,8 +738,16 @@ testing_through_time <- function (
 #' @export
 plot.clusters_results <- function (
         x, null_value = 0,
-        clusters_y = -Inf, clusters_colour = "black", lineend = "butt", ...
+        clusters_y = -Inf, clusters_colour = "black", lineend = "butt",
+        theme = ggplot2::theme_bw(),
+        ...
         ) {
+
+    if (!ggplot2::is.theme(theme) ) {
+
+        stop ("Argument 'theme' should be a 'theme' object.")
+
+    }
 
     # retrieve the empirical data
     emp_data <- x$model$data
@@ -888,7 +911,7 @@ plot.clusters_results <- function (
             lineend = lineend,
             linewidth = 5
             ) +
-        ggplot2::theme_bw() +
+        theme +
         ggplot2::labs(x = "Time", y = "Observed and predicted effect")
 
     # if clusters are available at the participant level
@@ -1131,6 +1154,8 @@ summary.clusters_results <- function (object, digits = 3, ...) {
 #' grouped PPCs at the group level. If NULL (default), the function uses
 #' "predictor" when present in model$data and binary (two levels).
 #' @param xlab Character; Label for the x-axis (usually time with some appropriate unit).
+#' @param theme A \code{\link[ggplot2:theme]{theme}} object
+#'   modifying the appearance of the plots.
 #' @param ... Currently unused. Included for future extensions.
 #'
 #' @details
@@ -1174,8 +1199,15 @@ ppc <- function (
         ndraws = 500,
         group_var = NULL,
         xlab = "Time (s)",
+        theme = ggplot2::theme_bw(),
         ...
         ) {
+
+    if (!ggplot2::is.theme(theme) ) {
+
+        stop ("Argument 'theme' should be a 'theme' object.")
+
+    }
 
     fit <- object$model
     ppc_type <- match.arg(ppc_type)
@@ -1275,7 +1307,7 @@ ppc <- function (
                 prob_outer = 0.5,
                 alpha = 0.5
                 ) +
-                ggplot2::theme_bw() +
+                theme +
                 ggplot2::labs(x = xlab)
 
         } else {
@@ -1347,7 +1379,7 @@ ppc <- function (
                 prob_outer = 0.5,
                 alpha = 0.5
                 ) +
-                ggplot2::theme_bw() +
+                theme +
                 ggplot2::labs(x = xlab)
 
         }
@@ -1364,7 +1396,7 @@ ppc <- function (
             prob_outer = 0.5,
             alpha = 0.5
             ) +
-            ggplot2::theme_bw() +
+            theme +
             ggplot2::labs(x = xlab)
 
     }

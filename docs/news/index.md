@@ -10,6 +10,9 @@
 - Implementing a
   [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md)
   method for `cluster_results` objects.
+  ([\#2](https://github.com/lnalborczyk/neurogam/issues/2))
+- Adding support for modelling auto-correlation via
+  `testing_through_time(include_ar_term == TRUE)`.
 - Implementing the
   [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
   function to visualise auto-correlation of the residuals.
@@ -25,12 +28,12 @@
   and related methods such as
   [`summary()`](https://rdrr.io/r/base/summary.html) and
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html).
+  ([\#4](https://github.com/lnalborczyk/neurogam/issues/4))
 - Adding support for [`binomial()`](https://rdrr.io/r/stats/family.html)
-  responses.
-- Supporting continuous predictors in
+  responses. ([\#7](https://github.com/lnalborczyk/neurogam/issues/7))
+- Adding support for continuous predictors in
   [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
-- Adding support for modelling auto-correlation via
-  `testing_through_time(include_ar_term == TRUE)`.
+  ([\#1](https://github.com/lnalborczyk/neurogam/issues/1))
 
 ### Other changes
 
@@ -40,6 +43,13 @@
 - Removed the `multilevel = "full"` option (too slow).
 - Now returns clusters with both positive and negative signs in
   [`find_clusters()`](https://lnalborczyk.github.io/neurogam/reference/find_clusters.md).
+- Allowing to manually specify fill limits in
+  [`plot_eeg()`](https://lnalborczyk.github.io/neurogam/reference/plot_eeg.md).
+- Allowing `ggplot2` theme to be modified in plotting functions.
+- Providing a more informative error message after internal data summary
+  when `outcome_sd` contains NAs.
+- Allowing to pass a precomputed outcome SD to
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
 
 ### Bug fixes
 

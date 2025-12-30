@@ -10,6 +10,7 @@ ppc(
   ndraws = 500,
   group_var = NULL,
   xlab = "Time (s)",
+  theme = ggplot2::theme_bw(),
   ...
 )
 }
@@ -29,6 +30,9 @@ grouped PPCs at the group level. If NULL (default), the function uses
 "predictor" when present in model$data and binary (two levels).}
 
 \item{xlab}{Character; Label for the x-axis (usually time with some appropriate unit).}
+
+\item{theme}{A \code{\link[ggplot2:theme]{theme}} object
+modifying the appearance of the plots.}
 
 \item{...}{Currently unused. Included for future extensions.}
 }

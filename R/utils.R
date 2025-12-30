@@ -4,6 +4,7 @@ make_summary_data <- function (
         data,
         participant_id = "participant",
         outcome_id = "eeg",
+        outcome_sd = NULL,
         time_id = "time",
         predictor_id = NA,
         trials_id = NULL,
@@ -20,7 +21,7 @@ make_summary_data <- function (
     # family name (robust)
     fam_name <- tryCatch({
 
-        if (is.list(family) && !is.null(family$family) ) as.character(family$family) else stop("not a family object")
+        if (is.list(family) && !is.null(family$family) ) as.character(family$family) else stop ("not a family object")
 
     }, error = function(e) {
 
@@ -46,6 +47,20 @@ make_summary_data <- function (
     required <- c(participant_id, outcome_id, time_id)
 
     if (!is.na(predictor_id) ) required <- c(required, predictor_id)
+
+    # if user provides an SD column name, require it (gaussian only)
+    if (!is.null(outcome_sd) ) {
+
+        if (!is.character(outcome_sd) || length(outcome_sd) != 1) {
+
+            stop ("`outcome_sd` must be NULL or a single character column name.", call. = FALSE)
+
+        }
+
+        required <- c(required, outcome_sd)
+
+    }
+
     if (is_binom && !is.null(trials_id) ) required <- c(required, trials_id)
 
     missing_cols <- setdiff(required, names(data) )
@@ -91,13 +106,15 @@ make_summary_data <- function (
             # "first" non-NA (or NA if all NA)
             x2 <- x[!is.na(x)]
 
-            if (length(x2) == 0L) NA_real_ else x2[[1]]
+            agg_result <- if (length(x2) == 0L) NA_real_ else x2[[1]]
 
         } else {
 
-            mean(x, na.rm = na_rm)
+            agg_result <- mean(x = x, na.rm = na_rm)
 
         }
+
+        return (agg_result)
 
     }
 
@@ -170,7 +187,7 @@ make_summary_data <- function (
                 dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
                 dplyr::summarise(
                     success = sum(.data$success_in, na.rm = na_rm),
-                    trials  = sum(.data$trials_in,  na.rm = na_rm),
+                    trials = sum(.data$trials_in,  na.rm = na_rm),
                     predictor = if (predictor_type == "continuous") agg_continuous(.data$predictor) else dplyr::first(.data$predictor),
                     .groups = "drop"
                     )
@@ -192,27 +209,106 @@ make_summary_data <- function (
         if (any(summary_data$success < 0, na.rm = TRUE) ) stop ("Computed `success` contains negative values.", call. = FALSE)
         if (any(summary_data$success > summary_data$trials, na.rm = TRUE) ) stop ("Some cells have success > trials after summarisation.", call. = FALSE)
 
-    } else {
+    } else { # gaussian summary
 
-        # gaussian summary
-        df <- df |> dplyr::mutate(outcome = .data[[outcome_id]])
+        # if outcome_sd is provided, assume data is already summarised and
+        # only validate + return it in the standard format.
+        if (!is.null(outcome_sd) ) {
 
-        summary_data <- df |>
-            dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
-            dplyr::summarise(
-                outcome_mean = mean(.data$outcome, na.rm = na_rm),
-                outcome_sd   = stats::sd(.data$outcome, na.rm = na_rm),
-                predictor = if (predictor_type == "continuous") agg_continuous(.data$predictor) else dplyr::first(.data$predictor),
-                .groups = "drop"
-                )
+            # build "summary-like" output directly
+            summary_data <- df |>
+                dplyr::transmute(
+                    participant = .data$participant,
+                    time = .data$time,
+                    predictor = if (!is.na(predictor_id)) .data$predictor else NULL,
+                    outcome_mean = .data[[outcome_id]],
+                    outcome_sd = .data[[outcome_sd]]
+                    )
 
-        if (predictor_type == "categorical") {
+            # type checks
+            if (!is.numeric(summary_data$outcome_mean) ) {
 
-            # predictor is already grouped; keep
+                stop ("`", outcome_id, "` must be numeric when providing `outcome_sd`.", call. = FALSE)
 
-        } else if (predictor_type == "none") {
+            }
 
-            summary_data <- summary_data |> dplyr::select(-dplyr::any_of("predictor"))
+            if (!is.numeric(summary_data$outcome_sd) ) {
+
+                stop ("`", outcome_sd, "` must be numeric (SD values).", call. = FALSE)
+
+            }
+
+            if (any(summary_data$outcome_sd < 0, na.rm = TRUE) ) {
+
+                stop ("`outcome_sd` contains negative values; SD must be >= 0.", call. = FALSE)
+
+            }
+
+            # enforce uniqueness of cells (what summarisation would have produced)
+            key_cols <- grp_outcome
+
+            # for continuous predictors, we do NOT group by predictor, but we do require
+            # predictor to be single-valued per (participant, time) row (already true
+            # if keys are unique)
+            dup <- summary_data |>
+                dplyr::count(dplyr::across(dplyr::all_of(key_cols) ) ) |>
+                dplyr::filter(.data$n > 1)
+
+            if (nrow(dup) > 0) {
+
+                stop (
+                    "When `outcome_sd` is provided, the input data must already be summarised ",
+                    "with one row per cell: ",
+                    paste(key_cols, collapse = " x "),
+                    ". Found duplicated cells.",
+                    call. = FALSE
+                    )
+
+            }
+
+            # if predictor absent
+            if (predictor_type == "none") {
+
+                summary_data <- summary_data |> dplyr::select(-dplyr::any_of("predictor") )
+
+            }
+
+        } else {
+
+            df <- df |> dplyr::mutate(outcome = .data[[outcome_id]])
+
+            if (!is.na(predictor_id) ) {
+
+                summary_data <- df |>
+                    dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
+                    dplyr::summarise(
+                        outcome_mean = mean(.data$outcome, na.rm = na_rm),
+                        outcome_sd = stats::sd(.data$outcome, na.rm = na_rm),
+                        predictor = if (predictor_type == "continuous") agg_continuous(.data$predictor) else dplyr::first(.data$predictor),
+                        .groups = "drop"
+                        )
+
+            } else {
+
+                summary_data <- df |>
+                    dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
+                    dplyr::summarise(
+                        outcome_mean = mean(.data$outcome, na.rm = na_rm),
+                        outcome_sd = stats::sd(.data$outcome, na.rm = na_rm),
+                        .groups = "drop"
+                        )
+
+            }
+
+            # if (predictor_type == "categorical") {
+            #
+            #     # predictor is already grouped; keep
+            #
+            # } else if (predictor_type == "none") {
+            #
+            #     summary_data <- summary_data |> dplyr::select(-dplyr::any_of("predictor") )
+            #
+            # }
 
         }
 
@@ -223,7 +319,8 @@ make_summary_data <- function (
 
         if (predictor_type == "categorical") {
 
-            if (exists("check_within_between", mode = "function")) {
+            if (exists("check_within_between", mode = "function") ) {
+
                 within_between <- check_within_between(
                     data = summary_data,
                     participant = "participant",
@@ -232,7 +329,8 @@ make_summary_data <- function (
 
             } else {
 
-                within_between <- NULL
+                # within_between <- NULL
+                within_between <- NA
 
             }
 
@@ -252,6 +350,10 @@ make_summary_data <- function (
                 )
 
         }
+
+    } else {
+
+        within_between <- NA
 
     }
 
@@ -294,7 +396,7 @@ check_within_between <- function (
     # basic checks
     stopifnot(
         is.character(participant), length(participant) == 1,
-        is.character(predictor), length(predictor)   == 1
+        is.character(predictor), length(predictor) == 1
         )
 
     if (!participant %in% names(data) ) {
@@ -336,27 +438,6 @@ check_within_between <- function (
             } else {
                 (.data$max - .data$min) > tol
             })
-
-    # per_participant <- df |>
-    #     dplyr::group_by(!!participant) |>
-    #     dplyr::summarise(
-    #         n_obs = dplyr::n(),
-    #         n_unique = dplyr::n_distinct(!!predictor),
-    #         sd_within = if (!is_cat) sd(!!predictor) else NA_real_,
-    #         min = if (!is_cat) min(!!predictor) else NA_real_,
-    #         max = if (!is_cat) max(!!predictor) else NA_real_,
-    #         .groups = "drop"
-    #         )
-
-    # classify per participant
-    # per_participant <- per_participant |>
-    #     dplyr::mutate(
-    #         varies_within = if (is_cat) {
-    #             .data$n_unique > 1
-    #         } else {
-    #             (max - min) > tol
-    #         }
-    #     )
 
     # summary stats
     prop_within <- mean(per_participant$varies_within)
@@ -503,7 +584,6 @@ st_compute_limits <- function (
     limits <- match.arg(limits)
 
     if (limits == "none") return (NULL)
-    # if (limits == "global") return (range(df[[z]], na.rm = TRUE) )
     if (limits == "global") return (c(-1, 1) * max(abs(df[[z]]), na.rm = TRUE) )
 
     qtls <- as.numeric(stats::quantile(df[[z]], probs = limit_quantiles, na.rm = TRUE) )
