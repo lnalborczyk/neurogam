@@ -167,25 +167,30 @@ make_bgam_formula <- function (
 
         if (include_by_smooth) {
 
+            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
+
             if (wb == "within-subject") {
 
-                smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
+                # smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
+                varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue}, by = predictor)")
 
             } else {
 
-                smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
+                # smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
+                varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
 
             }
 
         } else {
 
             smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
+            varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
 
         }
 
     }
 
-    varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
+    # varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
 
     # group-level model (no varying effects)
     if (multilevel == "group") {

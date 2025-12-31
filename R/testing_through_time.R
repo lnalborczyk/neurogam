@@ -284,7 +284,7 @@ testing_through_time <- function (
             chance_level <- 0
 
             # warning the user
-            cat("Setting chance_level = 0 by default when family = gaussian().\n")
+            cat("Assuming null_value (chance_level) = 0 by default when family = gaussian().\n")
 
 
         }
@@ -678,7 +678,7 @@ testing_through_time <- function (
         prob_y_above <- compute_one_sample_prob(
             post_draws = post_draws,
             participant_clusters = participant_clusters,
-            threshold = chance_level,
+            null_value = chance_level,
             n_post_samples = n_post_samples,
             credible_interval = credible_interval
             )
@@ -687,9 +687,9 @@ testing_through_time <- function (
 
         prob_y_above <- compute_two_sample_prob(
             post_draws = post_draws,
-            participant_clusters = participant_clusters,
             # when comparing two groups, null value should be 0
-            threshold = 0,
+            null_value = 0,
+            participant_clusters = participant_clusters,
             n_post_samples = n_post_samples,
             credible_interval = credible_interval,
             predictor_type = predictor_type

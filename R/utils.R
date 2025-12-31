@@ -697,7 +697,7 @@ st_interp_to_grid <- function (
 
 #' @keywords internal
 compute_one_sample_prob <- function (
-        post_draws, threshold, participant_clusters, n_post_samples, credible_interval
+        post_draws, null_value, participant_clusters, n_post_samples, credible_interval
         ) {
 
     # validate credible interval
@@ -718,7 +718,7 @@ compute_one_sample_prob <- function (
 
         prob_y_above <- post_draws |>
             dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(prob_above = mean(.data$.epred > threshold) ) |>
+            dplyr::summarise(prob_above = mean(.data$.epred > null_value) ) |>
             dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
             dplyr::mutate(
                 prob_ratio = pmin(.data$prob_ratio, n_post_samples),
@@ -745,7 +745,7 @@ compute_one_sample_prob <- function (
         prob_y_above <- post_draws |>
             dplyr::group_by(.data$time) |>
             dplyr::summarise(
-                prob_above = mean(.data$.epred > threshold)
+                prob_above = mean(.data$.epred > null_value)
                 ) |>
             dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
             dplyr::ungroup() |>
@@ -774,7 +774,7 @@ compute_one_sample_prob <- function (
 
 #' @keywords internal
 compute_two_sample_prob <- function (
-        post_draws, threshold, participant_clusters, n_post_samples,
+        post_draws, null_value, participant_clusters, n_post_samples,
         credible_interval, predictor_type
         ) {
 
@@ -815,7 +815,7 @@ compute_two_sample_prob <- function (
         prob_y_above <- post_diff |>
             dplyr::group_by(.data$time, .data$participant) |>
             dplyr::summarise(
-                prob_above = mean(.data$epred_diff > threshold)
+                prob_above = mean(.data$epred_diff > null_value)
                 ) |>
             dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
             dplyr::ungroup() |>
@@ -828,9 +828,9 @@ compute_two_sample_prob <- function (
         post_prob_slope <- post_diff |>
             dplyr::group_by(.data$time, .data$participant) |>
             dplyr::summarise(
-                post_prob = stats::quantile(.data$epred_diff, probs = 0.5),
-                lower = stats::quantile(.data$epred_diff, probs = lower_q),
-                upper = stats::quantile(.data$epred_diff, probs = upper_q)
+                post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
+                lower = stats::quantile(x = .data$epred_diff, probs = lower_q),
+                upper = stats::quantile(x = .data$epred_diff, probs = upper_q)
                 ) |>
             dplyr::ungroup()
 
@@ -849,7 +849,7 @@ compute_two_sample_prob <- function (
         prob_y_above <- post_diff |>
             dplyr::group_by(.data$time) |>
             dplyr::summarise(
-                prob_above = mean(.data$epred_diff > threshold)
+                prob_above = mean(.data$epred_diff > null_value)
                 ) |>
             dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
             dplyr::ungroup() |>
@@ -862,9 +862,9 @@ compute_two_sample_prob <- function (
         post_prob_slope <- post_diff |>
             dplyr::group_by(.data$time) |>
             dplyr::summarise(
-                post_prob = stats::quantile(.data$epred_diff, probs = 0.5),
-                lower = stats::quantile(.data$epred_diff, probs = lower_q),
-                upper = stats::quantile(.data$epred_diff, probs = upper_q)
+                post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
+                lower = stats::quantile(x = .data$epred_diff, probs = lower_q),
+                upper = stats::quantile(x = .data$epred_diff, probs = upper_q)
                 ) |>
             dplyr::ungroup()
 
