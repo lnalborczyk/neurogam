@@ -44,6 +44,7 @@
 * Fixing aberrant PPCs in the `ppc()` method (and simplifying arguments with `ppc_type = c("group", "participant")`).
 * Allowing "negative" clusters in `cluster_results` `print()`, `summary()`, and `plot()` methods.
 * Fixing error in `testing_through_time()` when `multilevel = "summary"` and `include_ar_term == TRUE`.
+* Fixing the `varying_smooth_term` error in `make_bgam_formula()` when `predictor_id = NA`.
 
 # neurogam 0.0.2
 

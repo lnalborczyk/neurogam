@@ -78,15 +78,14 @@ The `testing_through_time()` function returns an object of class `clusters_resul
 
 - clusters: a data frame with one row per detected cluster;
 - predictions: a data frame with time-resolved posterior summaries;
-- data: data used to fit the \pkg{brms} model (possibly summarised);
 - model: the fitted \pkg{brms} model object;
 - multilevel: the value of the \code{multilevel} argument.
 
-```{r print-clusters-structure, eval = FALSE}
+```{r print-clusters-structure}
 # results structure
-str(results)
+names(results)
 
-# model formula
+# model formula (see also ?make_bgam_formula)
 results$model$formula
 ```
 

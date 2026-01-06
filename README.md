@@ -14,9 +14,10 @@ commit](https://img.shields.io/github/last-commit/lnalborczyk/neurogam)](https:/
 The goal of `neurogam` is to provide utilities for estimating the onset
 and offset of time-resolved effects, such as those found in M/EEG,
 pupillometry, or finger/mouse-tracking data (amongst others). The
-current version only allows fitting 1D temporal data (e.g., raw M/EEG
-data or decoding timecourses, pupillometry) but will be extended in the
-near future to support 2D temporal and 3D spatiotemporal data.
+current version only allows fitting 1D temporal data (e.g., one M/EEG
+channel or decoding timecourses) but will be extended in the near future
+to support 2D temporal (e.g., cross-temporal generalisation matrices)
+and 3D spatiotemporal (e.g., time x sensors M/EEG) data.
 
 ## Installation
 
@@ -39,9 +40,9 @@ Below we fit a Bayesian generalised additive multilevel model (BGAMM)
 with varying intercept, slope, and smooth (per participant) to estimate
 the onset and offset of a difference between conditions. Note that we
 recommend fitting the BGAMM on time-resolved summary statistics (mean
-and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and
-the group-level BGAM (i.e., no random/varying effect) may provide
-anticonservative cluster estimates.
+and SD, computed internally) as the full (i.e., trial-by-trial) BGAMM
+may be too slow, and the group-level BGAM (i.e., without random/varying
+effect) may provide anticonservative cluster estimates.
 
 ``` r
 # loading the neurogam package
@@ -84,16 +85,17 @@ The `testing_through_time()` function returns an object of class
 
 - clusters: a data frame with one row per detected cluster;
 - predictions: a data frame with time-resolved posterior summaries;
-- data: data used to fit the model (possibly summarised);
 - model: the fitted model object;
 - multilevel: the value of the argument.
 
 ``` r
 # results structure
-str(results)
+names(results)
+#> [1] "clusters"    "predictions" "model"       "multilevel"
 
-# model formula
+# model formula (see also ?make_bgam_formula)
 results$model$formula
+#> outcome_mean | se(outcome_sd) ~ 1 + (1 | participant) + s(time, bs = "tp", k = 20) + s(participant, time, bs = "fs", m = 1, k = 20)
 ```
 
 ### Visualising the results

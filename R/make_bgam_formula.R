@@ -74,7 +74,7 @@ make_bgam_formula <- function (
     predictor_type <- match.arg(predictor_type)
 
     # restrict families the same way testing_through_time() does
-    fam_name <- tryCatch({
+    fam_name <- tryCatch ({
 
         if (is.list(family) && !is.null(family$family) ) {
 
@@ -147,21 +147,11 @@ make_bgam_formula <- function (
     # predictor_type == "categorical"
     wb <- within_between[1]
 
-    # to be checked
-    # if (is.na(wb) || !wb %in% c("within-subject", "between-subject") ) {
-    #
-    #     stop (
-    #         "When `predictor_type = 'categorical'` and `multilevel = 'summary'`, ",
-    #         "`within_between` must be either 'within-subject' or 'between-subject'.",
-    #         call. = FALSE
-    #         )
-    #
-    # }
-
     # smooth terms
     if (predictor_type == "none") {
 
         smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
+        varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
 
     } else {
 
@@ -189,8 +179,6 @@ make_bgam_formula <- function (
         }
 
     }
-
-    # varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
 
     # group-level model (no varying effects)
     if (multilevel == "group") {
