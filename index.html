@@ -73,7 +73,7 @@
 </div>
 <!-- badges: start -->
 
-<p>The goal of <code>neurogam</code> is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., raw M/EEG data or decoding timecourses, pupillometry) but will be extended in the near future to support 2D temporal and 3D spatiotemporal data.</p>
+<p>The goal of <code>neurogam</code> is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., one M/EEG channel or decoding timecourses) but will be extended in the near future to support 2D temporal (e.g., cross-temporal generalisation matrices) and 3D spatiotemporal (e.g., time x sensors M/EEG) data.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -92,7 +92,7 @@
 <div class="section level3">
 <h3 id="model-fitting">Model fitting<a class="anchor" aria-label="anchor" href="#model-fitting"></a>
 </h3>
-<p>Below we fit a Bayesian generalised additive multilevel model (BGAMM) with varying intercept, slope, and smooth (per participant) to estimate the onset and offset of a difference between conditions. Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., no random/varying effect) may provide anticonservative cluster estimates.</p>
+<p>Below we fit a Bayesian generalised additive multilevel model (BGAMM) with varying intercept, slope, and smooth (per participant) to estimate the onset and offset of a difference between conditions. Note that we recommend fitting the BGAMM on time-resolved summary statistics (mean and SD, computed internally) as the full (i.e., trial-by-trial) BGAMM may be too slow, and the group-level BGAM (i.e., without random/varying effect) may provide anticonservative cluster estimates.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># loading the neurogam package</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/lnalborczyk/neurogam" class="external-link">neurogam</a></span><span class="op">)</span></span>
@@ -129,16 +129,17 @@
 <ul>
 <li>clusters: a data frame with one row per detected cluster;</li>
 <li>predictions: a data frame with time-resolved posterior summaries;</li>
-<li>data: data used to fit the model (possibly summarised);</li>
 <li>model: the fitted model object;</li>
 <li>multilevel: the value of the argument.</li>
 </ul>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># results structure</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">results</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "clusters"    "predictions" "model"       "multilevel"</span></span>
 <span></span>
-<span><span class="co"># model formula</span></span>
-<span><span class="va">results</span><span class="op">$</span><span class="va">model</span><span class="op">$</span><span class="va">formula</span></span></code></pre></div>
+<span><span class="co"># model formula (see also ?make_bgam_formula)</span></span>
+<span><span class="va">results</span><span class="op">$</span><span class="va">model</span><span class="op">$</span><span class="va">formula</span></span>
+<span><span class="co">#&gt; outcome_mean | se(outcome_sd) ~ 1 + (1 | participant) + s(time, bs = "tp", k = 20) + s(participant, time, bs = "fs", m = 1, k = 20)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="visualising-the-results">Visualising the results<a class="anchor" aria-label="anchor" href="#visualising-the-results"></a>
