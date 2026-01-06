@@ -80,6 +80,7 @@ between participants (e.g., age).</p>
 <span>  bs <span class="op">=</span> <span class="st">"tp"</span>,</span>
 <span>  multilevel <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"summary"</span>, <span class="st">"group"</span><span class="op">)</span>,</span>
 <span>  include_ar_term <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  use_se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  participant_clusters <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  varying_smooth <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  warmup <span class="op">=</span> <span class="fl">1000</span>,</span>
@@ -176,6 +177,11 @@ distribution to be used in the model (defaults to <code><a href="https://rdrr.io
 <dd><p>Logical; if <code>TRUE</code>, adds an AR(1) autocorrelation
 structure within participant via
 <code>autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)</code>.</p></dd>
+
+
+<dt id="arg-use-se">use_se<a class="anchor" aria-label="anchor" href="#arg-use-se"></a></dt>
+<dd><p>Logical; whether to include known or internally computed
+measurement error via <code>y | se(outcome_sd)</code> in the model formula.</p></dd>
 
 
 <dt id="arg-participant-clusters">participant_clusters<a class="anchor" aria-label="anchor" href="#arg-participant-clusters"></a></dt>

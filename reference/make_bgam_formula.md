@@ -20,7 +20,8 @@ make_bgam_formula(
   bs = "tp",
   include_ar_term = FALSE,
   varying_smooth = TRUE,
-  include_by_smooth = TRUE
+  include_by_smooth = TRUE,
+  use_se = TRUE
 )
 ```
 
@@ -76,6 +77,11 @@ make_bgam_formula(
 
   Logical; if `TRUE` (default) and `predictor_type = "categorical"`, the
   time smooth is specified with `by = predictor`.
+
+- use_se:
+
+  Logical; whether to include known or internally computed measurement
+  error via `y | se(outcome_sd)` in the model formula.
 
 ## Value
 
