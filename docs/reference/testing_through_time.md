@@ -24,6 +24,7 @@ testing_through_time(
   bs = "tp",
   multilevel = c("summary", "group"),
   include_ar_term = FALSE,
+  use_se = TRUE,
   participant_clusters = FALSE,
   varying_smooth = TRUE,
   warmup = 1000,
@@ -120,6 +121,11 @@ testing_through_time(
   Logical; if `TRUE`, adds an AR(1) autocorrelation structure within
   participant via
   `autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)`.
+
+- use_se:
+
+  Logical; whether to include known or internally computed measurement
+  error via `y | se(outcome_sd)` in the model formula.
 
 - participant_clusters:
 

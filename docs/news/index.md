@@ -34,6 +34,12 @@
 - Adding support for continuous predictors in
   [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
   ([\#1](https://github.com/lnalborczyk/neurogam/issues/1))
+- Allowing to pass a precomputed outcome SD to
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
+- Adding the `use_se` argument in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+  and
+  [`make_bgam_formula()`](https://lnalborczyk.github.io/neurogam/reference/make_bgam_formula.md).
 
 ### Other changes
 
@@ -48,8 +54,6 @@
 - Allowing `ggplot2` theme to be modified in plotting functions.
 - Providing a more informative error message after internal data summary
   when `outcome_sd` contains NAs.
-- Allowing to pass a precomputed outcome SD to
-  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
 
 ### Bug fixes
 
@@ -64,6 +68,9 @@
 - Fixing error in
   [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
   when `multilevel = "summary"` and `include_ar_term == TRUE`.
+- Fixing the `varying_smooth_term` error in
+  [`make_bgam_formula()`](https://lnalborczyk.github.io/neurogam/reference/make_bgam_formula.md)
+  when `predictor_id = NA`.
 
 ## neurogam 0.0.2
 

@@ -19,11 +19,11 @@ make_summary_data <- function (
     continuous_agg <- match.arg(continuous_agg)
 
     # family name (robust)
-    fam_name <- tryCatch({
+    fam_name <- tryCatch ({
 
         if (is.list(family) && !is.null(family$family) ) as.character(family$family) else stop ("not a family object")
 
-    }, error = function(e) {
+    }, error = function (e) {
 
         stop ("`family` must be a valid family object (see ?brm).", call. = FALSE)
 

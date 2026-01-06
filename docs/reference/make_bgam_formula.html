@@ -70,7 +70,8 @@ effects structure.</p>
 <span>  bs <span class="op">=</span> <span class="st">"tp"</span>,</span>
 <span>  include_ar_term <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  varying_smooth <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  include_by_smooth <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  include_by_smooth <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  use_se <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -125,6 +126,11 @@ If <code>FALSE</code>, only include the intercept/slope varying effects.</p></dd
 <dd><p>Logical; if <code>TRUE</code> (default) and
 <code>predictor_type = "categorical"</code>, the time smooth is specified with
 <code>by = predictor</code>.</p></dd>
+
+
+<dt id="arg-use-se">use_se<a class="anchor" aria-label="anchor" href="#arg-use-se"></a></dt>
+<dd><p>Logical; whether to include known or internally computed
+measurement error via <code>y | se(outcome_sd)</code> in the model formula.</p></dd>
 
 </dl></div>
     <div class="section level2">

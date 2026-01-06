@@ -17,6 +17,7 @@ testing_through_time(
   bs = "tp",
   multilevel = c("summary", "group"),
   include_ar_term = FALSE,
+  use_se = TRUE,
   participant_clusters = FALSE,
   varying_smooth = TRUE,
   warmup = 1000,
@@ -90,6 +91,9 @@ distribution to be used in the model (defaults to \code{gaussian()}).}
 \item{include_ar_term}{Logical; if \code{TRUE}, adds an AR(1) autocorrelation
 structure within participant via
 \code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)}.}
+
+\item{use_se}{Logical; whether to include known or internally computed
+measurement error via \code{y | se(outcome_sd)} in the model formula.}
 
 \item{participant_clusters}{Logical; should we return clusters at the participant-level.}
 

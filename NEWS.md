@@ -28,6 +28,8 @@
 * Adding support for returning participant-level onsets in `testing_through_time()`, `find_clusters()`, and related methods such as `summary()` and `plot()`. (#4)
 * Adding support for `binomial()` responses. (#7)
 * Adding support for continuous predictors in `testing_through_time()`. (#1)
+* Allowing to pass a precomputed outcome SD to `testing_through_time()`.
+* Adding the `use_se` argument in `testing_through_time()` and `make_bgam_formula()`.
 
 ## Other changes
 
@@ -37,7 +39,6 @@
 * Allowing to manually specify fill limits in `plot_eeg()`.
 * Allowing `ggplot2` theme to be modified in plotting functions.
 * Providing a more informative error message after internal data summary when `outcome_sd` contains NAs.
-* Allowing to pass a precomputed outcome SD to `testing_through_time()`.
 
 ## Bug fixes
 

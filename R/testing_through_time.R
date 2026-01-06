@@ -54,6 +54,8 @@
 #' @param include_ar_term Logical; if \code{TRUE}, adds an AR(1) autocorrelation
 #'   structure within participant via
 #'   \code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)}.
+#' @param use_se Logical; whether to include known or internally computed
+#'   measurement error via \code{y | se(outcome_sd)} in the model formula.
 #' @param varying_smooth Logical; should we include a varying smooth. Default is
 #' \code{TRUE}. If \code{FALSE}, we only include a varying intercept and slope.
 #' @param participant_clusters Logical; should we return clusters at the participant-level.
@@ -142,6 +144,7 @@ testing_through_time <- function (
         family = gaussian(), kvalue = 20, bs = "tp",
         multilevel = c("summary", "group"),
         include_ar_term = FALSE,
+        use_se = TRUE,
         participant_clusters = FALSE, varying_smooth = TRUE,
         warmup = 1000, iter = 2000, chains = 4, cores = 4,
         backend = c("cmdstanr", "rstan"),
@@ -193,15 +196,6 @@ testing_through_time <- function (
 
     }
 
-    if (include_ar_term && multilevel == "summary") {
-
-        stop (
-            "`include_ar_term` not yet implemented for multilevel = 'summary'... try multilevel = 'group'.",
-            call. = FALSE
-            )
-
-    }
-
     # restrict supported response distributions
     fam_name <- tryCatch ({
         if (is.list(family) && !is.null(family$family) ) {
@@ -222,6 +216,15 @@ testing_through_time <- function (
         stop (
             "Unsupported `family`: '", fam_name, "'. ",
             "Currently supported families are: gaussian() and binomial().",
+            call. = FALSE
+            )
+
+    }
+
+    if (use_se && fam_name != "gaussian") {
+
+        stop (
+            "`se()` is only supported for gaussian models.",
             call. = FALSE
             )
 
@@ -344,7 +347,8 @@ testing_through_time <- function (
             kvalue = kvalue,
             bs = bs,
             include_ar_term = include_ar_term,
-            varying_smooth = varying_smooth
+            varying_smooth = varying_smooth,
+            use_se = use_se
             )
 
         # include new predictor in data
@@ -365,7 +369,7 @@ testing_through_time <- function (
         }
 
         # testing whether outcome_sd contains NAs
-        if (!is_binom && any(is.na(summary_data$outcome_sd) ) ) {
+        if (!is_binom && use_se && any(is.na(summary_data$outcome_sd) ) ) {
 
             na_count <- sum(is.na(summary_data$outcome_sd) )
 
@@ -375,6 +379,12 @@ testing_through_time <- function (
                 )
 
         }
+
+        # displays the model formula
+        message (
+            "Fitting model with formula: ",
+            paste(utils::capture.output(print(formula_obj) ), collapse = " "), "\n"
+            )
 
         ####################################################
         # fit the model
@@ -595,6 +605,12 @@ testing_through_time <- function (
             }
 
         }
+
+        # displays the model formula
+        message (
+            "Fitting model with formula: ",
+            paste(utils::capture.output(print(formula_obj) ), collapse = " "), "\n"
+            )
 
         ####################################################
         # fit the model

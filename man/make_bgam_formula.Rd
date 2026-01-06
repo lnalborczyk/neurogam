@@ -13,7 +13,8 @@ make_bgam_formula(
   bs = "tp",
   include_ar_term = FALSE,
   varying_smooth = TRUE,
-  include_by_smooth = TRUE
+  include_by_smooth = TRUE,
+  use_se = TRUE
 )
 }
 \arguments{
@@ -47,6 +48,9 @@ If \code{FALSE}, only include the intercept/slope varying effects.}
 \item{include_by_smooth}{Logical; if \code{TRUE} (default) and
 \code{predictor_type = "categorical"}, the time smooth is specified with
 \code{by = predictor}.}
+
+\item{use_se}{Logical; whether to include known or internally computed
+measurement error via \code{y | se(outcome_sd)} in the model formula.}
 }
 \value{
 A \code{\link[brms]{brmsformula}} object.
