@@ -2,11 +2,14 @@
 
 The goal of `neurogam` is to provide utilities for estimating the onset
 and offset of time-resolved effects, such as those found in M/EEG,
-pupillometry, or finger/mouse-tracking data (amongst others). The
-current version only allows fitting 1D temporal data (e.g., one M/EEG
-channel or decoding timecourses) but will be extended in the near future
-to support 2D temporal (e.g., cross-temporal generalisation matrices)
-and 3D spatiotemporal (e.g., time x sensors M/EEG) data.
+pupillometry, or finger/mouse-tracking data (amongst others). It is
+designed as a lightweight interface to the
+[`brms`](https://github.com/paul-buerkner/brms) package. The current
+version allows fitting 1D temporal data (e.g., pupillometry, single
+M/EEG channel, or decoding timecourses) or 2D temporal (e.g.,
+cross-temporal decoding generalisation matrices) data but will be
+extended in the near future to support 3D spatiotemporal (e.g., time x
+sensors M/EEG) data.
 
 ## Installation
 
@@ -76,8 +79,9 @@ containing:
 
 - clusters: a data frame with one row per detected cluster;
 - predictions: a data frame with time-resolved posterior summaries;
-- model: the fitted model object;
-- multilevel: the value of the argument.
+- model: the fitted `brms` model object;
+- summary_data: the summary data used internally for fitting;
+- multilevel: the value of the `multilevel` argument.
 
 ``` r
 # results structure
@@ -127,6 +131,37 @@ ppc(object = results, ppc_type = "participant")
 ```
 
 ![](reference/figures/README-fig-ppc-1.png)
+
+### Reusing a previously fitted model
+
+The `previous_model` argument allows passing an existing `neurogam`
+model (previously fitted with
+[`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)),
+which may be useful for exploring the effects of the `threshold`
+parameters (while avoiding re-fitting the model).
+
+``` r
+# fitting the BGAMM to identify clusters
+results2 <- testing_through_time(
+    # simulated EEG data
+    data = eeg_data,
+    # previously fitted model
+    previous_model = results$model,
+    # when predictor_id = NA, tests average level against 0
+    predictor_id = NA,
+    # we recommend fitting the GAMM with summary statistics (mean and SD)
+    multilevel = "summary",
+    # new threshold on posterior odds
+    threshold = 20
+    )
+```
+
+``` r
+# plotting the data, model's predictions, and clusters
+plot(results2)
+```
+
+![](reference/figures/README-fig-clusters2-1.png)
 
 ### How to define the basis dimension?
 
@@ -245,9 +280,6 @@ cite one or more of the following publications:
 - Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R
   Package brms. The R Journal. 10(1), 395-411.
   doi.org/10.32614/RJ-2018-017
-- Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms
-  and Stan. Journal of Statistical Software, 100(5), 1-54.
-  doi.org/10.18637/jss.v100.i05
 
 ## Getting help
 

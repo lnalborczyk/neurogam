@@ -2,7 +2,7 @@
 % Please edit documentation in R/check_residual_autocorrelation.R
 \name{check_residual_autocorrelation}
 \alias{check_residual_autocorrelation}
-\title{Check and visualise residual autocorrelation in a fitted \pkg{neurogam} model}
+\title{Check residual autocorrelation for brms models}
 \usage{
 check_residual_autocorrelation(
   fit,
@@ -11,94 +11,141 @@ check_residual_autocorrelation(
   series_id = "ar_series",
   participant_id = "participant",
   predictor_id = "predictor",
-  outcome_mean_id = "outcome_mean",
-  success_id = "success",
-  trials_id = "trials",
-  max_lag = 25,
-  n_series_plot = 9,
-  seed = 42,
+  resid_method = "posterior_epred",
+  resid_type = c("ordinary", "pearson"),
+  ndraws = 1000,
   use_posterior_mean = TRUE,
+  ar_summary = c("mean", "median"),
+  max_lag = 20,
+  n_series_plot = 9,
+  seed = 666,
+  acf_ndraws = 1000,
+  acf_ci = 0.95,
   theme = ggplot2::theme_bw(),
   verbose = TRUE
 )
 }
 \arguments{
-\item{fit}{A fitted \code{\link[brms:brm]{brmsfit}} object.}
+\item{fit}{A fitted \code{brmsfit} object.}
 
-\item{data}{A data frame used to fit the model (or the same rows in the same order).
-Must contain a time column and (directly or indirectly) an AR series identifier.
-If \code{NULL} (default), uses data from \code{fit}.}
+\item{data}{Optional \code{data.frame} used to compute diagnostics. Defaults to
+\code{fit$data}. Must match the data used to fit \code{fit} (same rows and order),
+otherwise residual draws will not align with \code{data}.}
 
-\item{time_id}{Character; name of the time column. Defaults to \code{"time"}.}
+\item{time_id}{Name of the time column in \code{data}. Must be present. The time
+variable is used to order observations within each series prior to computing
+correlations.}
 
-\item{series_id}{Character; name of the column defining independent time series
-for autocorrelation checks. Defaults to \code{"ar_series"}.
-If \code{series_id} is not present in \code{data}, it is created as
-\code{interaction(participant_id, predictor_id, drop = TRUE)} when possible,
-otherwise as \code{participant_id}.}
+\item{series_id}{Name of the series (time-series grouping) column in \code{data}.
+If present, it is used as the grouping variable. If absent, a series factor is
+constructed using \code{participant_id} and \code{predictor_id} if available (see
+Details).}
 
-\item{participant_id}{Character; participant column name used to build \code{series}
-if needed. Defaults to \code{"participant"}.}
+\item{participant_id}{Name of a participant identifier column. Used to construct
+a fallback series grouping if \code{series_id} is not present.}
 
-\item{predictor_id}{Character; predictor/condition column name used to build \code{series}
-if needed. Defaults to \code{"predictor"}.}
+\item{predictor_id}{Name of a predictor identifier column. Used to construct
+a fallback series grouping if \code{series_id} is not present.}
 
-\item{outcome_mean_id}{Character; outcome column for Gaussian-type residuals.
-Defaults to \code{"outcome_mean"}.}
+\item{resid_method}{Residual method passed to \code{residuals.brmsfit()} (argument
+\code{method}). Defaults to \code{"posterior_epred"}.}
 
-\item{success_id, trials_id}{Character; columns for binomial outcomes
-(\code{success} and \code{trials}). Defaults to \code{"success"} and \code{"trials"}.}
+\item{resid_type}{Residual type passed to \code{residuals.brmsfit()} (argument
+\code{resid_type}). One of \code{"ordinary"} or \code{"pearson"}.}
 
-\item{max_lag}{Integer; maximum lag for ACF curves. Defaults to 25.}
+\item{ndraws}{Number of posterior draws of residuals to request from
+\code{residuals.brmsfit(..., summary = FALSE)}. These draws are used both to compute
+the pointwise residual summary stored in \code{data} and to compute ACF/PACF bands.}
 
-\item{n_series_plot}{Integer; number of series to plot ACFs for (sampled).
-Defaults to 9.}
+\item{use_posterior_mean}{Logical; if \code{TRUE}, raw residuals stored in
+\code{data} are computed as the posterior mean across residual draws. If \code{FALSE},
+the posterior median is used.}
 
-\item{seed}{Integer or \code{NULL}; random seed for sampling series to plot.
-Defaults to 42.}
+\item{ar_summary}{Summary used to form a single vector of AR coefficients for the
+"point" corrected residuals stored in \code{data}. One of \code{"mean"} or
+\code{"median"}.}
 
-\item{use_posterior_mean}{Logical; if \code{TRUE} (default) uses posterior mean
-\code{E[y|x]} to compute residuals. If \code{FALSE}, uses median.}
+\item{max_lag}{Maximum lag for ACF/PACF computation (positive integer). Lags are
+computed from 1 to \code{max_lag}.}
 
-\item{theme}{A \code{\link[ggplot2:theme]{theme}} object
-modifying the appearance of the plots.}
+\item{n_series_plot}{Number of series to randomly sample (without replacement) for
+plotting ACF/PACF panels and residual time series panels.}
 
-\item{verbose}{Logical; if \code{TRUE}, emits informative messages and warnings.}
+\item{seed}{Optional random seed used for sampling series and posterior draws. If
+\code{NULL}, sampling is not seeded.}
+
+\item{acf_ndraws}{Number of posterior draws to subsample when computing ACF/PACF
+summaries. If \code{acf_ndraws > ndraws}, the maximum available
+draws are used.}
+
+\item{acf_ci}{Credible interval width for ACF/PACF bands (e.g., \code{0.95} for a 95%
+interval). Must lie in \code{(0, 1)}.}
+
+\item{theme}{A \code{ggplot2} theme object added to plots.}
+
+\item{verbose}{Logical; if \code{TRUE}, emit messages and warnings about grouping,
+duplicated time values, or posterior draw alignment.}
 }
 \value{
-A named list with components:
+A list of class \code{"neurogam_autocor_check"} with components:
 \describe{
-  \item{data}{A copy of \code{data} with \code{.series} and \code{.resid} columns added.}
-  \item{checks}{A list of checks (duplicates, missing columns, etc.).}
-  \item{ar_summary}{A data frame summarising AR parameter draws (if present).}
-  \item{rho1_by_series}{A data frame with lag-1 residual correlation per series.}
-  \item{acf_df}{A data frame of ACF values for sampled series (for plotting).}
-  \item{plots}{A list of \pkg{ggplot2} objects.}
+  \item{ar_summary}{A \code{data.frame} summarising posterior AR parameters (if present).}
+  \item{rho1_by_series_raw}{Lag-1 autocorrelation per series computed from \code{.resid_raw}.}
+  \item{rho1_by_series_corrected}{Lag-1 autocorrelation per series computed from
+    \code{.resid_corrected} (NA if no AR parameters).}
+  \item{acf_raw}{A \code{data.frame} containing ACF summaries for raw residuals, with
+    columns \code{.series}, \code{lag}, \code{q_low}, \code{q50}, \code{q_high}, \code{point}.}
+  \item{acf_corrected}{Same as \code{acf_raw} but for corrected residuals (empty/NA if no AR).}
+  \item{pacf_raw}{A \code{data.frame} containing PACF summaries for raw residuals, with
+    columns \code{.series}, \code{lag}, \code{q_low}, \code{q50}, \code{q_high}, \code{point}.}
+  \item{pacf_corrected}{Same as \code{pacf_raw} but for corrected residuals (empty/NA if no AR).}
+  \item{plots}{A named list of \code{ggplot} objects (ACF/PACF panels, rho1 summaries,
+    residual time-series plots, and AR density plots if applicable).}
 }
 }
 \description{
-Computes practical diagnostics for residual autocorrelation in a fitted
-\pkg{brms} model, with special handling of time-resolved neurogam data where
-each participant can have multiple independent time series (e.g., one per
-condition).
+Compute and visualise residual autocorrelation diagnostics (ACF and partial ACF)
+for \code{brms} models, optionally comparing raw residuals to "corrected" residuals
+obtained by removing the contribution of autoregressive (AR) terms.
 }
 \details{
-The function:
-\itemize{
-  \item checks that time points are unique within each AR series,
-  \item extracts and summarises AR parameter(s) (e.g., \code{ar[1]}) if present,
-  \item computes posterior-mean residuals \eqn{y - E[y \mid x]},
-  \item quantifies lag-1 residual autocorrelation per series,
-  \item visualises residual autocorrelation via ACF curves and summary plots.
+This function is designed for models fit with \code{brms} that may include
+autoregressive structures (e.g., \code{ar()} terms). Residual autocorrelation is
+evaluated per time series (defined by \code{series_id} or fallback groupings) and
+summarised using posterior draws of residuals.
+
+
+\strong{Series grouping.} If \code{series_id} is present in \code{data}, it defines
+the grouping. Otherwise, the function tries to construct \code{.series} as:
+\enumerate{
+  \item \code{interaction(participant_id, predictor_id)} if both columns exist;
+  \item \code{participant_id} if only participant exists;
+  \item \code{predictor_id} if only predictor exists;
+  \item a single-level factor \code{"group"} if none exist.
 }
+
+\strong{Corrected residuals.} If AR parameters are detected in the posterior draws
+(columns matching \code{"^ar\\["}), corrected residuals are computed per series as:
+\deqn{e_t^{(corr)} = e_t - \sum_{k=1}^{p} \phi_k e_{t-k}}
+using either the posterior mean or median of \eqn{\phi_k} (controlled by
+\code{ar_summary}) for the \emph{point} corrected residuals stored in \code{data}.
 }
 \examples{
 \dontrun{
-# after fitting a brms model
-out <- check_residual_autocorrelation(fit)
-out$ar_summary
-out$plots$rho1_hist
-out$plots$acf
+# fit is a brmsfit with an AR(1) term
+out <- check_residual_autocorrelation(
+    fit = fit,
+    time_id = "time",
+    series_id = "ar_series"
+    )
+
+# inspect ACF/PACF summaries
+head(out$acf_raw)
+head(out$pacf_raw)
+
+# plot ACF/PACF panels
+out$plots$acf_raw
+out$plots$acf_corrected
 }
 
 }

@@ -19,7 +19,7 @@ thresholding condition."><meta property="og:image" content="https://lnalborczyk.
 
     <a class="navbar-brand me-2" href="../index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,6 +32,8 @@ thresholding condition."><meta property="og:image" content="https://lnalborczyk.
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eeg_spatio_temporal.html">Application to spatio-temporal EEG data (in progress)</a></li>
     <li><a class="dropdown-item" href="../articles/eeg_temporal.html">Application to 1D temporal EEG data</a></li>
+    <li><a class="dropdown-item" href="../articles/residual_autocorrelation.html">Checking and modelling residual auto-correlation (1D temporal data)</a></li>
+    <li><a class="dropdown-item" href="../articles/temporal-2d.html">Modelling cross-temporal decoding generalisation matrices (2D temporal)</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +64,8 @@ thresholding condition.</p>
 <span>  <span class="va">data</span>,</span>
 <span>  threshold <span class="op">=</span> <span class="fl">10</span>,</span>
 <span>  group <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  threshold_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"both"</span>, <span class="st">"above"</span>, <span class="st">"below"</span><span class="op">)</span></span>
+<span>  threshold_type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"both"</span>, <span class="st">"above"</span>, <span class="st">"below"</span><span class="op">)</span>,</span>
+<span>  time_id <span class="op">=</span> <span class="st">"time"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -98,6 +101,11 @@ detected. Must be one of <code>"above"</code>, <code>"below"</code>, or <code>"b
 <code>value &lt;= 1/threshold</code>. When <code>"both"</code>, both types are detected
 and the returned data include a <code>sign</code> column.</p></dd>
 
+
+<dt id="arg-time-id">time_id<a class="anchor" aria-label="anchor" href="#arg-time-id"></a></dt>
+<dd><p>Character; name of the column(s) in <code>data</code>
+containing time information (e.g., in seconds or samples).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -132,11 +140,13 @@ if grouping is used). Internally, the data are:</p><ol><li><p>filtered to remove
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
     <p>Ladislas Nalborczyk <a href="mailto:ladislas.nalborczyk@cnrs.fr">ladislas.nalborczyk@cnrs.fr</a></p>
+<p>Ladislas Nalborczyk <a href="mailto:ladislas.nalborczyk@cnrs.fr">ladislas.nalborczyk@cnrs.fr</a>.</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">666</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">666</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
@@ -149,47 +159,12 @@ if grouping is used). Internally, the data are:</p><ol><li><p>filtered to remove
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Detect both positive and negative clusters</span></span></span>
 <span class="r-in"><span><span class="fu">find_clusters</span><span class="op">(</span>data <span class="op">=</span> <span class="va">df</span>, threshold <span class="op">=</span> <span class="fl">3</span>, threshold_type <span class="op">=</span> <span class="st">"both"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    id      onset     offset n_points     sign</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   1 0.30303030 0.36363636        7 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   2 0.38383838 0.44444444        7 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   3 0.46464646 0.49494949        4 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   1 0.02020202 0.02020202        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   2 0.04040404 0.04040404        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   3 0.06060606 0.09090909        4 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   4 0.11111111 0.11111111        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   5 0.13131313 0.15151515        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9   6 0.18181818 0.18181818        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10  7 0.20202020 0.21212121        2 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11  8 0.23232323 0.29292929        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12  9 0.50505051 0.71717172       22 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 10 0.73737374 0.79797980        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 11 0.82828283 0.84848485        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15 12 0.88888889 0.94949495        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16 13 0.97979798 1.00000000        3 negative</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># One-sided detection (positive only)</span></span></span>
 <span class="r-in"><span><span class="fu">find_clusters</span><span class="op">(</span>data <span class="op">=</span> <span class="va">df</span>, threshold <span class="op">=</span> <span class="fl">3</span>, threshold_type <span class="op">=</span> <span class="st">"above"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   id     onset    offset n_points     sign</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  1 0.3030303 0.3636364        7 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  2 0.3838384 0.4444444        7 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  3 0.4646465 0.4949495        4 positive</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># One-sided detection (negative only)</span></span></span>
 <span class="r-in"><span><span class="fu">find_clusters</span><span class="op">(</span>data <span class="op">=</span> <span class="va">df</span>, threshold <span class="op">=</span> <span class="fl">3</span>, threshold_type <span class="op">=</span> <span class="st">"below"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    id      onset     offset n_points     sign</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   1 0.02020202 0.02020202        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   2 0.04040404 0.04040404        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   3 0.06060606 0.09090909        4 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   4 0.11111111 0.11111111        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   5 0.13131313 0.15151515        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   6 0.18181818 0.18181818        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7   7 0.20202020 0.21212121        2 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8   8 0.23232323 0.29292929        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9   9 0.50505051 0.71717172       22 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10 10 0.73737374 0.79797980        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 11 0.82828283 0.84848485        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 12 0.88888889 0.94949495        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 13 0.97979798 1.00000000        3 negative</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Grouped example (e.g., per participant)</span></span></span>
 <span class="r-in"><span><span class="va">df_g</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span></span>
@@ -203,39 +178,7 @@ if grouping is used). Internally, the data are:</p><ol><li><p>filtered to remove
 <span class="r-in"><span>  group <span class="op">=</span> <span class="st">"participant"</span>,</span></span>
 <span class="r-in"><span>  threshold_type <span class="op">=</span> <span class="st">"both"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    participant id      onset     offset n_points     sign</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1          P01  1 0.30303030 0.36363636        7 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2          P01  2 0.38383838 0.44444444        7 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3          P01  3 0.46464646 0.49494949        4 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4          P01  1 0.02020202 0.02020202        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5          P01  2 0.04040404 0.04040404        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6          P01  3 0.06060606 0.09090909        4 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7          P01  4 0.11111111 0.11111111        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8          P01  5 0.13131313 0.15151515        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9          P01  6 0.18181818 0.18181818        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10         P01  7 0.20202020 0.21212121        2 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11         P01  8 0.23232323 0.29292929        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12         P01  9 0.50505051 0.71717172       22 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13         P01 10 0.73737374 0.79797980        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14         P01 11 0.82828283 0.84848485        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15         P01 12 0.88888889 0.94949495        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16         P01 13 0.97979798 1.00000000        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17         P02  1 0.30303030 0.36363636        7 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18         P02  2 0.38383838 0.44444444        7 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19         P02  3 0.46464646 0.49494949        4 positive</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20         P02  1 0.02020202 0.02020202        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21         P02  2 0.04040404 0.04040404        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22         P02  3 0.06060606 0.09090909        4 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23         P02  4 0.11111111 0.11111111        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24         P02  5 0.13131313 0.15151515        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25         P02  6 0.18181818 0.18181818        1 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26         P02  7 0.20202020 0.21212121        2 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27         P02  8 0.23232323 0.29292929        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28         P02  9 0.50505051 0.71717172       22 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29         P02 10 0.73737374 0.79797980        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30         P02 11 0.82828283 0.84848485        3 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31         P02 12 0.88888889 0.94949495        7 negative</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32         P02 13 0.97979798 1.00000000        3 negative</span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

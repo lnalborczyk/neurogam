@@ -9,14 +9,26 @@
 #' between participants (e.g., age).
 #'
 #' @param data A data frame in long format containing time-resolved data.
+#' @param previous_model Optional. A previously fitted \code{brmsfit} object
+#'   obtained from \code{testing_through_time()}. When provided, the model is
+#'   not refitted; instead, posterior predictions and inference are recomputed
+#'   using the supplied model. This is useful for exploring the effect of
+#'   different \code{threshold} and \code{threshold_type} values without
+#'   re-running model fitting.
+#'
+#'   The supplied model must be compatible with the current function call
+#'   (i.e., same data structure, formula, family, and predictors). If
+#'   \code{previous_model} is not \code{NULL}, arguments related to model
+#'   estimation (e.g., \code{warmup}, \code{iter}, \code{chains},
+#'   \code{cores}, \code{backend}, \code{stan_control}) are ignored.
 #' @param participant_id Character; name of the column in \code{data}
-#' specifying participant IDs.
+#'   specifying participant IDs.
 #' @param outcome_id Character; name of the column in \code{data} containing
-#' the outcome values (e.g., M/EEG amplitude, decoding accuracy).
+#'   the outcome values (e.g., M/EEG amplitude, decoding accuracy).
 #' @param outcome_sd Character; name of the column in \code{data} containing
-#' the outcome SD, when \code{outcome_id} has already been summarised (default
-#' value is NULL).
-#' @param time_id Character; name of the column in \code{data}
+#'   the outcome SD, when \code{outcome_id} has already been summarised (default
+#'   value is NULL).
+#' @param time_id Character; name of the column(s) in \code{data}
 #' containing time information (e.g., in seconds or samples).
 #' @param predictor_id Character; name of the column in \code{data}
 #'   containing either:
@@ -35,9 +47,9 @@
 #'       for instance).
 #'   }
 #' @param trials_id Character; name of the column in \code{data}
-#' containing the number of trials when using \code{family = binomial()}
-#' and summary data. If NULL (default), the function internally summarise binary
-#' data into "successes" and total number of "trials".
+#'   containing the number of trials when using \code{family = binomial()}
+#'   and summary data. If NULL (default), the function internally summarise binary
+#'   data into "successes" and total number of "trials".
 #' @param family A \pkg{brms} family object describing the response
 #'   distribution to be used in the model (defaults to \code{gaussian()}).
 #' @param kvalue Numeric; basis dimension \code{k} passed to the smooth term
@@ -56,6 +68,10 @@
 #'   \code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)}.
 #' @param use_se Logical; whether to include known or internally computed
 #'   measurement error via \code{y | se(outcome_sd)} in the model formula.
+#' @param t2_full Logical; If TRUE, then there is a separate penalty for each
+#'   combination of null space column and range space, see \code{\link[mgcv]{t2}}.
+#'   Only use when fitting 2D temporal models (i.e., when \code{time_id} contains
+#'   two temporal variables).
 #' @param varying_smooth Logical; should we include a varying smooth. Default is
 #' \code{TRUE}. If \code{FALSE}, we only include a varying intercept and slope.
 #' @param participant_clusters Logical; should we return clusters at the participant-level.
@@ -63,10 +79,17 @@
 #' @param iter Numeric; total number of iterations per chain (including warmup).
 #' @param chains Numeric; number of MCMCs.
 #' @param cores Numeric; number of parallel cores to use.
+#' @param threads Numeric; number of threads to use in within-chain parallelisation.
+#'   See \code{\link[brms]{brm}} documentation for more information.
 #' @param backend Character; package to use as the backend for fitting the
 #'   \code{Stan} model. One of \code{"cmdstanr"} (default) or \code{"rstan"}.
 #' @param stan_control List; parameters to control the MCMC behaviour, using
 #'   default parameters when NULL. See \code{?brm} for more details.
+#' @param file Either NULL or a character string. In the latter case, the
+#'   fitted \code{brms} model object is saved via saveRDS in a file named after
+#'   the string supplied in file. The \code{.rds} extension is added
+#'   automatically. If the file already exists, \code{brm} will load and return
+#'   the saved model object instead of refitting the model.
 #' @param n_post_samples Numeric; number of posterior draws used to compute
 #'   posterior probabilities. If \code{NULL} (default), all available draws
 #'   from the fitted model are used.
@@ -91,7 +114,7 @@
 #'     \item \code{predictions}: a data frame with time-resolved posterior
 #'       summaries (posterior median, credible interval, posterior
 #'       probabilities, and odds \code{prob_ratio});
-#'     \item \code{data}: data used to fit the \pkg{brms} model
+#'     \item \code{summary_data}: data used to fit the \pkg{brms} model
 #'       (possibly summarised);
 #'     \item \code{model}: the fitted \pkg{brms} model object;
 #'     \item \code{multilevel}: the value of the \code{multilevel} argument.
@@ -130,6 +153,9 @@
 #'
 #' # plot the model predictions and identified clusters
 #' plot(results)
+#'
+#' # posterior predictive check
+#' ppc(results)
 #' }
 #'
 #' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
@@ -139,16 +165,18 @@
 #' @export
 testing_through_time <- function (
         data,
+        previous_model = NULL,
         participant_id = "participant", outcome_id = "eeg", outcome_sd = NULL,
         time_id = "time", predictor_id = "condition", trials_id = NULL,
         family = gaussian(), kvalue = 20, bs = "tp",
         multilevel = c("summary", "group"),
         include_ar_term = FALSE,
-        use_se = TRUE,
+        use_se = TRUE, t2_full = FALSE,
         participant_clusters = FALSE, varying_smooth = TRUE,
-        warmup = 1000, iter = 2000, chains = 4, cores = 4,
+        warmup = 1000, iter = 2000, chains = 4, cores = 4, threads = NULL,
         backend = c("cmdstanr", "rstan"),
         stan_control = NULL,
+        file = NULL,
         n_post_samples = NULL,
         threshold = 10, threshold_type = c("both", "above", "below"),
         chance_level = NULL, credible_interval = 0.95
@@ -157,12 +185,13 @@ testing_through_time <- function (
     # some tests for variable types
     stopifnot("data must be a dataframe..." = is.data.frame(data) )
     stopifnot("kvalue must be a numeric..." = is.numeric(kvalue) )
+    stopifnot("bs must be a character..." = is.character(bs) )
     stopifnot("warmup must be a numeric..." = is.numeric(warmup) )
     stopifnot("iter must be a numeric..." = is.numeric(iter) )
     stopifnot("chains must be a numeric..." = is.numeric(chains) )
     stopifnot("cores must be a numeric..." = is.numeric(cores) )
     stopifnot("threshold must be a numeric..." = is.numeric(threshold) )
-    stopifnot("bs must be a character..." = is.character(bs) )
+    stopifnot("credible_interval must be a numeric..." = is.numeric(credible_interval) )
 
     # multilevel should be one of above
     multilevel <- match.arg(multilevel)
@@ -221,17 +250,42 @@ testing_through_time <- function (
 
     }
 
-    if (use_se && fam_name != "gaussian") {
+    # time_id can be 1D or 2D (character vector of length 1 or 2)
+    if (!is.character(time_id) ) {
 
         stop (
-            "`se()` is only supported for gaussian models.",
-            call. = FALSE
+            "`time_id` must be a character vector (e.g., \"time\" or c(\"train_time\", \"test_time\")). ",
+            "Passing unquoted names like time_id = c(train_time, test_time) will fail unless ",
+            "`train_time` and `test_time` objects exist in the calling environment."
             )
 
     }
 
-    # checking required column names
-    required_columns <- c(participant_id, outcome_id, time_id)
+    if (!(length(time_id) %in% c(1L, 2L) ) ) {
+
+        stop ("`time_id` must have length 1 or 2.")
+
+    }
+
+    if (length(time_id) == 2L && identical(time_id[[1]], time_id[[2]]) ) {
+
+        stop ("When `time_id` has length 2, the two names must be different.")
+
+    }
+
+    # check columns exist
+    missing_time_cols <- setdiff(time_id, names(data) )
+    if (length(missing_time_cols) > 0) {
+
+        stop (
+            "The following `time_id` column(s) are missing from `data`: ",
+            paste(missing_time_cols, collapse = ", ")
+            )
+
+    }
+
+    # check further required column names
+    required_columns <- c(participant_id, outcome_id)
 
     if (!is.na(predictor_id) ) {
 
@@ -271,6 +325,17 @@ testing_through_time <- function (
 
     }
 
+    if (is_binom) use_se <- FALSE
+
+    if (use_se && fam_name != "gaussian") {
+
+        stop (
+            "`se()` is only supported for gaussian models.",
+            call. = FALSE
+            )
+
+    }
+
     if (is.null(chance_level) ) {
 
         if (is_binom) {
@@ -283,12 +348,33 @@ testing_through_time <- function (
 
         } else {
 
-            # define chance_level to 0 by default for gaussian responses
+            # define chance_level to 0 by default for Gaussian responses
             chance_level <- 0
 
             # warning the user
             cat("Assuming null_value (chance_level) = 0 by default when family = gaussian().\n")
 
+
+        }
+
+    }
+
+    # allow reusing an already fitted model
+    use_previous_model <- !is.null(previous_model)
+
+    if (use_previous_model) {
+
+        if (!inherits(previous_model, "brmsfit") ) {
+
+            stop ("`previous_model` must be a valid `brmsfit` object.", call. = FALSE)
+
+        }
+
+        brms_gam <- previous_model
+
+        if (is.null(n_post_samples) ) {
+
+            n_post_samples <- brms::ndraws(brms_gam)
 
         }
 
@@ -309,7 +395,7 @@ testing_through_time <- function (
 
             predictor_type <- "categorical"
 
-            # optional: enforce 2 levels for categorical case
+            # enforce 2 levels for categorical case
             if (length(unique(pred_vec) ) != 2) {
 
                 stop ("For categorical `predictor_id`, there must be exactly 2 levels.", call. = FALSE)
@@ -319,6 +405,10 @@ testing_through_time <- function (
         }
 
     }
+
+    # retrieving temporal variable(s)
+    is_2d_time <- length(time_id) == 2L
+    time_vars <- time_id
 
     if (multilevel == "summary") {
 
@@ -344,6 +434,8 @@ testing_through_time <- function (
             multilevel = multilevel,
             predictor_type = predictor_type,
             within_between = if (!is.na(predictor_id) ) within_between$classification else NA,
+            time_id = time_id,
+            t2_full = t2_full,
             kvalue = kvalue,
             bs = bs,
             include_ar_term = include_ar_term,
@@ -354,7 +446,8 @@ testing_through_time <- function (
         # include new predictor in data
         if (include_ar_term) {
 
-            if (!is.na(predictor_id) ) {
+            # if there is a predictor and if it varies within participants
+            if (!is.na(predictor_id) && within_between$classification == "within-subject") {
 
                 summary_data <- summary_data |>
                     dplyr::mutate(ar_series = interaction(.data$participant, .data$predictor) )
@@ -386,179 +479,68 @@ testing_through_time <- function (
             paste(utils::capture.output(print(formula_obj) ), collapse = " "), "\n"
             )
 
-        ####################################################
-        # fit the model
-        ####################################################
-        brms_gam <- brms::brm(
-            formula = formula_obj,
-            data = summary_data,
-            family = family,
-            warmup = warmup,
-            iter = iter,
-            chains = chains,
-            cores = cores,
-            backend = backend,
-            control = stan_control,
-            stan_model_args = list(stanc_options = list("O1") )
+        #####################################################
+        # fit the model (unless previous_model is provided) #
+        #####################################################
+
+        if (!use_previous_model) {
+
+            brms_gam <- brms::brm(
+                formula = formula_obj,
+                data = summary_data,
+                family = family,
+                warmup = warmup,
+                iter = iter,
+                chains = chains,
+                cores = cores,
+                threads = threads,
+                backend = backend,
+                control = stan_control,
+                file = file,
+                stan_model_args = list(stanc_options = list("O1") )
+                )
+
+            if (is.null(n_post_samples) ) {
+
+                n_post_samples <- brms::ndraws(brms_gam)
+
+            }
+
+        } else {
+
+            message ("Using `previous_model`: skipping model fitting.")
+
+        }
+
+        ###########################################
+        # build prediction grid from summary_data #
+        ###########################################
+
+        newdata_grid <- make_prediction_grid_from_summary(
+            summary_data = summary_data,
+            brms_gam = brms_gam,
+            predictor_id = predictor_id,
+            predictor_type = predictor_type,
+            participant_clusters = participant_clusters,
+            within_between = within_between,
+            is_2d_time = is_2d_time,
+            is_binom = is_binom,
+            include_ar_term = include_ar_term,
+            continuous_mode = "pm1sd"
             )
 
-        if (is.null(n_post_samples) ) {
+        ##################################
+        # retrieve posterior predictions #
+        ##################################
 
-            n_post_samples <- brms::ndraws(brms_gam)
-
-        }
-
-        # computing the posterior odds over time
-        if (is.na(predictor_id) ) {
-
-            if (participant_clusters) {
-
-                # newdata grid over time
-                newdata_grid <- tidyr::crossing(
-                    time = sort(unique(brms_gam$data$time) ),
-                    participant = sort(unique(brms_gam$data$participant) )
-                    ) |>
-                    # add appropriate dummy to satisfy validate_data()
-                    add_required_dummy(is_binom = is_binom)
-
-                # retrieving posterior predictions (draws)
-                post_draws <- tidybayes::add_epred_draws(
-                    object = brms_gam,
-                    newdata = newdata_grid,
-                    ndraws = n_post_samples,
-                    re_formula = NULL
-                    ) |>
-                    data.frame()
-
-            } else {
-
-                # newdata grid over time
-                newdata_grid <- tidyr::crossing(
-                    time = sort(unique(brms_gam$data$time) )
-                    ) |>
-                    # add appropriate dummy to satisfy validate_data()
-                    add_required_dummy(is_binom = is_binom) |>
-                    # NA participant to satisfy validate_data()
-                    dplyr::mutate(participant = NA)
-
-                # retrieving posterior predictions (draws)
-                post_draws <- tidybayes::add_epred_draws(
-                    object = brms_gam,
-                    newdata = newdata_grid,
-                    ndraws = n_post_samples,
-                    re_formula = NA
-                    ) |>
-                    data.frame()
-
-            }
-
-        } else if (predictor_type == "categorical") {
-
-            if (participant_clusters) {
-
-                if (within_between$classification == "within-subject") {
-
-                    # newdata grid over time and predictor
-                    newdata_grid <- tidyr::crossing(
-                        time = sort(unique(brms_gam$data$time) ),
-                        predictor = levels(brms_gam$data$predictor),
-                        participant = sort(unique(brms_gam$data$participant) )
-                        ) |>
-                        # add appropriate dummy to satisfy validate_data()
-                        add_required_dummy(is_binom = is_binom)
-
-                    # retrieving posterior predictions (draws)
-                    post_draws <- tidybayes::add_epred_draws(
-                        object = brms_gam,
-                        newdata = newdata_grid,
-                        ndraws = n_post_samples,
-                        re_formula = NULL
-                        ) |>
-                        data.frame()
-
-                } else if (within_between$classification == "between-subject") {
-
-                    cat(
-                        "We can not estimate clusters at the participant level when the predictor varies across participants...\nSwitching to participant_clusters = FALSE\n"
-                        )
-
-                    participant_clusters <- FALSE
-
-                }
-
-            } else { # end participant_clusters
-
-                # newdata grid over time and predictor
-                newdata_grid <- tidyr::crossing(
-                    time = sort(unique(brms_gam$data$time) ),
-                    predictor = levels(brms_gam$data$predictor)
-                    ) |>
-                    # add appropriate dummy to satisfy validate_data()
-                    add_required_dummy(is_binom = is_binom) |>
-                    # NA participant to satisfy validate_data()
-                    dplyr::mutate(participant = NA)
-
-                # retrieving posterior predictions (draws)
-                post_draws <- tidybayes::add_epred_draws(
-                    object = brms_gam,
-                    newdata = newdata_grid,
-                    ndraws = n_post_samples,
-                    re_formula = NA
-                    ) |>
-                    data.frame()
-
-            }
-
-        } else if (predictor_type == "continuous") {
-
-            if (participant_clusters) {
-
-                # newdata grid over time and predictor +/-1 SD
-                predictor_mean <- mean(brms_gam$data$predictor)
-                predictor_sd <- sd(brms_gam$data$predictor)
-                newdata_grid <- tidyr::crossing(
-                    time = sort(unique(brms_gam$data$time) ),
-                    predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd),
-                    participant = sort(unique(brms_gam$data$participant) )
-                    ) |>
-                    # add appropriate dummy to satisfy validate_data()
-                    add_required_dummy(is_binom = is_binom)
-
-                # retrieving posterior predictions (draws)
-                post_draws <- tidybayes::add_epred_draws(
-                    object = brms_gam,
-                    newdata = newdata_grid,
-                    ndraws = n_post_samples,
-                    re_formula = NULL
-                    ) |>
-                    data.frame()
-
-            } else {
-
-                # newdata grid over time and predictor +/-1 SD
-                predictor_mean <- mean(brms_gam$data$predictor)
-                predictor_sd <- sd(brms_gam$data$predictor)
-                newdata_grid <- tidyr::crossing(
-                    time = sort(unique(brms_gam$data$time) ),
-                    predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)
-                    ) |>
-                    # add appropriate dummy to satisfy validate_data()
-                    add_required_dummy(is_binom = is_binom) |>
-                    # NA participant to satisfy validate_data()
-                    dplyr::mutate(participant = NA)
-
-                # retrieving posterior predictions (draws)
-                post_draws <- tidybayes::add_epred_draws(
-                    object = brms_gam,
-                    newdata = newdata_grid,
-                    ndraws = n_post_samples,
-                    re_formula = NA
-                    ) |>
-                    data.frame()
-
-            }
-
-        }
+        post_draws <- tidybayes::add_epred_draws(
+            object = brms_gam,
+            newdata = newdata_grid,
+            ndraws = n_post_samples,
+            re_formula = if (participant_clusters) NULL else NA,
+            incl_autocor = TRUE
+            ) |>
+            data.frame()
 
     } else if (multilevel == "group") {
 
@@ -575,7 +557,7 @@ testing_through_time <- function (
             )
 
         summary_data <- ms$data
-        within_between <- ms$within_betwee
+        within_between <- ms$within_between
 
         # define the model formula
         formula_obj <- make_bgam_formula(
@@ -583,6 +565,8 @@ testing_through_time <- function (
             multilevel = multilevel,
             predictor_type = predictor_type,
             within_between = if (!is.na(predictor_id) ) within_between$classification else NA,
+            time_id = time_id,
+            t2_full = t2_full,
             kvalue = kvalue,
             bs = bs,
             include_ar_term = include_ar_term,
@@ -592,7 +576,8 @@ testing_through_time <- function (
         # include new predictor in data
         if (include_ar_term) {
 
-            if (!is.na(predictor_id) ) {
+            # if there is a predictor and if it varies within participants
+            if (!is.na(predictor_id) && within_between$classification == "within-subject") {
 
                 summary_data <- summary_data |>
                     dplyr::mutate(ar_series = interaction(.data$participant, .data$predictor) )
@@ -606,131 +591,247 @@ testing_through_time <- function (
 
         }
 
-        # displays the model formula
+        # display the model formula
         message (
             "Fitting model with formula: ",
             paste(utils::capture.output(print(formula_obj) ), collapse = " "), "\n"
             )
 
-        ####################################################
-        # fit the model
-        ####################################################
-        brms_gam <- brms::brm(
-            formula = formula_obj,
-            data = summary_data,
-            family = family,
-            warmup = warmup,
-            iter = iter,
-            chains = chains,
-            cores = cores,
-            backend = backend,
-            control = stan_control
-            )
+        #####################################################
+        # fit the model (unless previous_model is provided) #
+        #####################################################
 
-        if (is.null(n_post_samples) ) {
+        if (!use_previous_model) {
 
-            n_post_samples <- brms::ndraws(brms_gam)
+            brms_gam <- brms::brm(
+                formula = formula_obj,
+                data = summary_data,
+                family = family,
+                warmup = warmup,
+                iter = iter,
+                chains = chains,
+                cores = cores,
+                threads = threads,
+                backend = backend,
+                control = stan_control,
+                file = file,
+                stan_model_args = list(stanc_options = list("O1") )
+                )
+
+            if (is.null(n_post_samples) ) {
+
+                n_post_samples <- brms::ndraws(brms_gam)
+
+            }
+
+        } else {
+
+            message ("Using `previous_model`: skipping model fitting.")
 
         }
 
-        # computing the posterior odds over time
+        # compute the posterior odds over time
         if (is.na(predictor_id) ) {
 
-            # newdata grid over time
-            newdata_grid <- tidyr::crossing(time = sort(unique(brms_gam$data$time) ) )
+            if (is_2d_time) {
 
-            # retrieving posterior predictions (draws)
-            post_draws <- tidybayes::add_epred_draws(
-                object = brms_gam,
-                newdata = newdata_grid,
-                ndraws = n_post_samples,
-                re_formula = NA
-                ) |>
-                data.frame()
+                if (participant_clusters) {
+
+                    stop ("`participant_clusters = TRUE` is not supported for 2D temporal models yet.", call. = FALSE)
+
+                }
+
+                newdata_grid <- tidyr::crossing(
+                    time1 = sort(unique(brms_gam$data$time1) ),
+                    time2 = sort(unique(brms_gam$data$time2) )
+                    ) |>
+                    # add appropriate dummy to satisfy validate_data()
+                    add_required_dummy(is_binom = is_binom) |>
+                    # NA participant to satisfy validate_data()
+                    dplyr::mutate(participant = NA)
+
+            } else {
+
+                # newdata grid over time
+                newdata_grid <- tidyr::crossing(time = sort(unique(brms_gam$data$time) ) )
+
+                }
 
         } else if (predictor_type == "categorical") {
 
-            # newdata grid over time and predictor
-            newdata_grid <- tidyr::crossing(
-                time = sort(unique(brms_gam$data$time) ),
-                predictor = levels(brms_gam$data$predictor)
-                )
+            if (is_2d_time) {
 
-            # retrieving posterior predictions (draws)
-            post_draws <- tidybayes::add_epred_draws(
-                object = brms_gam,
-                newdata = newdata_grid,
-                ndraws = n_post_samples,
-                re_formula = NA
-                ) |>
-                data.frame()
+                if (participant_clusters) {
+
+                    stop ("`participant_clusters = TRUE` is not supported for 2D temporal models yet.", call. = FALSE)
+
+                }
+
+                newdata_grid <- tidyr::crossing(
+                    time1 = sort(unique(brms_gam$data$time1) ),
+                    time2 = sort(unique(brms_gam$data$time2) ),
+                    predictor = levels(brms_gam$data$predictor)
+                    ) |>
+                    # add appropriate dummy to satisfy validate_data()
+                    add_required_dummy(is_binom = is_binom) |>
+                    # NA participant to satisfy validate_data()
+                    dplyr::mutate(participant = NA)
+
+            } else {
+
+                # newdata grid over time and predictor
+                newdata_grid <- tidyr::crossing(
+                    time = sort(unique(brms_gam$data$time) ),
+                    predictor = levels(brms_gam$data$predictor)
+                    )
+
+            }
 
         } else if (predictor_type == "continuous") {
 
-            # newdata grid over time and predictor +/-1 SD
-            predictor_mean <- mean(brms_gam$data$predictor)
-            predictor_sd <- sd(brms_gam$data$predictor)
-            newdata_grid <- tidyr::crossing(
-                time = sort(unique(brms_gam$data$time) ),
-                predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)
-                )
+            if (is_2d_time) {
 
-            # retrieving posterior predictions (draws)
-            post_draws <- tidybayes::add_epred_draws(
-                object = brms_gam,
-                newdata = newdata_grid,
-                ndraws = n_post_samples,
-                re_formula = NA
-                ) |>
-                data.frame()
+                if (participant_clusters) {
+
+                    stop ("`participant_clusters = TRUE` is not supported for 2D temporal models yet.", call. = FALSE)
+
+                }
+
+                predictor_mean <- mean(brms_gam$data$predictor)
+                predictor_sd <- stats::sd(brms_gam$data$predictor)
+
+                newdata_grid <- tidyr::crossing(
+                    time1 = sort(unique(brms_gam$data$time1) ),
+                    time2 = sort(unique(brms_gam$data$time2) ),
+                    predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)
+                    ) |>
+                    # add appropriate dummy to satisfy validate_data()
+                    add_required_dummy(is_binom = is_binom) |>
+                    # NA participant to satisfy validate_data()
+                    dplyr::mutate(participant = NA)
+
+            } else {
+
+                # newdata grid over time and predictor +/-1 SD
+                predictor_mean <- mean(brms_gam$data$predictor)
+                predictor_sd <- sd(brms_gam$data$predictor)
+                newdata_grid <- tidyr::crossing(
+                    time = sort(unique(brms_gam$data$time) ),
+                    predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)
+                    )
+
+            }
 
         }
 
-    }
-
-    # compute the posterior odds
-    if (is.na(predictor_id) ) {
-
-        prob_y_above <- compute_one_sample_prob(
-            post_draws = post_draws,
-            participant_clusters = participant_clusters,
-            null_value = chance_level,
-            n_post_samples = n_post_samples,
-            credible_interval = credible_interval
-            )
-
-    } else {
-
-        prob_y_above <- compute_two_sample_prob(
-            post_draws = post_draws,
-            # when comparing two groups, null value should be 0
-            null_value = 0,
-            participant_clusters = participant_clusters,
-            n_post_samples = n_post_samples,
-            credible_interval = credible_interval,
-            predictor_type = predictor_type
-            )
+        # retrieve posterior predictions (draws)
+        post_draws <- tidybayes::add_epred_draws(
+            object = brms_gam,
+            newdata = newdata_grid,
+            ndraws = n_post_samples,
+            re_formula = NA,
+            incl_autocor = FALSE
+            ) |>
+            data.frame()
 
     }
 
-    if (participant_clusters) {
+    ###########################################
+    # compute the posterior odds and clusters #
+    ###########################################
 
-        # find the clusters
+    if (!is_2d_time) {
+
+        if (is.na(predictor_id) ) {
+
+            prob_y_above <- compute_one_sample_prob(
+                post_draws = post_draws,
+                participant_clusters = participant_clusters,
+                null_value = chance_level,
+                n_post_samples = n_post_samples,
+                credible_interval = credible_interval
+                )
+
+        } else {
+
+            prob_y_above <- compute_two_sample_prob(
+                post_draws = post_draws,
+                # when comparing two groups/conditions, null value should be 0
+                null_value = 0,
+                participant_clusters = participant_clusters,
+                n_post_samples = n_post_samples,
+                credible_interval = credible_interval,
+                predictor_type = predictor_type
+                )
+
+        }
+
+        if (participant_clusters) {
+
+            # find the clusters
+            clusters <- find_clusters(
+                data = prob_y_above |> dplyr::select(.data$time, .data$participant, value = .data$prob_ratio),
+                group = "participant",
+                threshold = threshold,
+                threshold_type = threshold_type
+                )
+
+        } else {
+
+            # find the clusters
+            clusters <- find_clusters(
+                data = prob_y_above |> dplyr::select(.data$time, value = .data$prob_ratio),
+                group = NULL,
+                threshold = threshold,
+                threshold_type
+                )
+
+        }
+
+    } else { # 2D clusters
+
+        if (participant_clusters) {
+
+            stop (
+                "`participant_clusters = TRUE` is not supported for 2D temporal models yet. ",
+                "Please set `participant_clusters = FALSE`.",
+                call. = FALSE
+                )
+
+        }
+
+        if (is.na(predictor_id) ) {
+
+            prob_y_above <- compute_one_sample_prob_2d(
+                post_draws = post_draws,
+                participant_clusters = FALSE,
+                null_value = chance_level,
+                n_post_samples = n_post_samples,
+                credible_interval = credible_interval
+                )
+
+        } else {
+
+            prob_y_above <- compute_two_sample_prob_2d(
+                post_draws = post_draws,
+                # when comparing two groups/conditions, null value should be 0
+                null_value = 0,
+                participant_clusters = FALSE,
+                n_post_samples = n_post_samples,
+                credible_interval = credible_interval,
+                predictor_type = predictor_type
+                )
+
+        }
+
+        time_id <- c("time1", "time2")
+
         clusters <- find_clusters(
-            data = prob_y_above |> dplyr::select(.data$time, .data$participant, value = .data$prob_ratio),
-            group = "participant",
-            threshold = threshold,
-            threshold_type = threshold_type
-            )
-
-    } else {
-
-        # find the clusters
-        clusters <- find_clusters(
-            data = prob_y_above |> dplyr::select(.data$time, value = .data$prob_ratio),
+            data = prob_y_above |> dplyr::select(dplyr::all_of(time_id), value = .data$prob_ratio),
             group = NULL,
             threshold = threshold,
-            threshold_type
+            threshold_type = threshold_type,
+            time_id = time_id
             )
 
     }
@@ -740,685 +841,22 @@ testing_through_time <- function (
         clusters = clusters,
         predictions = prob_y_above,
         model = brms_gam,
+        summary_data = summary_data,
         multilevel = multilevel
         )
 
     # assign a new class to the list
-    class(clusters_results) <- "clusters_results"
+    if (is_2d_time) {
+
+        class(clusters_results) <- "clusters_results_2d"
+
+    } else {
+
+        class(clusters_results) <- "clusters_results_1d"
+
+    }
 
     # return the clusters and posterior probabilities
     return (clusters_results)
-
-}
-
-#' @export
-plot.clusters_results <- function (
-        x, null_value = 0,
-        clusters_y = -Inf, clusters_colour = "black", lineend = "butt",
-        theme = ggplot2::theme_bw(),
-        ...
-        ) {
-
-    if (!ggplot2::is.theme(theme) ) {
-
-        stop ("Argument 'theme' should be a 'theme' object.")
-
-    }
-
-    # retrieve the empirical data
-    emp_data <- x$model$data
-
-    # group-level or participant-level clusters?
-    group_level <- ifelse(
-        test = "participant" %in% names(x$clusters),
-        yes = FALSE, no = TRUE
-        )
-
-    # reconstruct a raw data time course when possible
-    if (!is.null(x$multilevel) && "outcome_mean" %in% names(emp_data) ) {
-
-        if ("predictor" %in% names(emp_data) ) {
-
-            if (is.numeric(emp_data$predictor) ) {
-
-                stop ("plot.cluster_results() is not implemented for continuous predictors yet.")
-
-            } else {
-
-                cond1 <- levels(emp_data$predictor)[1]
-                cond2 <- levels(emp_data$predictor)[2]
-
-            }
-
-            reshaped_data <- emp_data |>
-                dplyr::summarise(
-                    outcome_mean = mean(.data$outcome_mean),
-                    .by = c(.data$time, .data$predictor)
-                    ) |>
-                tidyr::pivot_wider(
-                    names_from  = .data$predictor,
-                    values_from = .data$outcome_mean
-                    ) |>
-                dplyr::mutate(outcome_mean = .data[[cond2]] - .data[[cond1]])
-
-        } else {
-
-            if (group_level) {
-
-                reshaped_data <- emp_data |>
-                    dplyr::summarise(
-                        outcome_mean = mean(.data$outcome_mean),
-                        .by = .data$time
-                        )
-
-            } else {
-
-                reshaped_data <- emp_data |>
-                    dplyr::summarise(
-                        outcome_mean = mean(.data$outcome_mean),
-                        .by = c(.data$participant, .data$time)
-                        )
-
-            }
-
-        }
-
-    } else if (!is.null(x$multilevel) && "success" %in% names(emp_data) ) {
-
-        if ("predictor" %in% names(emp_data) ) {
-
-            cond1 <- levels(emp_data$predictor)[1]
-            cond2 <- levels(emp_data$predictor)[2]
-
-            if (group_level) {
-
-                reshaped_data <- emp_data |>
-                    dplyr::mutate(emp_prob = .data$success / .data$trials) |>
-                    dplyr::summarise(
-                        emp_prob = mean(.data$emp_prob),
-                        .by = c(.data$time, .data$predictor)
-                        ) |>
-                    tidyr::pivot_wider(
-                        names_from  = .data$predictor,
-                        values_from = .data$emp_prob
-                        ) |>
-                    dplyr::mutate(outcome_mean = .data[[cond2]] - .data[[cond1]])
-
-            } else {
-
-                reshaped_data <- emp_data |>
-                    dplyr::mutate(emp_prob = .data$success / .data$trials) |>
-                    dplyr::summarise(
-                        emp_prob = mean(.data$emp_prob),
-                        .by = c(.data$time, .data$predictor, .data$participant)
-                        ) |>
-                    tidyr::pivot_wider(
-                        names_from  = .data$predictor,
-                        values_from = .data$emp_prob
-                        ) |>
-                    dplyr::mutate(outcome_mean = .data[[cond2]] - .data[[cond1]])
-
-            }
-
-        } else {
-
-            if (group_level) {
-
-                reshaped_data <- emp_data |>
-                    dplyr::summarise(
-                        outcome_mean = mean(.data$outcome_mean),
-                        .by = .data$time
-                    )
-
-            } else {
-
-                reshaped_data <- emp_data |>
-                    dplyr::summarise(
-                        outcome_mean = mean(.data$outcome_mean),
-                        .by = c(.data$participant, .data$time)
-                    )
-
-            }
-
-        }
-
-    } else {
-
-        reshaped_data <- NULL
-
-    }
-
-    p <- ggplot2::ggplot(
-        data = if (is.null(reshaped_data) ) x$predictions else reshaped_data,
-        ggplot2::aes(
-            x = .data$time,
-            y = if (!is.null(reshaped_data) ) .data$outcome_mean else .data$post_prob)
-        ) +
-        ggplot2::geom_hline(yintercept = null_value, linetype = 2) +
-        ggplot2::geom_ribbon(
-            data = x$predictions,
-            ggplot2::aes(x = .data$time, y = NULL, ymin = .data$lower, ymax = .data$upper),
-            fill = clusters_colour, alpha = 0.2
-            ) +
-        ggplot2::geom_line(
-            data = x$predictions,
-            ggplot2::aes(x = .data$time, y = .data$post_prob),
-            colour = clusters_colour,
-            linewidth = 1
-            )
-
-    if (!is.null(reshaped_data) ) {
-
-        p <- p + ggplot2::geom_line(linewidth = 0.5)
-
-    }
-
-    p <- p +
-        ggplot2::geom_segment(
-            data = x$clusters,
-            ggplot2::aes(
-                x = .data$onset,
-                xend = .data$offset,
-                y = clusters_y,
-                yend = clusters_y
-                ),
-            colour = clusters_colour,
-            inherit.aes = FALSE,
-            lineend = lineend,
-            linewidth = 5
-            ) +
-        theme +
-        ggplot2::labs(x = "Time", y = "Observed and predicted effect")
-
-    # if clusters are available at the participant level
-    if ("participant" %in% colnames(x$clusters) ) {
-
-        p + ggplot2::facet_wrap(~participant, scales = "free")
-
-    } else {
-
-        p
-
-    }
-
-}
-
-#' Print method for \code{clusters_results} objects
-#'
-#' This method provides a concise console representation of the output from
-#' \code{\link{testing_through_time}}, including the number of detected
-#' clusters and a compact table summarising each cluster's onset, offset,
-#' and duration. Values are rounded for readability.
-#'
-#' @param x An object of class \code{"clusters_results"} as returned by
-#'   \code{\link{testing_through_time}}.
-#' @param digits Integer; number of decimal places used when printing numeric
-#'   values (default: \code{3}).
-#' @param ... Additional arguments (currently ignored).
-#'
-#' @details
-#' The printed cluster table includes:
-#' \itemize{
-#'   \item \code{cluster_id}: numeric identifier of the cluster;
-#'   \item \code{cluster_onset}: estimated temporal onset of the cluster;
-#'   \item \code{cluster_offset}: estimated temporal offset of the cluster;
-#'   \item \code{duration}: duration of the cluster, computed as
-#'     \code{cluster_offset - cluster_onset}.
-#' }
-#'
-#' If no clusters exceed the posterior odds threshold, an informative message
-#' is displayed and no table is printed.
-#'
-#' @return The input object \code{x}, returned invisibly.
-#'
-#' @seealso \code{\link{summary.clusters_results}},
-#'   \code{\link{testing_through_time}}
-#'
-#' @export
-print.clusters_results <- function (x, digits = 3, ...) {
-
-    cat("\n==== Time-resolved GAMM results ===============================\n\n")
-
-    # number of clusters
-    n_clust <- nrow(x$clusters)
-    # cat("Clusters found: ", n_clust, "\n\n", sep = "")
-    cat("Clusters found: ", "\n\n", sep = "")
-
-    # if no clusters, stop early
-    if (n_clust == 0) {
-
-        cat("\nNo clusters exceed the threshold.\n\n")
-
-        return (invisible(x) )
-
-    }
-
-    # prepare cluster table
-    if ("participant" %in% colnames(x$clusters) ) {
-
-        clust_tbl <- x$clusters |>
-            dplyr::mutate(
-                onset = round(.data$onset,  digits),
-                offset = round(.data$offset, digits),
-                duration = round(.data$offset - .data$onset, digits)
-                ) |>
-            dplyr::select(
-                .data$participant, .data$sign, .data$id,
-                .data$onset, .data$offset, .data$duration
-                )
-
-    } else {
-
-        clust_tbl <- x$clusters |>
-            dplyr::mutate(
-                onset = round(.data$onset,  digits),
-                offset = round(.data$offset, digits),
-                duration = round(.data$offset - .data$onset, digits)
-                ) |>
-            dplyr::select(
-                .data$sign, .data$id, .data$onset,
-                .data$offset, .data$duration
-                )
-
-    }
-
-    # print nicely
-    print(data.frame(clust_tbl), row.names = FALSE)
-    cat("\n=================================================================\n")
-    invisible(x)
-
-}
-
-#' Summary method for \code{clusters_results} objects
-#'
-#' Produces a detailed textual summary of a time-resolved Bayesian GAMM
-#' analysis, including model metadata, the number of clusters detected, and
-#' descriptive statistics of cluster durations. A rounded cluster table is
-#' also printed.
-#'
-#' @param object An object of class \code{"clusters_results"} created by
-#'   \code{\link{testing_through_time}}.
-#' @param digits Integer; number of decimal places used when printing numeric
-#'   values (default: \code{3}).
-#' @param ... Additional arguments (currently ignored).
-#'
-#' @details
-#' The summary prints:
-#' \itemize{
-#'   \item the model type used (\code{"full"}, \code{"summary"},
-#'     or \code{"group"});
-#'   \item the class of the underlying \pkg{brms} model and the number of
-#'     posterior draws;
-#'   \item the number of clusters detected by the posterior odds threshold;
-#'   \item descriptive statistics for cluster durations (minimum, maximum,
-#'     mean, median, and total duration);
-#'   \item a neatly formatted table listing each cluster's onset, offset,
-#'     and duration.
-#' }
-#'
-#' If no clusters were detected, the function prints a message and returns
-#' invisibly.
-#'
-#' @return The object \code{object}, returned invisibly.
-#'
-#' @seealso \code{\link{print.clusters_results}},
-#'   \code{\link{testing_through_time}}
-#'
-#' @export
-summary.clusters_results <- function (object, digits = 3, ...) {
-
-    cat("\n==== Time-resolved GAMM results ===============================\n\n")
-
-    # model type
-    if (!is.null(object$multilevel) ) {
-
-        cat("Model type: ", object$multilevel, "\n", sep = "")
-
-    }
-
-    # class of backend model
-    if (!is.null(object$model) ) {
-
-        cat("Backend model: ", class(object$model)[1], "\n", sep = "")
-        cat("Posterior draws: ", brms::ndraws(object$model), "\n", sep = "")
-
-    }
-
-    # number of clusters
-    n_clust <- nrow(object$clusters)
-
-    # no clusters, simple summary
-    if (n_clust == 0) {
-
-        cat("\nNo clusters exceeded the threshold.\n\n")
-
-        return (invisible(object) )
-
-    }
-
-    # compute durations
-    cl <- object$clusters |>
-        dplyr::mutate(duration = .data$offset - .data$onset)
-
-    # basic cluster stats
-    cat("\nCluster statistics:\n")
-    cat("  Mean cluster duration: ",
-        round(mean(cl$duration), digits), "\n", sep = "")
-    cat("  Median cluster duration: ",
-        round(stats::median(cl$duration), digits), "\n", sep = "")
-    cat("  Min cluster duration: ",
-        round(min(cl$duration), digits), "\n", sep = "")
-    cat("  Max cluster duration: ",
-        round(max(cl$duration), digits), "\n", sep = "")
-
-    # prepare cluster table
-    if ("participant" %in% colnames(object$clusters) ) {
-
-        cl_print <- cl |>
-            dplyr::mutate(
-                onset = round(.data$onset,  digits),
-                offset = round(.data$offset, digits),
-                duration = round(.data$duration, digits)
-                ) |>
-            dplyr::select(
-                .data$participant, .data$sign, .data$id,
-                .data$onset, .data$offset, .data$duration
-                )
-
-    } else {
-
-        cl_print <- cl |>
-            dplyr::mutate(
-                onset = round(.data$onset,  digits),
-                offset = round(.data$offset, digits),
-                duration = round(.data$duration, digits)
-                ) |>
-            dplyr::select(
-                .data$sign, .data$id,
-                .data$onset, .data$offset, .data$duration
-                )
-
-    }
-
-    cat("\nCluster table:\n\n")
-    print(data.frame(cl_print), row.names = FALSE)
-    cat("\n=================================================================\n")
-    invisible(object)
-
-}
-
-#' Posterior predictive checks
-#'
-#' Generate posterior predictive checks (PPCs) from a fitted Bayesian
-#' time-resolved GAMM stored in a \code{clusters_results} object.
-#' PPCs can be produced either at the group level or separately for each participant.
-#'
-#' At the group level, predictions are obtained by simulating from the posterior
-#' using \code{\link[brms]{posterior_predict}} with \code{re_formula = NA},
-#' after collapsing the original data across participants (by time).
-#' At the participant level, PPCs are generated using
-#' \code{\link[brms]{pp_check}} with grouped ribbons.
-#'
-#' @param object A \code{clusters_results} object containing a fitted
-#'   \code{\link[brms]{brmsfit}} model in \code{object$model}.
-#' @param ppc_type Character string specifying the type of PPC to generate.
-#'   Either \code{"group"} (default) for group-level PPCs (ignoring participant
-#'   identity) or \code{"participant"} for participant-wise PPCs.
-#' @param ndraws Integer specifying the number of posterior draws to use for
-#'   the PPC. Defaults to 500.
-#' @param group_var Optional character; name of the grouping variable to use for
-#' grouped PPCs at the group level. If NULL (default), the function uses
-#' "predictor" when present in model$data and binary (two levels).
-#' @param xlab Character; Label for the x-axis (usually time with some appropriate unit).
-#' @param theme A \code{\link[ggplot2:theme]{theme}} object
-#'   modifying the appearance of the plots.
-#' @param ... Currently unused. Included for future extensions.
-#'
-#' @details
-#' \itemize{
-#'   \item \strong{Group-level PPCs} are computed by averaging numeric variables
-#'   across participants at each time point, and simulating posterior predictive
-#'   draws with random effects excluded (\code{re_formula = NA}).
-#'   This provides a marginal, population-level posterior predictive check.
-#'
-#'   \item \strong{Participant-level PPCs} are computed using grouped ribbon
-#'   plots, showing posterior predictive distributions separately for each
-#'   participant.
-#' }
-#'
-#' The returned object is a \code{ggplot2} object produced by
-#' \code{\link[bayesplot]{ppc_ribbon}} or \code{\link[brms]{pp_check}},
-#' depending on the selected \code{ppc_type}.
-#'
-#' @return
-#' A \code{ggplot} object visualising the posterior predictive check.
-#' The plot is printed to the active graphics device and also returned invisibly.
-#'
-#' @seealso
-#' \code{\link[brms]{pp_check}},
-#' \code{\link[brms]{posterior_predict}},
-#' \code{\link[bayesplot]{ppc_ribbon}}
-#'
-#' @examples
-#' \dontrun{
-#' # Group-level PPC
-#' ppc(object = res, ppc_type = "group")
-#'
-#' # Participant-level PPC
-#' ppc(object = res, ppc_type = "participant")
-#' }
-#'
-#' @export
-ppc <- function (
-        object,
-        ppc_type = c("group", "participant"),
-        ndraws = 500,
-        group_var = NULL,
-        xlab = "Time (s)",
-        theme = ggplot2::theme_bw(),
-        ...
-        ) {
-
-    if (!ggplot2::is.theme(theme) ) {
-
-        stop ("Argument 'theme' should be a 'theme' object.")
-
-    }
-
-    fit <- object$model
-    ppc_type <- match.arg(ppc_type)
-
-    if (!inherits(object, "clusters_results") ) {
-
-        stop ("`object` must be of class 'clusters_results'.", call. = FALSE)
-
-    }
-
-    if (is.null(fit) || !inherits(fit, "brmsfit") ) {
-
-        stop ("`object$model` must be a valid 'brmsfit' object.", call. = FALSE)
-
-    }
-
-    # determine grouping variable (if any and if NULL)
-    data_fit <- fit$data
-
-    # binomial?
-    is_binom <- ifelse(test = "success" %in% names(data_fit), yes = TRUE, no = FALSE)
-
-    if (is.null(group_var) ) {
-
-        if ("predictor" %in% names(data_fit) ) {
-
-            g <- data_fit[["predictor"]]
-
-            # coerce to factor for level checking
-            if (!is.factor(g) ) {
-
-                g <- factor(g)
-
-            }
-
-            if (nlevels(g) == 2) {
-
-                group_var <- "predictor"
-
-            } else {
-
-                group_var <- NULL
-
-            }
-
-        } else {
-
-            group_var <- NULL
-
-        }
-
-    } else {
-
-        if (!group_var %in% names(data_fit) ) {
-
-            stop (
-                "Specified `group_var` '", group_var,
-                "' not found in model$data.",
-                call. = FALSE
-                )
-
-        }
-
-    }
-
-    # PPC per group
-    if (ppc_type == "group") {
-
-        if (is.null(group_var) ) {
-
-            # grid for group-level prediction
-            newdata <- data_fit |>
-                dplyr::summarise(
-                    dplyr::across(dplyr::where(is.numeric), mean, na.rm = TRUE),
-                    .by = .data$time
-                    ) |>
-                dplyr::mutate(participant = NA)
-
-            # simulate from posterior at the group level
-            yrep <- brms::posterior_predict(
-                object = fit,
-                newdata = newdata,
-                re_formula = NA,
-                ndraws = ndraws
-                )
-
-            # observed y on that same grid
-            y_obs <- newdata$outcome_mean
-            x_time <- newdata$time
-
-            # ribbon PPC
-            ppc_plot <- bayesplot::ppc_ribbon(
-                x = x_time,
-                y = y_obs,
-                yrep = yrep,
-                prob = 0.5,
-                prob_outer = 0.5,
-                alpha = 0.5
-                ) +
-                theme +
-                ggplot2::labs(x = xlab)
-
-        } else {
-
-            # grid for group-level prediction
-            if (is_binom) {
-
-                # observed y on that same grid
-                newdata <- tidyr::crossing(predictor = data_fit$predictor, time = data_fit$time) |>
-                    add_required_dummy(is_binom = is_binom)
-
-                y_obs <- data_fit |>
-                    dplyr::mutate(emp_prob = .data$success / .data$trials) |>
-                    dplyr::summarise(
-                        emp_prob = mean(.data$emp_prob),
-                        .by = c(.data$predictor, .data$time)
-                        ) |>
-                    dplyr::arrange(.data$predictor, .data$time) |>
-                    dplyr::pull(.data$emp_prob)
-
-                # predict probs of success at the group level
-                yrep <- brms::posterior_epred(
-                    object = fit,
-                    newdata = newdata,
-                    re_formula = NA,
-                    ndraws = ndraws
-                    )
-
-            } else {
-
-                newdata <- data_fit |>
-                    dplyr::summarise(
-                        dplyr::across(dplyr::where(is.numeric), mean, na.rm = TRUE),
-                        .by = c(.data$predictor, .data$time)
-                        ) |>
-                    dplyr::mutate(participant = NA) |>
-                    dplyr::arrange(.data$predictor, .data$time)
-
-                # observed y on that same grid
-                y_obs <- data_fit |>
-                    dplyr::group_by(.data$time, .data$predictor) |>
-                    dplyr::summarise(
-                        y = mean(.data$outcome_mean, na.rm = TRUE),
-                        .groups = "drop"
-                        ) |>
-                    dplyr::arrange(.data$predictor, .data$time) |>
-                    dplyr::pull(.data$y)
-
-                # simulate from posterior at the group level
-                yrep <- brms::posterior_predict(
-                    object = fit,
-                    newdata = newdata,
-                    re_formula = NA,
-                    ndraws = ndraws
-                    )
-
-            }
-
-            # x-axis timesteps
-            x_time <- newdata$time
-
-            # ribbon PPC
-            ppc_plot <- bayesplot::ppc_ribbon_grouped(
-                x = x_time,
-                y = y_obs,
-                group = newdata$predictor,
-                yrep = yrep,
-                prob = 0.5,
-                prob_outer = 0.5,
-                alpha = 0.5
-                ) +
-                theme +
-                ggplot2::labs(x = xlab)
-
-        }
-
-    } else { # or PPC per participant
-
-        ppc_plot <- brms::pp_check(
-            object = fit,
-            ndraws = ndraws,
-            type = "ribbon_grouped",
-            x = "time",
-            group = "participant",
-            prob = 0.5,
-            prob_outer = 0.5,
-            alpha = 0.5
-            ) +
-            theme +
-            ggplot2::labs(x = xlab)
-
-    }
-
-    # returning the plot
-    print(ppc_plot)
-    invisible(ppc_plot)
 
 }

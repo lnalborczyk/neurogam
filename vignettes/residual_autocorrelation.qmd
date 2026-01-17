@@ -1,0 +1,287 @@
+---
+title: "Checking and modelling residual auto-correlation (1D temporal data)"
+author: "Ladislas Nalborczyk"
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Checking and modelling residual auto-correlation (1D temporal data)}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{quarto::html}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+    cache = TRUE,
+    collapse = TRUE,
+    warning = FALSE,
+    message = FALSE,
+    comment = "#>",
+    out.width = "100%",
+    dev = "png",
+    dpi = 300
+    )
+```
+
+## Importing and visualising EEG data
+
+Below we import and reshape EEG data from the [`eegkit` package](https://cran.r-project.org/web/packages/eegkit/index.html).
+
+```{r data-import, fig.width = 12, fig.height = 12}
+library(patchwork)
+library(neurogam)
+library(ggplot2)
+library(eegkit)
+library(dplyr)
+
+# retrieving some EEG data
+data(eegdata)
+head(eegdata)
+
+# plotting the average ERP per group and channel
+eegdata |>
+    summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
+    ggplot(aes(x = time, y = voltage, colour = group) ) +
+    geom_line() +
+    facet_wrap(~channel) +
+    theme_bw()
+```
+
+```{r data-reshape}
+# reshape the data
+eeg_data <- eegdata |>
+    # keeping only one channel
+    dplyr::filter(channel == "PZ") |>
+    # converting timesteps to seconds
+    mutate(time = (time + 1) / 256) |>
+    # rounding numeric variables
+    mutate(across(where(is.numeric), ~ round(.x, 4) ) ) |>
+    # removing NAs
+    na.omit()
+
+# show a few rows
+head(eeg_data)
+```
+
+## Fitting a first model
+
+We fit the model (a BGAMM) on one channel (PZ) to test for group difference at every timestep.
+
+```{r clusters1, results = "hide"}
+# fitting the BGAMM to identify clusters
+results1 <- testing_through_time(
+    # EEG data
+    data = eeg_data,
+    # participant column
+    participant_id = "subject",
+    # EEG column
+    outcome_id = "voltage",
+    # no predictor
+    predictor_id = NA,
+    # basis dimension
+    kvalue = 20,
+    # we recommend fitting the GAMM on summary statistics (mean and SD)
+    multilevel = "summary",
+    # no by-participant varying smooth (for speed purposes)
+    varying_smooth = FALSE,
+    # threshold on posterior odds
+    threshold = 10,
+    # number of MCMCs
+    chains = 4,
+    # number of parallel cores
+    cores = 4,
+    # number of warmup iterations
+    warmup = 1000,
+    # total number of iterations (per chain)
+    iter = 2000
+    )
+```
+
+### Visualising the results
+
+```{r print-clusters1}
+# displaying the identified clusters
+print(results1)
+```
+
+```{r clusters-plot1, fig.width = 9, fig.height = 6}
+# plotting the data, model's predictions, and clusters
+plot(results1)
+```
+
+### Checking auto-correlation
+
+Below we use the `check_residual_autocorrelation()` function to check to residual auto-correlation. The ACF plot (per participant) reveals strong residual auto-correlation.
+
+```{r check-autocor1, fig.width = 9, fig.height = 6}
+# checking residual auto-correlation
+ar_check1 <- check_residual_autocorrelation(
+    fit = results1$model
+    )
+
+# residual ACF (for some participants)
+ar_check1$plots$acf_raw
+```
+
+Compare with the residuals of the equivalent `mgcv` model (see also [this vignette](https://cran.r-project.org/web/packages/itsadug/vignettes/acf.html)).
+
+```{r itsadug, fig.width = 9, fig.height = 6}
+library(itsadug)
+library(mgcv)
+
+# fitting an equivalent mgcv model
+m1 <- bam(voltage ~ s(time, k = 20) + s(subject, bs = "re"), data = eeg_data)
+
+# plotting the raw residuals for some participants
+acf_resid(model = m1, split_pred = "subject", n = 9)
+```
+
+## Modelling auto-correlation
+
+The `testing_through_time()` function allows including a latent AR1 model to capture unmodelled autocorrelation (via `include_ar_term = TRUE`), which is estimated simultaneously to the other model parameters. This contrast with conventional approaches using a 2-step procedure consisting in first estimating the residual auto-correlation (from a first model), and then including this correlation as a fixed parameter in a subsequent model. Our approach, while more computationally intense, has several advantages:
+
+* **Proper uncertainty propagation.** Estimating the latent AR term jointly with the smooth/linear effects propagates uncertainty about autocorrelation into *all* model parameters and predictions. In contrast, a 2-step "estimate then fix it" approach is a plug-in procedure that conditions on an uncertain quantity, which may yield **overconfident** intervals (too-small SEs / under-coverage). 
+
+* **Less bias from mean-correlation confounding.** Residual autocorrelation depends on what the mean model has already explained (and on smoothing penalties). When estimating autocorrelation from residuals of an initial fit, we risk **misallocating structure** between the smooth trend and the AR process. Joint estimation helps the model decide, probabilistically, whether variation is better explained by the smooth component or by autocorrelated deviations.
+
+* **Cleaner, less error-prone prediction.** Two-step workflows often require awkward post-hoc steps (fit trend, extract residuals, fit AR model, forecast residuals, back-transform, etc.), which is tedious and easy to get wrong. A joint latent AR formulation gives a single coherent generative model for estimation *and* prediction (see also [this blogpost](https://ecogambler.netlify.app/blog/autocorrelated-gams/)).
+
+```{r clusters2, results = "hide"}
+# fitting the BGAMM to identify clusters
+results2 <- testing_through_time(
+    # EEG data
+    data = eeg_data,
+    # participant column
+    participant_id = "subject",
+    # EEG column
+    outcome_id = "voltage",
+    # no predictor
+    predictor_id = NA,
+    # basis dimension
+    kvalue = 20,
+    # we recommend fitting the GAMM on summary statistics (mean and SD)
+    multilevel = "summary",
+    # no by-participant varying smooth (for speed purposes)
+    varying_smooth = FALSE,
+    # including (estimating) auto-correlation within the same model
+    include_ar_term = TRUE,
+    # threshold on posterior odds
+    threshold = 10,
+    # number of MCMCs
+    chains = 4,
+    # number of parallel cores
+    cores = 4,
+    # number of warmup iterations
+    warmup = 1000,
+    # total number of iterations (per chain)
+    iter = 2000
+    )
+```
+
+```{r check-autocor2, fig.width = 9, fig.height = 6}
+# checking residual auto-correlation
+ar_check2 <- check_residual_autocorrelation(fit = results2$model)
+
+# checking auto-correlation estimates
+ar_check2$ar_summary
+```
+
+If the AR term correctly captured residual auto-correlation, we expect the average lag-1 auto-correlation to be lower in the corrected residuals than in the raw residuals.
+
+```{r print-ar2}
+head(x = ar_check2$rho1_by_series_raw)
+head(x = ar_check2$rho1_by_series_corrected)
+
+# average lag-1 autocorrelation across series
+mean(x = ar_check2$rho1_by_series_raw$rho1, na.rm = TRUE)
+mean(x = ar_check2$rho1_by_series_corrected$rho1, na.rm = TRUE)
+```
+
+We then visualise the identified clusters, showing that this model produces much more conservative estimates (because of the larger uncertainty about group-level estimates.)
+
+```{r print-clusters2}
+# displaying the identified clusters
+print(results2)
+```
+
+```{r clusters-plot2, fig.width = 9, fig.height = 6}
+# plotting the data, model's predictions, and clusters
+plot(results2)
+```
+
+We visualise both the auto-correlation (ACF) and partial auto-correlation (pACF) of the raw and AR-corrected (whitened) residuals.
+
+```{r clusters-plots-combined2, fig.width = 12, fig.height = 12}
+(ar_check2$plots$acf_raw + ar_check2$plots$pacf_raw) /
+    (ar_check2$plots$acf_corrected + ar_check2$plots$pacf_corrected)
+```
+
+## Model comparison
+
+Model comparison suggests that the second model has much better out-of-sample predictive accuracy (lower WAIC).
+
+```{r model-comparison}
+# model comparison using WAIC
+brms::waic(results1$model, results2$model)
+```
+
+## Lowering auto-correlation with varying smooth
+
+Another way of reducing residual auto-correlation is to improve the model fit to capture finer structure present in the data. Below we show that auto-correlation can be considerably lowered by including per-participant varying smoothers.
+
+```{r clusters3, results = "hide"}
+# fitting the BGAMM to identify clusters
+results3 <- testing_through_time(
+    # EEG data
+    data = eeg_data,
+    # participant column
+    participant_id = "subject",
+    # EEG column
+    outcome_id = "voltage",
+    # no predictor
+    predictor_id = NA,
+    # basis dimension
+    kvalue = 20,
+    # we recommend fitting the GAMM on summary statistics (mean and SD)
+    multilevel = "summary",
+    # no by-participant varying smooth (for speed purposes)
+    varying_smooth = TRUE,
+    # threshold on posterior odds
+    threshold = 10,
+    # number of MCMCs
+    chains = 4,
+    # number of parallel cores
+    cores = 4,
+    # number of warmup iterations
+    warmup = 1000,
+    # total number of iterations (per chain)
+    iter = 2000
+    )
+```
+
+```{r check-autocor3, fig.width = 12, fig.height = 9}
+# checking residual auto-correlation
+ar_check3 <- check_residual_autocorrelation(fit = results3$model)
+
+# residual ACF and pACF (for some participants)
+ar_check3$plots$acf_raw + ar_check3$plots$pacf_raw
+```
+
+```{r print-clusters3}
+# displaying the identified clusters
+print(results3)
+```
+
+```{r clusters-plot3, fig.width = 9, fig.height = 6}
+# plotting the data, model's predictions, and clusters
+plot(results3)
+```
+
+## Model comparison
+
+Model comparison suggests that this last model has slightly better out-of-sample predictive accuracy (lower WAIC).
+
+```{r model-comparison2}
+# model comparison using WAIC
+brms::waic(results1$model, results2$model, results3$model)
+```

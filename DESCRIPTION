@@ -1,8 +1,8 @@
 Package: neurogam
 Type: Package
 Title: Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
-Version: 0.0.3
-Date: 2026-01-06
+Version: 0.0.4
+Date: 2026-01-17
 Authors@R:
     c(
     person(
@@ -30,8 +30,11 @@ Imports:
     ggplot2,
     ggrepel,
     glue,
+    patchwork,
     rlang,
     scales,
+    scico,
+    tibble,
     tidybayes,
     tidyr
 Depends: 
@@ -43,6 +46,7 @@ Suggests:
     eegkit,
     knitr,
     quarto,
+    rmarkdown,
     testthat (>= 3.0.0)
-VignetteBuilder: quarto
+VignetteBuilder: quarto, knitr
 Config/testthat/edition: 3

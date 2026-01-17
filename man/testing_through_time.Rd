@@ -6,6 +6,7 @@
 \usage{
 testing_through_time(
   data,
+  previous_model = NULL,
   participant_id = "participant",
   outcome_id = "eeg",
   outcome_sd = NULL,
@@ -18,14 +19,17 @@ testing_through_time(
   multilevel = c("summary", "group"),
   include_ar_term = FALSE,
   use_se = TRUE,
+  t2_full = FALSE,
   participant_clusters = FALSE,
   varying_smooth = TRUE,
   warmup = 1000,
   iter = 2000,
   chains = 4,
   cores = 4,
+  threads = NULL,
   backend = c("cmdstanr", "rstan"),
   stan_control = NULL,
+  file = NULL,
   n_post_samples = NULL,
   threshold = 10,
   threshold_type = c("both", "above", "below"),
@@ -35,6 +39,19 @@ testing_through_time(
 }
 \arguments{
 \item{data}{A data frame in long format containing time-resolved data.}
+
+\item{previous_model}{Optional. A previously fitted \code{brmsfit} object
+  obtained from \code{testing_through_time()}. When provided, the model is
+  not refitted; instead, posterior predictions and inference are recomputed
+  using the supplied model. This is useful for exploring the effect of
+  different \code{threshold} and \code{threshold_type} values without
+  re-running model fitting.
+
+  The supplied model must be compatible with the current function call
+  (i.e., same data structure, formula, family, and predictors). If
+  \code{previous_model} is not \code{NULL}, arguments related to model
+  estimation (e.g., \code{warmup}, \code{iter}, \code{chains},
+  \code{cores}, \code{backend}, \code{stan_control}) are ignored.}
 
 \item{participant_id}{Character; name of the column in \code{data}
 specifying participant IDs.}
@@ -46,7 +63,7 @@ the outcome values (e.g., M/EEG amplitude, decoding accuracy).}
 the outcome SD, when \code{outcome_id} has already been summarised (default
 value is NULL).}
 
-\item{time_id}{Character; name of the column in \code{data}
+\item{time_id}{Character; name of the column(s) in \code{data}
 containing time information (e.g., in seconds or samples).}
 
 \item{predictor_id}{Character; name of the column in \code{data}
@@ -95,6 +112,11 @@ structure within participant via
 \item{use_se}{Logical; whether to include known or internally computed
 measurement error via \code{y | se(outcome_sd)} in the model formula.}
 
+\item{t2_full}{Logical; If TRUE, then there is a separate penalty for each
+combination of null space column and range space, see \code{\link[mgcv]{t2}}.
+Only use when fitting 2D temporal models (i.e., when \code{time_id} contains
+two temporal variables).}
+
 \item{participant_clusters}{Logical; should we return clusters at the participant-level.}
 
 \item{varying_smooth}{Logical; should we include a varying smooth. Default is
@@ -108,11 +130,20 @@ measurement error via \code{y | se(outcome_sd)} in the model formula.}
 
 \item{cores}{Numeric; number of parallel cores to use.}
 
+\item{threads}{Numeric; number of threads to use in within-chain parallelisation.
+See \code{\link[brms]{brm}} documentation for more information.}
+
 \item{backend}{Character; package to use as the backend for fitting the
 \code{Stan} model. One of \code{"cmdstanr"} (default) or \code{"rstan"}.}
 
 \item{stan_control}{List; parameters to control the MCMC behaviour, using
 default parameters when NULL. See \code{?brm} for more details.}
+
+\item{file}{Either NULL or a character string. In the latter case, the
+fitted \code{brms} model object is saved via saveRDS in a file named after
+the string supplied in file. The \code{.rds} extension is added
+automatically. If the file already exists, \code{brm} will load and return
+the saved model object instead of refitting the model.}
 
 \item{n_post_samples}{Numeric; number of posterior draws used to compute
 posterior probabilities. If \code{NULL} (default), all available draws
@@ -143,7 +174,7 @@ An object of class \code{"clusters_results"}, which is a list with
     \item \code{predictions}: a data frame with time-resolved posterior
       summaries (posterior median, credible interval, posterior
       probabilities, and odds \code{prob_ratio});
-    \item \code{data}: data used to fit the \pkg{brms} model
+    \item \code{summary_data}: data used to fit the \pkg{brms} model
       (possibly summarised);
     \item \code{model}: the fitted \pkg{brms} model object;
     \item \code{multilevel}: the value of the \code{multilevel} argument.
@@ -188,6 +219,9 @@ summary(results)
 
 # plot the model predictions and identified clusters
 plot(results)
+
+# posterior predictive check
+ppc(results)
 }
 
 }

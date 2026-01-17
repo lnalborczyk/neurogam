@@ -9,6 +9,8 @@ make_bgam_formula(
   multilevel = c("summary", "group"),
   predictor_type = c("none", "categorical", "continuous"),
   within_between = c(NA, "within-subject", "between-subject"),
+  time_id = "time",
+  t2_full = FALSE,
   kvalue = 20,
   bs = "tp",
   include_ar_term = FALSE,
@@ -33,13 +35,28 @@ and \code{multilevel = "summary"}. Must be one of \code{"within-subject"}
 or \code{"between-subject"} to determine whether to include a varying slope
 \code{(1 + predictor | participant)} or only \code{(1 | participant)}.}
 
+\item{time_id}{Character vector specifying the temporal variable(s) used in
+  the smooth term. By default \code{"time"} (1D). If a character vector of
+  length 2 is provided (e.g., \code{c("train_time", "test_time")}), the
+  function constructs a 2D tensor-product smooth using
+  \code{t2(train_time, test_time, ...)} (rather than \code{s(time, ...)}).
+
+  Currently, 2D \code{time_id} is supported for \code{multilevel = "group"}
+  models (population-level smooth surface). Participant-level varying smooths
+  for 2D surfaces are not implemented.}
+
+\item{t2_full}{Logical; If TRUE, then there is a separate penalty for each
+combination of null space column and range space, see \code{\link[mgcv]{t2}}.
+Only use when fitting 2D temporal models (i.e., when \code{time_id} contains
+two temporal variables).}
+
 \item{kvalue}{Numeric; basis dimension \code{k} used in \code{s(time, ..., k = kvalue)}.}
 
 \item{bs}{Character; spline basis used in \code{s(time, bs = bs, ...)} (e.g., \code{"tp"}).}
 
 \item{include_ar_term}{Logical; if \code{TRUE}, adds an AR(1) autocorrelation
   structure within participant via
-.  \code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)}.}
+.  \code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = TRUE)}.}
 
 \item{varying_smooth}{Logical; if \code{TRUE} (default), add a factor-smooth interaction
 \code{s(participant, time, bs = "fs", ...)} in \code{multilevel = "summary"} models.
@@ -89,4 +106,7 @@ make_bgam_formula(
   )
 }
 
+}
+\author{
+Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }

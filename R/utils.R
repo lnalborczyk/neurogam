@@ -18,7 +18,22 @@ make_summary_data <- function (
     multilevel <- match.arg(multilevel)
     continuous_agg <- match.arg(continuous_agg)
 
-    # family name (robust)
+    # validate time_id
+    if (!is.character(time_id) || !(length(time_id) %in% c(1L, 2L) ) ) {
+
+        stop ("`time_id` must be a character vector of length 1 or 2.", call. = FALSE)
+
+    }
+
+    is_2d_time <- length(time_id) == 2L
+
+    if (is_2d_time && identical(time_id[[1]], time_id[[2]]) ) {
+
+        stop ("When `time_id` has length 2, the two names must be different.", call. = FALSE)
+
+    }
+
+    # checking family name
     fam_name <- tryCatch ({
 
         if (is.list(family) && !is.null(family$family) ) as.character(family$family) else stop ("not a family object")
@@ -71,12 +86,25 @@ make_summary_data <- function (
 
     }
 
-    # internal columns
-    df <- data |>
-        dplyr::mutate(
-            participant = .data[[participant_id]],
-            time = .data[[time_id]]
-            )
+    # internal columns (UPDATED for 2D time)
+    if (!is_2d_time) {
+
+        df <- data |>
+            dplyr::mutate(
+                participant = .data[[participant_id]],
+                time = .data[[time_id[[1]]]]
+                )
+
+    } else {
+
+        df <- data |>
+            dplyr::mutate(
+                participant = .data[[participant_id]],
+                time1 = .data[[time_id[[1]]]],
+                time2 = .data[[time_id[[2]]]]
+                )
+
+    }
 
     predictor_type <- "none"
 
@@ -121,9 +149,19 @@ make_summary_data <- function (
     within_between <- NULL
 
     # choose grouping keys for the outcome
-    # - categorical predictor: group by predictor
-    # - continuous predictor: DO NOT group by predictor; keep as a covariate column
-    grp_outcome <- c("participant", "time")
+    if (!is_2d_time) {
+
+        time_keys_summary <- c("participant", "time")
+        time_keys_group <- c("time")
+
+    } else {
+
+        time_keys_summary <- c("participant", "time1", "time2")
+        time_keys_group <- c("time1", "time2")
+
+    }
+
+    grp_outcome <- time_keys_summary
     if (predictor_type == "categorical") grp_outcome <- c(grp_outcome, "predictor")
 
     if (is_binom) {
@@ -174,7 +212,7 @@ make_summary_data <- function (
             df <- df |>
                 dplyr::mutate(
                     success_in = .data[[outcome_id]],
-                    trials_in  = .data[[trials_id]]
+                    trials_in = .data[[trials_id]]
                     )
 
             if (!is.numeric(df$success_in) || !is.numeric(df$trials_in) ) {
@@ -299,16 +337,6 @@ make_summary_data <- function (
                         )
 
             }
-
-            # if (predictor_type == "categorical") {
-            #
-            #     # predictor is already grouped; keep
-            #
-            # } else if (predictor_type == "none") {
-            #
-            #     summary_data <- summary_data |> dplyr::select(-dplyr::any_of("predictor") )
-            #
-            # }
 
         }
 
@@ -892,5 +920,463 @@ add_required_dummy <- function (df, is_binom) {
     }
 
     return (df)
+
+}
+
+#' @keywords internal
+compute_one_sample_prob_2d <- function (
+        post_draws, null_value, participant_clusters, n_post_samples,
+        credible_interval
+        ) {
+
+    time_id <- c("time1", "time2")
+    t1 <- time_id[1]
+    t2 <- time_id[2]
+
+    # validate time_id
+    if (!all(time_id %in% colnames(post_draws) ) ) {
+
+        stop ("`time_id` must be a character vector of length 2.", call. = FALSE)
+
+    }
+
+    # validate credible interval
+    if (!is.numeric(credible_interval) ||
+
+        length(credible_interval) != 1 ||
+        credible_interval <= 0 || credible_interval >= 1) {
+
+        stop ("`credible_interval` must be a number strictly between 0 and 1.")
+
+    }
+
+    alpha <- (1 - credible_interval) / 2
+    lower_q <- alpha
+    upper_q <- 1 - alpha
+
+    if (participant_clusters) {
+
+        prob_y_above <- post_draws |>
+            dplyr::group_by(.data[[t1]], .data[[t2]], .data$participant) |>
+            dplyr::summarise(prob_above = mean(.data$.epred > null_value), .groups = "drop") |>
+            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above)) |>
+            dplyr::mutate(
+                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+                ) |>
+            data.frame()
+
+        post_prob_slope <- post_draws |>
+            dplyr::group_by(.data[[t1]], .data[[t2]], .data$participant) |>
+            dplyr::summarise(
+                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
+                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
+                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE),
+                .groups = "drop"
+                )
+
+        results <- dplyr::left_join(
+            prob_y_above, post_prob_slope,
+            by = c(t1, t2, "participant")
+            )
+
+    } else {
+
+        prob_y_above <- post_draws |>
+            dplyr::group_by(.data[[t1]], .data[[t2]]) |>
+            dplyr::summarise(prob_above = mean(.data$.epred > null_value), .groups = "drop") |>
+            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above)) |>
+            dplyr::mutate(
+                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+                ) |>
+            data.frame()
+
+        post_prob_slope <- post_draws |>
+            dplyr::group_by(.data[[t1]], .data[[t2]]) |>
+            dplyr::summarise(
+                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
+                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
+                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE),
+                .groups = "drop"
+                )
+
+        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = c(t1, t2) )
+
+    }
+
+    return (results)
+
+}
+
+#' @keywords internal
+compute_two_sample_prob_2d <- function (
+        post_draws, null_value, participant_clusters, n_post_samples,
+        credible_interval, predictor_type, time_id
+        ) {
+
+    predictor_type <- match.arg(predictor_type, c("categorical", "continuous") )
+
+    time_id <- c("time1", "time2")
+    t1 <- time_id[1]
+    t2 <- time_id[2]
+
+    # validate time_id
+    if (!all(time_id %in% colnames(post_draws) ) ) {
+
+        stop ("`time_id` must be a character vector of length 2.", call. = FALSE)
+
+    }
+
+    # validate credible interval
+    if (!is.numeric(credible_interval) ||
+
+        length(credible_interval) != 1 ||
+        credible_interval <= 0 || credible_interval >= 1) {
+
+        stop ("`credible_interval` must be a number strictly between 0 and 1.")
+
+    }
+
+    # mirror 1D: convert continuous predictor to factor-like character labels
+    if (predictor_type == "continuous") {
+
+        post_draws$predictor <- as.character(round(x = post_draws$predictor, digits = 3) )
+
+    }
+
+    alpha <- (1 - credible_interval) / 2
+    lower_q <- alpha
+    upper_q <- 1 - alpha
+
+    conds <- unique(post_draws$predictor)
+
+    if (length(conds) != 2) {
+
+        stop ("`post_draws$predictor` must contain exactly 2 unique values/levels.", call. = FALSE)
+
+    }
+
+    cond1 <- conds[1]
+    cond2 <- conds[2]
+
+    if (participant_clusters) {
+
+        post_diff <- post_draws |>
+            dplyr::select(
+                .data[[t1]], .data[[t2]], .data$predictor, .data$participant,
+                .data$.epred, .data$.draw
+                ) |>
+            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
+
+        prob_y_above <- post_diff |>
+            dplyr::group_by(.data[[t1]], .data[[t2]], .data$participant) |>
+            dplyr::summarise(prob_above = mean(.data$epred_diff > null_value), .groups = "drop") |>
+            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above)) |>
+            dplyr::mutate(
+                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+                ) |>
+            data.frame()
+
+        post_prob_slope <- post_diff |>
+            dplyr::group_by(.data[[t1]], .data[[t2]], .data$participant) |>
+            dplyr::summarise(
+                post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5, na.rm = TRUE),
+                lower = stats::quantile(x = .data$epred_diff, probs = lower_q, na.rm = TRUE),
+                upper = stats::quantile(x = .data$epred_diff, probs = upper_q, na.rm = TRUE),
+                .groups = "drop"
+                )
+
+        results <- dplyr::left_join(
+            prob_y_above, post_prob_slope,
+            by = c(t1, t2, "participant")
+            )
+
+    } else {
+
+        post_diff <- post_draws |>
+            dplyr::select(.data[[t1]], .data[[t2]], .data$predictor, .data$.epred, .data$.draw) |>
+            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
+            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
+
+        prob_y_above <- post_diff |>
+            dplyr::group_by(.data[[t1]], .data[[t2]]) |>
+            dplyr::summarise(prob_above = mean(.data$epred_diff > null_value), .groups = "drop") |>
+            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above)) |>
+            dplyr::mutate(
+                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+                ) |>
+            data.frame()
+
+        post_prob_slope <- post_diff |>
+            dplyr::group_by(.data[[t1]], .data[[t2]]) |>
+            dplyr::summarise(
+                post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5, na.rm = TRUE),
+                lower     = stats::quantile(x = .data$epred_diff, probs = lower_q, na.rm = TRUE),
+                upper     = stats::quantile(x = .data$epred_diff, probs = upper_q, na.rm = TRUE),
+                .groups = "drop"
+                )
+
+        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = c(t1, t2) )
+
+    }
+
+    return (results)
+
+}
+
+# null-coalescing (avoid importing rlang just for %||%)
+#' @keywords internal
+`%||%` <- function (a, b) if (!is.null(a) ) a else b
+
+# plotting 2D temporal clusters
+#' @keywords internal
+plot_clusters_2d <- function (
+        field_df,
+        clusters_df = NULL,
+        value_col = "prob_ratio",
+        palette = "vik",
+        midpoint = 0.5,
+        fill_name = NULL,
+        axes_labels = c("Training time", "Testing time"),
+        cluster_colour = "white"
+        ) {
+
+    stopifnot(length(axes_labels) == 2)
+
+    hit_df <- clusters_df |> dplyr::transmute(.data$time1, .data$time2, hit = 1)
+
+    plot_df <- field_df |>
+        dplyr::left_join(hit_df, by = c("time1", "time2") ) |>
+        dplyr::mutate(hit = tidyr::replace_na(.data$hit, 0) )
+
+    p <- field_df |>
+        ggplot2::ggplot(
+            ggplot2::aes(
+                x = .data$time1,
+                y = .data$time2,
+                fill = .data[[value_col]]
+                )
+            ) +
+        ggplot2::geom_raster() +
+        ggplot2::coord_equal(expand = FALSE) +
+        ggplot2::geom_abline(intercept = 0, slope = 1, linetype = 2, color = cluster_colour) +
+        ggplot2::labs(x = axes_labels[1], y = axes_labels[2], fill = value_col) +
+        scico::scale_fill_scico(
+            palette = palette,
+            midpoint = midpoint,
+            oob = scales::squish,
+            name = fill_name
+            )
+
+    if (!is.null(clusters_df) && nrow(clusters_df) > 0) {
+
+        p <- p +
+            ggplot2::geom_contour(
+                data = plot_df,
+                ggplot2::aes(x = .data$time1, y = .data$time2, z = .data$hit),
+                breaks = 0.5,
+                colour = cluster_colour,
+                linewidth = 0.5,
+                inherit.aes = FALSE
+                )
+
+    }
+
+    return (p)
+
+}
+
+# create data grid for model predictions
+#' @keywords internal
+make_prediction_grid_from_summary <- function (
+        summary_data,
+        brms_gam,
+        predictor_id,
+        predictor_type = c("none", "categorical", "continuous"),
+        participant_clusters = FALSE,
+        within_between = NULL,
+        is_2d_time = FALSE,
+        is_binom = FALSE,
+        include_ar_term = FALSE,
+        continuous_mode = c("pm1sd", "observed")
+        ) {
+
+    # argument checks (match testing_through_time() style)
+    stopifnot("summary_data must be a dataframe..." = is.data.frame(summary_data) )
+    stopifnot("brms_gam must be a brmsfit..." = inherits(brms_gam, "brmsfit") )
+    stopifnot("predictor_id must be a character (or NA)..." = is.character(predictor_id) || is.na(predictor_id) )
+    stopifnot("participant_clusters must be logical..." = is.logical(participant_clusters) )
+    stopifnot("is_2d_time must be logical..." = is.logical(is_2d_time) )
+    stopifnot("is_binom must be logical..." = is.logical(is_binom) )
+    stopifnot("include_ar_term must be logical..." = is.logical(include_ar_term) )
+
+    predictor_type <- match.arg(predictor_type)
+    continuous_mode <- match.arg(continuous_mode)
+
+    # expected time columns
+    time_cols <- if (is_2d_time) c("time1", "time2") else "time"
+
+    assertthat::assert_that(
+        all(time_cols %in% names(summary_data) ),
+        msg = paste(
+            "Missing time column(s) in summary_data:",
+            paste(setdiff(time_cols, names(summary_data) ), collapse = ", ")
+            )
+        )
+
+    # base grid = time support
+    base_grid <- summary_data |>
+        dplyr::distinct(dplyr::across(dplyr::all_of(time_cols) ) ) |>
+        dplyr::arrange(dplyr::across(dplyr::all_of(time_cols) ) )
+
+    # add predictor dimension
+    if (is.na(predictor_id) || predictor_type == "none") {
+
+        newdata_grid <- base_grid
+
+    } else if (predictor_type == "categorical") {
+
+        assertthat::assert_that(
+            "predictor" %in% names(summary_data),
+            msg = "summary_data must contain a 'predictor' column for categorical predictors."
+            )
+
+        pred_levels <- if (is.factor(summary_data$predictor) ) {
+            levels(summary_data$predictor)
+        } else {
+            sort(unique(summary_data$predictor) )
+        }
+
+        newdata_grid <- tidyr::crossing(
+            base_grid,
+            predictor = pred_levels
+            )
+
+    } else if (predictor_type == "continuous") {
+
+        assertthat::assert_that(
+            "predictor" %in% names(summary_data),
+            msg = "summary_data must contain a 'predictor' column for continuous predictors."
+            )
+
+        if (continuous_mode == "observed") {
+
+            pred_vals <- sort(unique(summary_data$predictor) )
+
+        } else {
+
+            # use model data for mean/sd
+            predictor_mean <- mean(brms_gam$data$predictor, na.rm = TRUE)
+            predictor_sd <- stats::sd(brms_gam$data$predictor, na.rm = TRUE)
+
+            pred_vals <- c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)
+
+        }
+
+        newdata_grid <- tidyr::crossing(
+            base_grid,
+            predictor = pred_vals
+            )
+
+    }
+
+    # detect whether ar_series is required
+    needs_ar_series <- include_ar_term || ("ar_series" %in% names(brms_gam$data) )
+
+    # participant dimension
+    if (participant_clusters) {
+
+        assertthat::assert_that(
+            "participant" %in% names(summary_data),
+            msg = "summary_data must contain 'participant' when participant_clusters = TRUE."
+            )
+
+        # no participant clusters for between-subject predictors
+        if (!is.null(within_between) &&
+            !is.na(predictor_id) &&
+            is.list(within_between) &&
+            !is.null(within_between$classification) &&
+            identical(within_between$classification, "between-subject") ) {
+
+            stop (
+                "participant_clusters = TRUE is not supported for between-subject predictors.",
+                call. = FALSE
+                )
+
+        }
+
+        newdata_grid <- tidyr::crossing(
+            newdata_grid,
+            participant = sort(unique(summary_data$participant) )
+            )
+
+    } else {
+
+        # For population-level predictions:
+        # - if AR is on and participant exists: use a reference participant so ar_series is well-defined
+        # - otherwise: keep old behaviour (participant = NA)
+        if ("participant" %in% names(summary_data) ) {
+
+            if (needs_ar_series) {
+
+                ref_participant <- brms_gam$data$participant[!is.na(brms_gam$data$participant)][1]
+
+                newdata_grid <- newdata_grid |>
+                    dplyr::mutate(participant = ref_participant)
+
+            } else {
+
+                newdata_grid <- newdata_grid |>
+                    dplyr::mutate(participant = NA)
+
+            }
+
+        }
+
+    }
+
+    # ar_series (when needed)
+    if (needs_ar_series) {
+
+        if ("participant" %in% names(newdata_grid) ) {
+
+            if ("predictor" %in% names(newdata_grid) ) {
+
+                newdata_grid <- newdata_grid |>
+                    dplyr::mutate(ar_series = interaction(.data$participant, .data$predictor, drop = TRUE) )
+
+            } else {
+
+                newdata_grid <- newdata_grid |>
+                    dplyr::mutate(ar_series = .data$participant)
+
+            }
+
+        } else {
+
+            # fall-back dummy
+            newdata_grid <- newdata_grid |>
+                dplyr::mutate(ar_series = "ar_dummy")
+
+        }
+
+        # match factor levels to model data if needed
+        if ("ar_series" %in% names(brms_gam$data) && is.factor(brms_gam$data$ar_series) ) {
+
+            newdata_grid$ar_series <- factor(newdata_grid$ar_series, levels = levels(brms_gam$data$ar_series) )
+
+        }
+
+    }
+
+    # add required dummy columns for validate_data()
+    newdata_grid <- newdata_grid |>
+        add_required_dummy(is_binom = is_binom)
+
+    return (newdata_grid)
 
 }

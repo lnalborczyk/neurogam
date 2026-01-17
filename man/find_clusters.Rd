@@ -8,7 +8,8 @@ find_clusters(
   data,
   threshold = 10,
   group = NULL,
-  threshold_type = c("both", "above", "below")
+  threshold_type = c("both", "above", "below"),
+  time_id = "time"
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ detected. Must be one of \code{"above"}, \code{"below"}, or \code{"both"}
 \code{value >= threshold}. When \code{"below"}, clusters are formed where
 \code{value <= 1/threshold}. When \code{"both"}, both types are detected
 and the returned data include a \code{sign} column.}
+
+\item{time_id}{Character; name of the column(s) in \code{data}
+containing time information (e.g., in seconds or samples).}
 }
 \value{
 A data frame with one row per detected cluster and columns:
@@ -78,6 +82,7 @@ if grouping is used). Internally, the data are:
 }
 }
 \examples{
+\dontrun{
 set.seed(666)
 df <- data.frame(
   time = seq(0, 1, length.out = 100),
@@ -110,8 +115,11 @@ find_clusters(
   group = "participant",
   threshold_type = "both"
   )
+}
 
 }
 \author{
 Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}
+
+Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }

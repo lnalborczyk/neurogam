@@ -5,6 +5,8 @@
 <url><loc>https://lnalborczyk.github.io/neurogam/articles/eeg_spatio_temporal.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/articles/eeg_temporal.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/articles/index.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/articles/residual_autocorrelation.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/articles/temporal-2d.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/authors.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/index.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/news/index.html</loc></url>
@@ -15,16 +17,22 @@
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/index.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/make_bgam_formula.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/make_summary_data.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/plot.clusters_results_1d.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/plot.clusters_results_2d.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/plot_eeg.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/plot_sensors.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/ppc.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/ppc_clusters_results.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/print.clusters_results.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/print.clusters_results_1d.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/print.recommend_k_results.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/recommend_k.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/st_take_n_times.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results_1d.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results_2d.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/summary.recommend_k_results.html</loc></url>
 <url><loc>https://lnalborczyk.github.io/neurogam/reference/testing_through_time.html</loc></url>
+<url><loc>https://lnalborczyk.github.io/neurogam/reference/timegen_data.html</loc></url>
 </urlset>
 
