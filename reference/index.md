@@ -3,10 +3,7 @@
 ## All functions
 
 - [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
-  :
-
-  Check and visualise residual autocorrelation in a fitted neurogam
-  model
+  : Check residual autocorrelation for brms models
 
 - [`eeg_data`](https://lnalborczyk.github.io/neurogam/reference/eeg_data.md)
   : Simulated EEG data
@@ -19,6 +16,12 @@
 
   Build a brms formula for time-resolved BGAMMs
 
+- [`plot(`*`<clusters_results_1d>`*`)`](https://lnalborczyk.github.io/neurogam/reference/plot.clusters_results_1d.md)
+  : Plot time-resolved GAM results (1D clusters)
+
+- [`plot(`*`<clusters_results_2d>`*`)`](https://lnalborczyk.github.io/neurogam/reference/plot.clusters_results_2d.md)
+  : Plot time-generalisation GAM results (2D clusters)
+
 - [`plot_eeg()`](https://lnalborczyk.github.io/neurogam/reference/plot_eeg.md)
   : Plot spatio-temporal EEG data as topographies or 2D surfaces
 
@@ -28,10 +31,10 @@
 - [`ppc()`](https://lnalborczyk.github.io/neurogam/reference/ppc.md) :
   Posterior predictive checks
 
-- [`print(`*`<clusters_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/print.clusters_results.md)
+- [`print(`*`<clusters_results_1d>`*`)`](https://lnalborczyk.github.io/neurogam/reference/print.clusters_results_1d.md)
   :
 
-  Print method for `clusters_results` objects
+  Print method for 1D `clusters_results` objects
 
 - [`print(`*`<recommend_k_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/print.recommend_k_results.md)
   : Print method for recommend_k_results objects
@@ -43,13 +46,21 @@
 - [`st_take_n_times()`](https://lnalborczyk.github.io/neurogam/reference/st_take_n_times.md)
   : Select approximately equally spaced times
 
-- [`summary(`*`<clusters_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results.md)
+- [`summary(`*`<clusters_results_1d>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results_1d.md)
   :
 
-  Summary method for `clusters_results` objects
+  Summary method for 1D `clusters_results` objects
+
+- [`summary(`*`<clusters_results_2d>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results_2d.md)
+  :
+
+  Summary method for 2D `clusters_results` objects
 
 - [`summary(`*`<recommend_k_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.recommend_k_results.md)
   : Summary method for recommend_k_results objects
 
 - [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
   : Time-resolved testing based on BGAMMs
+
+- [`timegen_data`](https://lnalborczyk.github.io/neurogam/reference/timegen_data.md)
+  : Time-generalisation decoding example dataset

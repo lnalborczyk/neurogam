@@ -1,5 +1,55 @@
 # Changelog
 
+## neurogam 0.0.4
+
+### New features
+
+- Implementing 2D temporal BGAMs, which can be useful for modelling
+  cross-temporal decoding generalisation matrices. Such models can be
+  fitted by defining two time columns (i.e., training and testing times)
+  in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
+  For instance,
+  `testing_through_time(..., time_id = c(train_time, test_time), ...)`.
+- Implementing post-processing methods (e.g.,
+  [`print()`](https://rdrr.io/r/base/print.html),
+  [`summary()`](https://rdrr.io/r/base/summary.html),
+  [`plot()`](https://rdrr.io/r/graphics/plot.default.html)) for 2D
+  temporal models.
+- Adding a `previous_model` argument to
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
+  This allows to pass an existing `neurogam` model (previously fitted
+  with
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)),
+  which may be useful for exploring the effects of the `threshold`
+  parameters (this avoids re-fitting the model).
+
+### Other changes
+
+- Including the `timegen_data` (2D temporal data).
+- Including a new vignette on 2D temporal models using the
+  `timegen_data` data.
+- Including a new vignette on checking and modelling residual
+  auto-correlation (for 1D temporal data).
+- Allowing to use within-chain parallelisation in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+  via the `threads` argument.
+- Allowing to save the fitted `brms` model in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+  via the `save` argument.
+- Re-factoring the
+  [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
+  function to use `residuals.brmsfit()` and returns credible intervals.
+
+### Bug fixes
+
+- Fixing the specification of AR terms in
+  [`make_bgam_formula()`](https://lnalborczyk.github.io/neurogam/reference/make_bgam_formula.md)
+  (now works for both participant- and group-level models).
+- The
+  [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
+  function now works when `multilevel = "group"`.
+
 ## neurogam 0.0.3
 
 ### New features

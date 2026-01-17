@@ -13,6 +13,7 @@ or iii) the amplitude of a continuous predictor varying either within
 ``` r
 testing_through_time(
   data,
+  previous_model = NULL,
   participant_id = "participant",
   outcome_id = "eeg",
   outcome_sd = NULL,
@@ -25,14 +26,17 @@ testing_through_time(
   multilevel = c("summary", "group"),
   include_ar_term = FALSE,
   use_se = TRUE,
+  t2_full = FALSE,
   participant_clusters = FALSE,
   varying_smooth = TRUE,
   warmup = 1000,
   iter = 2000,
   chains = 4,
   cores = 4,
+  threads = NULL,
   backend = c("cmdstanr", "rstan"),
   stan_control = NULL,
+  file = NULL,
   n_post_samples = NULL,
   threshold = 10,
   threshold_type = c("both", "above", "below"),
@@ -46,6 +50,21 @@ testing_through_time(
 - data:
 
   A data frame in long format containing time-resolved data.
+
+- previous_model:
+
+  Optional. A previously fitted `brmsfit` object obtained from
+  `testing_through_time()`. When provided, the model is not refitted;
+  instead, posterior predictions and inference are recomputed using the
+  supplied model. This is useful for exploring the effect of different
+  `threshold` and `threshold_type` values without re-running model
+  fitting.
+
+  The supplied model must be compatible with the current function call
+  (i.e., same data structure, formula, family, and predictors). If
+  `previous_model` is not `NULL`, arguments related to model estimation
+  (e.g., `warmup`, `iter`, `chains`, `cores`, `backend`, `stan_control`)
+  are ignored.
 
 - participant_id:
 
@@ -63,7 +82,7 @@ testing_through_time(
 
 - time_id:
 
-  Character; name of the column in `data` containing time information
+  Character; name of the column(s) in `data` containing time information
   (e.g., in seconds or samples).
 
 - predictor_id:
@@ -127,6 +146,14 @@ testing_through_time(
   Logical; whether to include known or internally computed measurement
   error via `y | se(outcome_sd)` in the model formula.
 
+- t2_full:
+
+  Logical; If TRUE, then there is a separate penalty for each
+  combination of null space column and range space, see
+  [`t2`](https://rdrr.io/pkg/mgcv/man/t2.html). Only use when fitting 2D
+  temporal models (i.e., when `time_id` contains two temporal
+  variables).
+
 - participant_clusters:
 
   Logical; should we return clusters at the participant-level.
@@ -152,6 +179,12 @@ testing_through_time(
 
   Numeric; number of parallel cores to use.
 
+- threads:
+
+  Numeric; number of threads to use in within-chain parallelisation. See
+  [`brm`](https://paulbuerkner.com/brms/reference/brm.html)
+  documentation for more information.
+
 - backend:
 
   Character; package to use as the backend for fitting the `Stan` model.
@@ -161,6 +194,14 @@ testing_through_time(
 
   List; parameters to control the MCMC behaviour, using default
   parameters when NULL. See `?brm` for more details.
+
+- file:
+
+  Either NULL or a character string. In the latter case, the fitted
+  `brms` model object is saved via saveRDS in a file named after the
+  string supplied in file. The `.rds` extension is added automatically.
+  If the file already exists, `brm` will load and return the saved model
+  object instead of refitting the model.
 
 - n_post_samples:
 
@@ -201,7 +242,7 @@ An object of class `"clusters_results"`, which is a list with elements:
   (posterior median, credible interval, posterior probabilities, and
   odds `prob_ratio`);
 
-- `data`: data used to fit the brms model (possibly summarised);
+- `summary_data`: data used to fit the brms model (possibly summarised);
 
 - `model`: the fitted brms model object;
 
@@ -255,5 +296,8 @@ summary(results)
 
 # plot the model predictions and identified clusters
 plot(results)
+
+# posterior predictive check
+ppc(results)
 } # }
 ```

@@ -16,6 +16,8 @@ make_bgam_formula(
   multilevel = c("summary", "group"),
   predictor_type = c("none", "categorical", "continuous"),
   within_between = c(NA, "within-subject", "between-subject"),
+  time_id = "time",
+  t2_full = FALSE,
   kvalue = 20,
   bs = "tp",
   include_ar_term = FALSE,
@@ -52,6 +54,26 @@ make_bgam_formula(
   `"between-subject"` to determine whether to include a varying slope
   `(1 + predictor | participant)` or only `(1 | participant)`.
 
+- time_id:
+
+  Character vector specifying the temporal variable(s) used in the
+  smooth term. By default `"time"` (1D). If a character vector of length
+  2 is provided (e.g., `c("train_time", "test_time")`), the function
+  constructs a 2D tensor-product smooth using
+  `t2(train_time, test_time, ...)` (rather than `s(time, ...)`).
+
+  Currently, 2D `time_id` is supported for `multilevel = "group"` models
+  (population-level smooth surface). Participant-level varying smooths
+  for 2D surfaces are not implemented.
+
+- t2_full:
+
+  Logical; If TRUE, then there is a separate penalty for each
+  combination of null space column and range space, see
+  [`t2`](https://rdrr.io/pkg/mgcv/man/t2.html). Only use when fitting 2D
+  temporal models (i.e., when `time_id` contains two temporal
+  variables).
+
 - kvalue:
 
   Numeric; basis dimension `k` used in `s(time, ..., k = kvalue)`.
@@ -65,7 +87,7 @@ make_bgam_formula(
 
   Logical; if `TRUE`, adds an AR(1) autocorrelation structure within
   participant via .
-  `autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)`.
+  `autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = TRUE)`.
 
 - varying_smooth:
 
@@ -96,6 +118,10 @@ reshaped to use the internal column names expected by
 `testing_through_time`: `time`, `participant`, `predictor` (optional),
 and one of `outcome_mean` / `outcome_sd` (Gaussian) or `success` /
 `trials` (Binomial).
+
+## Author
+
+Ladislas Nalborczyk <ladislas.nalborczyk@cnrs.fr>.
 
 ## Examples
 

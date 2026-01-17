@@ -34,7 +34,7 @@
 
     <a class="navbar-brand me-2" href="index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,6 +49,8 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/eeg_spatio_temporal.html">Application to spatio-temporal EEG data (in progress)</a></li>
     <li><a class="dropdown-item" href="articles/eeg_temporal.html">Application to 1D temporal EEG data</a></li>
+    <li><a class="dropdown-item" href="articles/residual_autocorrelation.html">Checking and modelling residual auto-correlation (1D temporal data)</a></li>
+    <li><a class="dropdown-item" href="articles/temporal-2d.html">Modelling cross-temporal decoding generalisation matrices (2D temporal)</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -73,7 +75,7 @@
 </div>
 <!-- badges: start -->
 
-<p>The goal of <code>neurogam</code> is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). The current version only allows fitting 1D temporal data (e.g., one M/EEG channel or decoding timecourses) but will be extended in the near future to support 2D temporal (e.g., cross-temporal generalisation matrices) and 3D spatiotemporal (e.g., time x sensors M/EEG) data.</p>
+<p>The goal of <code>neurogam</code> is to provide utilities for estimating the onset and offset of time-resolved effects, such as those found in M/EEG, pupillometry, or finger/mouse-tracking data (amongst others). It is designed as a lightweight interface to the <a href="https://github.com/paul-buerkner/brms" class="external-link"><code>brms</code></a> package. The current version allows fitting 1D temporal data (e.g., pupillometry, single M/EEG channel, or decoding timecourses) or 2D temporal (e.g., cross-temporal decoding generalisation matrices) data but will be extended in the near future to support 3D spatiotemporal (e.g., time x sensors M/EEG) data.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -129,8 +131,9 @@
 <ul>
 <li>clusters: a data frame with one row per detected cluster;</li>
 <li>predictions: a data frame with time-resolved posterior summaries;</li>
-<li>model: the fitted model object;</li>
-<li>multilevel: the value of the argument.</li>
+<li>model: the fitted <code>brms</code> model object;</li>
+<li>summary_data: the summary data used internally for fitting;</li>
+<li>multilevel: the value of the <code>multilevel</code> argument.</li>
 </ul>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># results structure</span></span>
@@ -171,10 +174,33 @@
 <p><img src="reference/figures/README-fig-ppc-1.png" width="100%"></p>
 </div>
 <div class="section level3">
+<h3 id="reusing-a-previously-fitted-model">Reusing a previously fitted model<a class="anchor" aria-label="anchor" href="#reusing-a-previously-fitted-model"></a>
+</h3>
+<p>The <code>previous_model</code> argument allows passing an existing <code>neurogam</code> model (previously fitted with <code><a href="reference/testing_through_time.html">testing_through_time()</a></code>), which may be useful for exploring the effects of the <code>threshold</code> parameters (while avoiding re-fitting the model).</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># fitting the BGAMM to identify clusters</span></span>
+<span><span class="va">results2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/testing_through_time.html">testing_through_time</a></span><span class="op">(</span></span>
+<span>    <span class="co"># simulated EEG data</span></span>
+<span>    data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
+<span>    <span class="co"># previously fitted model</span></span>
+<span>    previous_model <span class="op">=</span> <span class="va">results</span><span class="op">$</span><span class="va">model</span>,</span>
+<span>    <span class="co"># when predictor_id = NA, tests average level against 0</span></span>
+<span>    predictor_id <span class="op">=</span> <span class="cn">NA</span>,</span>
+<span>    <span class="co"># we recommend fitting the GAMM with summary statistics (mean and SD)</span></span>
+<span>    multilevel <span class="op">=</span> <span class="st">"summary"</span>,</span>
+<span>    <span class="co"># new threshold on posterior odds</span></span>
+<span>    threshold <span class="op">=</span> <span class="fl">20</span></span>
+<span>    <span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># plotting the data, model's predictions, and clusters</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">results2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-fig-clusters2-1.png" width="100%"></p>
+</div>
+<div class="section level3">
 <h3 id="how-to-define-the-basis-dimension">How to define the basis dimension?<a class="anchor" aria-label="anchor" href="#how-to-define-the-basis-dimension"></a>
 </h3>
 <p>We cannot provide a single universal recommendation for choosing the optimal value of <span class="math inline">\(k\)</span>, as it depends on several factors, including the sampling rate, preprocessing steps (e.g., signal-to-noise ratio, low-pass filtering), and the underlying temporal dynamics of the effect of interest. One strategy is to set <span class="math inline">\(k\)</span> as high as computational constraints allow (acknowledging that the <span class="math inline">\(k\)</span>-value only provides an upper bound on the <em>effective</em> basis dimension). Alternatively, one can fit a series of models with different <span class="math inline">\(k\)</span> values and compare these models using information criteria such as LOOIC or WAIC, alongside with posterior predictive checks (PPCs), to select the model that best captures the structure of the data. We illustrate this approach below.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># recommend an optimal smooth basis dimension k</span></span>
 <span><span class="va">k_res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/recommend_k.html">recommend_k</a></span><span class="op">(</span></span>
 <span>    object <span class="op">=</span> <span class="va">results</span>,</span>
@@ -184,7 +210,7 @@
 <span>    criterion <span class="op">=</span> <span class="st">"waic"</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-fig-reco-k-1.png" width="100%"></p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># results summary</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">k_res</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -215,34 +241,34 @@
 <a class="anchor" aria-label="anchor" href="#polyglot-use-of-neurogam"></a>
 </h2>
 <p>To use <code>neurogam</code> functions in Python (e.g., on MNE epochs), we recommend using the <code>rpy2</code> interface (<a href="https://github.com/rpy2/rpy2" class="external-link uri">https://github.com/rpy2/rpy2</a>), as shown below. It simply requires reshaping MNE epochs into long format (one trial/observation per row) (see for instance <code>epochs.to_data_frame(long_format=True)</code>, <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame" class="external-link uri">https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame</a>).</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># loading the Python modules</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="im">import</span> rpy2.robjects <span class="im">as</span> robjects</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.packages <span class="im">import</span> importr</span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.conversion <span class="im">import</span> localconverter</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a></span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co"># importing the "neurogam" R package</span></span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>neurogam <span class="op">=</span> importr(<span class="st">"neurogam"</span>)</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a></span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co"># reshaping epochs into long format</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co"># long_df = epochs.to_data_frame(long_format=True)</span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a></span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="cf">with</span> localconverter(robjects.default_converter <span class="op">+</span> pandas2ri.converter):</span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>    </span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>    long_df_r <span class="op">=</span> robjects.conversion.py2rpy(long_df)</span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>    </span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a></span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co"># using the testing_through_time() function from the neurogam package</span></span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>results <span class="op">=</span> neurogam.testing_through_time(data<span class="op">=</span>long_df_r, threshold<span class="op">=</span><span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># loading the Python modules</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="im">import</span> rpy2.robjects <span class="im">as</span> robjects</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.packages <span class="im">import</span> importr</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="im">from</span> rpy2.robjects.conversion <span class="im">import</span> localconverter</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co"># importing the "neurogam" R package</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>neurogam <span class="op">=</span> importr(<span class="st">"neurogam"</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co"># reshaping epochs into long format</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="co"># long_df = epochs.to_data_frame(long_format=True)</span></span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="cf">with</span> localconverter(robjects.default_converter <span class="op">+</span> pandas2ri.converter):</span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>    </span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>    long_df_r <span class="op">=</span> robjects.conversion.py2rpy(long_df)</span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>    </span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a></span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a><span class="co"># using the testing_through_time() function from the neurogam package</span></span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a>results <span class="op">=</span> neurogam.testing_through_time(data<span class="op">=</span>long_df_r, threshold<span class="op">=</span><span class="dv">10</span>)</span></code></pre></div>
 <p>To use <code>neurogam</code> functions in Julia, we recommend using the <code>RCall</code> package (<a href="https://juliainterop.github.io/RCall.jl/stable/" class="external-link uri">https://juliainterop.github.io/RCall.jl/stable/</a>) (thanks to Benedikt Ehinger for sharing this code snippet).</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># loading the RCall module</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>using RCall</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co"># importing the neurogam R package</span></span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="sc">@</span>rimport neurogam</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">neurogam.testing_through_time</span>(<span class="at">data=</span>long_df, <span class="at">threshold=</span><span class="dv">10</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># loading the RCall module</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>using RCall</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># importing the neurogam R package</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="sc">@</span>rimport neurogam</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co"># assuming long_df is some M/EEG data reshaped in long format</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">neurogam.testing_through_time</span>(<span class="at">data=</span>long_df, <span class="at">threshold=</span><span class="dv">10</span>)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
@@ -255,7 +281,6 @@
 <ul>
 <li>Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel Models using Stan. Journal of Statistical Software. 80(1), 1-28. doi.org/10.18637/jss.v080.i01</li>
 <li>Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R Package brms. The R Journal. 10(1), 395-411. doi.org/10.32614/RJ-2018-017</li>
-<li>Bürkner P. C. (2021). Bayesian Item Response Modeling in R with brms and Stan. Journal of Statistical Software, 100(5), 1-54. doi.org/10.18637/jss.v100.i05</li>
 </ul>
 </div>
 <div class="section level2">
