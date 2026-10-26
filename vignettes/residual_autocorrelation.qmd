@@ -21,6 +21,9 @@ knitr::opts_chunk$set(
     dev = "png",
     dpi = 300
     )
+
+# use the ggplot2 neurogam theme
+theme_set(theme_neurogam() )
 ```
 
 ## Importing and visualising EEG data
@@ -65,7 +68,7 @@ head(eeg_data)
 
 ## Fitting a first model
 
-We fit the model (a BGAMM) on one channel (PZ) to test for group difference at every timestep.
+We fit the model (a BGAMM) on one channel (PZ) to test for a group difference at every timestep.
 
 ```{r clusters1, results = "hide"}
 # fitting the BGAMM to identify clusters
@@ -218,11 +221,11 @@ We visualise both the auto-correlation (ACF) and partial auto-correlation (pACF)
 
 ## Model comparison
 
-Model comparison suggests that the second model has much better out-of-sample predictive accuracy (lower WAIC).
+Model comparison suggests that the second model has much better out-of-sample predictive accuracy.
 
 ```{r model-comparison}
-# model comparison using WAIC
-brms::waic(results1$model, results2$model)
+# model comparison using leave-one-out cross-validation
+brms::loo(results1$model, results2$model)
 ```
 
 ## Lowering auto-correlation with varying smooth
@@ -279,9 +282,9 @@ plot(results3)
 
 ## Model comparison
 
-Model comparison suggests that this last model has slightly better out-of-sample predictive accuracy (lower WAIC).
+Model comparison suggests that this last model has slightly better out-of-sample predictive accuracy.
 
 ```{r model-comparison2}
-# model comparison using WAIC
-brms::waic(results1$model, results2$model, results3$model)
+# model comparison using leave-one-out cross-validation
+brms::loo(results1$model, results2$model, results3$model)
 ```

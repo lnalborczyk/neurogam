@@ -10,7 +10,7 @@
   clusters_y = -Inf,
   clusters_colour = "black",
   lineend = "butt",
-  theme = ggplot2::theme_bw(),
+  theme = theme_neurogam(),
   ...
 )
 }
@@ -30,7 +30,7 @@ the cluster segments. Defaults to \code{"black"}.}
 \item{lineend}{Character. Line end style for cluster segments, passed to
 \code{\link[ggplot2]{geom_segment}} (e.g., \code{"butt"}, \code{"round"}).}
 
-\item{theme}{A ggplot2 theme object. Defaults to \code{\link[ggplot2]{theme_bw}()}.}
+\item{theme}{A ggplot2 theme object. Defaults to \code{theme_neurogam()}.}
 
 \item{...}{Currently unused. Included for S3 compatibility.}
 }

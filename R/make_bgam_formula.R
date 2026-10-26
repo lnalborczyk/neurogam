@@ -9,7 +9,7 @@
 #' The function assumes that the data passed to \code{brm()} has already been
 #' reshaped to use the internal column names expected by \code{testing_through_time}:
 #' \code{time}, \code{participant}, \code{predictor} (optional), and one of
-#' \code{outcome_mean} / \code{outcome_sd} (Gaussian) or \code{success} / \code{trials}
+#' \code{outcome_mean} / \code{outcome_sem} (Gaussian) or \code{success} / \code{trials}
 #' (Binomial).
 #'
 #' @param family A family object describing the response distribution. Must be
@@ -47,8 +47,11 @@
 #' @param include_by_smooth Logical; if \code{TRUE} (default) and
 #'   \code{predictor_type = "categorical"}, the time smooth is specified with
 #'   \code{by = predictor}.
+#' @param include_by_varying_smooth Logical; if \code{TRUE} (non default) and
+#'   \code{predictor_type = "categorical"}, the time varying smooth is specified with
+#'   \code{by = predictor}.
 #' @param use_se Logical; whether to include known or internally computed
-#'   measurement error via \code{y | se(outcome_sd)} in the model formula.
+#'   measurement error via \code{y | se(outcome_sem)} in the model formula.
 #'
 #' @return A \code{\link[brms]{brmsformula}} object.
 #'
@@ -87,6 +90,7 @@ make_bgam_formula <- function (
         include_ar_term = FALSE,
         varying_smooth = TRUE,
         include_by_smooth = TRUE,
+        include_by_varying_smooth = FALSE,
         use_se = TRUE
         ) {
 
@@ -173,15 +177,17 @@ make_bgam_formula <- function (
 
             if (isTRUE(include_ar_term) ) {
 
-                # expects columns: outcome_mean, outcome_sd
-                "outcome_mean | se(outcome_sd, sigma = TRUE)"
+                # expects columns: outcome_mean, outcome_sem
+                "outcome_mean | se(outcome_sem, sigma = TRUE)"
 
             } else {
 
                 if (use_se) {
 
-                    # expects columns: outcome_mean, outcome_sd
-                    "outcome_mean | se(outcome_sd)"
+                    # expects columns: outcome_mean, outcome_sem
+                    # "outcome_mean | se(outcome_sem)"
+                    # "outcome_mean | se(outcome_sem, sigma = FALSE)"
+                    "outcome_mean | se(outcome_sem, sigma = TRUE)"
 
                 } else {
 
@@ -205,7 +211,9 @@ make_bgam_formula <- function (
         if (predictor_type == "none") {
 
             smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
-            varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
+            # varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
+            # varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {kvalue})")
+            varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {floor(kvalue/2)})")
 
         } else {
 
@@ -213,22 +221,20 @@ make_bgam_formula <- function (
 
                 smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
 
-                if (wb == "within-subject") {
+                if (wb == "within-subject" && include_by_varying_smooth) {
 
-                    # smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
-                    varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue}, by = predictor)")
+                    varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {floor(kvalue/2)}, by = predictor)")
 
                 } else {
 
-                    # smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
-                    varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
+                    varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {floor(kvalue/2)})")
 
                 }
 
             } else {
 
                 smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
-                varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
+                varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {kvalue})")
 
             }
 
@@ -242,7 +248,7 @@ make_bgam_formula <- function (
         if (predictor_type == "none") {
 
             smooth_term <- glue::glue("t2(time1, time2, bs = '{bs}', k = c({kvalue}, {kvalue}), full = {t2_full})")
-            varying_smooth_term <- glue::glue("t2(time1, time2, participant, bs = 'fs', k = {kvalue})")
+            varying_smooth_term <- glue::glue("t2(time1, time2, participant, bs = 'fs', k = {floor(kvalue/2)})")
 
         } else {
 
@@ -252,18 +258,18 @@ make_bgam_formula <- function (
 
                 if (wb == "within-subject") {
 
-                    varying_smooth_term <- glue::glue("t2(time1, time2, participant, by = predictor, bs = 'fs', k = {kvalue})")
+                    varying_smooth_term <- glue::glue("t2(time1, time2, participant, by = predictor, bs = 'fs', k = {floor(kvalue/2)})")
 
                 } else {
 
-                    varying_smooth_term <- glue::glue("t2(time1, time2, participant, bs = 'fs', k = {kvalue})")
+                    varying_smooth_term <- glue::glue("t2(time1, time2, participant, bs = 'fs', k = {floor(kvalue/2)})")
 
                 }
 
             } else {
 
                 smooth_term <- glue::glue("t2(time1, time2, bs = '{bs}', k = c({kvalue}, {kvalue}), full = {t2_full})")
-                varying_smooth_term <- glue::glue("t2(time1, time2, bs = '{bs}', k = c({kvalue}, {kvalue}), full = {t2_full})")
+                varying_smooth_term <- glue::glue("t2(time1, time2, bs = '{bs}', k = c({floor(kvalue/2)}, {floor(kvalue/2)}), full = {t2_full})")
 
             }
 
@@ -346,7 +352,8 @@ make_bgam_formula <- function (
 
     if (isTRUE(varying_smooth) ) {
 
-        rhs_parts <- c(rhs_parts, as.character(varying_smooth_term) )
+        # remove the varying intercept and slope if there are varying smooths
+        rhs_parts <- c(rhs_parts[-3], as.character(varying_smooth_term) )
 
     }
 

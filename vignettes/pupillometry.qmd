@@ -1,0 +1,302 @@
+---
+title: "Time-resolved analysis of pupillometry data"
+author: "Ladislas Nalborczyk"
+date: "`r Sys.Date()`"
+vignette: >
+  %\VignetteIndexEntry{Application to pupillometry data}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{quarto::html}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+    cache = TRUE,
+    collapse = TRUE,
+    warning = FALSE,
+    message = FALSE,
+    comment = "#>",
+    out.width = "100%",
+    dev = "png",
+    dpi = 300
+    )
+```
+
+## Overview
+
+Pupil size changes slowly after an experimental event, often producing a response whose magnitude and latency depend on task demands. In this tutorial, we use `neurogam` to address a time-resolved question: **when does pupil size differ between easy and difficult arithmetic problems?**
+
+The workflow is:
+
+1. Import a small, publicly available pupillometry dataset.
+2. Briefly preprocess the recordings and inspect data quality.
+3. Summarise repeated trials within participants, conditions, and time bins.
+4. Fit a Bayesian generalised additive multilevel model (BGAMM).
+5. Inspect posterior time courses, evidence thresholds, and model diagnostics.
+
+**Scope.** This is a worked example of `neurogam`, not a general preprocessing
+standard. The original sample has nine participants; one is excluded for poor
+data quality, leaving approximately eight participants before any further
+exclusions. Consequently, the analysis is illustrative.
+
+## Dataset and experimental contrast
+
+The `pupil_data` dataset from
+[`PupillometryR`](https://samhforbes.github.io/PupillometryR/) comes from a
+demonstration study of easy and difficult arithmetic problems. Each observation
+contains the participant, trial, condition, elapsed time in milliseconds, and
+pupil measurements for the left and right eye. The dataset is installed with
+the package; no manual download is required.
+
+## Import and preprocess
+
+We follow the basic operations described in the `PupillometryR` tutorial:
+mark invalid samples, combine the two eyes, downsample to 50-ms bins, remove
+trials with substantial missingness, filter, interpolate short gaps, and
+subtract a trial-specific baseline.
+
+```{r data-import}
+library(PupillometryR)
+library(neurogam)
+library(ggplot2)
+library(dplyr)
+
+# use the ggplot2 neurogam theme
+theme_set(theme_neurogam() )
+
+# import the pupil data
+# see https://samhforbes.github.io/PupillometryR/articles/PupillometryR.html
+data("pupil_data")
+
+# check that IDs are not numeric
+pupil_data$ID <- as.character(pupil_data$ID)
+
+# remove participant number 8, who had problematic data
+pupil_data <- subset(pupil_data, ID != 8)
+
+# blinks were registered as -1, so replace with NAs
+pupil_data$LPupil[pupil_data$LPupil == -1] <- NA
+pupil_data$RPupil[pupil_data$RPupil == -1] <- NA
+
+# reshape the data
+Sdata <- make_pupillometryr_data(
+    data = pupil_data,
+    subject = ID,
+    trial = Trial,
+    time = Time,
+    condition = Type
+    )
+
+new_data <- replace_missing_data(data = Sdata)
+regressed_data <- regress_data(data = new_data, pupil1 = RPupil, pupil2 = LPupil)
+
+mean_data <- calculate_mean_pupil_size(
+    data = regressed_data,
+    pupil1 = RPupil,
+    pupil2 = LPupil
+    )
+
+mean_data <- downsample_time_data(
+    data = mean_data,
+    pupil = mean_pupil,
+    timebin_size = 50,
+    option = "median"
+    )
+
+missing <- calculate_missing_data(mean_data,  mean_pupil)
+
+mean_data2 <- clean_missing_data(
+    mean_data,
+    pupil = mean_pupil,
+    trial_threshold = 0.75,
+    subject_trial_threshold = 0.75
+    )
+
+filtered_data <- filter_data(
+    data = mean_data2,
+    pupil = mean_pupil,
+    filter = "median",
+    degree = 11
+    )
+
+int_data <- interpolate_data(
+    data = filtered_data,
+    pupil = mean_pupil,
+    type = "linear"
+    )
+
+base_data <- baseline_data(
+    data = int_data,
+    pupil = mean_pupil,
+    start = 0,
+    stop = 100
+    )
+```
+
+## Explore the observed responses
+
+Visualise participant-average trajectories first, before inspecting the grand
+mean. This reveals the large variability that is otherwise hidden by a single
+group-level summary.
+
+```{r observed-participants, fig.width = 12, fig.height = 12}
+base_data %>%
+     # average trials within each participant
+    group_by(ID, Type, Time) %>%
+    summarise(
+        mean_pupil = mean(mean_pupil, na.rm = TRUE),
+        .groups = "drop"
+        ) %>%
+    # group-level mean and SEM across participants
+    group_by(Type, Time) %>%
+    summarise(
+        mean = mean(mean_pupil, na.rm = TRUE),
+        sem = sd(mean_pupil, na.rm = TRUE) / sqrt(sum(!is.na(mean_pupil) ) ),
+        .groups = "drop"
+        ) %>%
+    ggplot(aes(x = Time, y = mean, fill = Type, colour = Type) ) +
+    geom_hline(yintercept = 0, linetype = 2) +
+    geom_ribbon(
+        aes(
+            ymin = mean - sem,
+            ymax = mean + sem
+            ),
+        alpha = 0.25,
+        colour = NA
+        ) +
+    geom_line(linewidth = 1) +
+    labs(
+        x = "Time (ms)",
+        y = "Mean pupil response",
+        colour = "Condition",
+        fill = "Condition"
+        )
+```
+
+## Fit the Bayesian GAMM
+
+We estimate a smooth response for each condition together with participant variation. `kvalue` controls the maximum flexibility of the smooth terms, not the number of temporal clusters. Fitting may take several minutes or longer depending on the hardware and Stan backend.
+
+**Baseline caveat.** This dataset begins after event onset, so 0-100 ms is not
+a true pre-event baseline. A pre-stimulus baseline would normally be preferable
+when available. An apparent difference emerging immediately after event onset
+should also be considered with particular caution given the latency of the
+pupillary response.
+
+```{r clusters, results = "hide"}
+# centering and scaling predictors
+base_data <- data.frame(base_data)
+base_data$Type <- as.factor(base_data$Type)
+contrasts(base_data$Type) <- c(-0.5, 0.5)
+base_data <- base_data %>% select(-Trial, -Timebin)
+
+# load cached results
+previous_results <- readRDS(file = "cache/pupillometry_results.rds")
+reuse_model <- previous_results$model
+
+# fit the BGAMM to identify clusters
+results <- testing_through_time(
+    # pupillometry data
+    data = base_data,
+    # reuse a previous model
+    previous_model = reuse_model,
+    # participant column
+    participant_id = "ID",
+    # outcome column
+    outcome_id = "mean_pupil",
+    # name of predictor in data
+    predictor_id = "Type",
+    # time column
+    time_id = "Time",
+    # time_id = "Time_scaled",
+    # basis dimension
+    # kvalue = 30,
+    kvalue = 20,
+    # we recommend fitting the model on summary statistics (mean and SEM)
+    multilevel = "summary",
+    # include an AR(1) autocorrelation structure
+    # include_ar_term = TRUE,
+    # threshold on posterior odds
+    threshold = 2,
+    # number of MCMCs
+    chains = 4,
+    # number of parallel cores
+    cores = 4,
+    # list of Stan control arguments
+    stan_control = list(adapt_delta = 0.95, max_treedepth = 12),
+    # define the baseline window (used to compute the ROPE)
+    baseline_window = c(0, 100)
+    )
+
+# check the model formula
+results$model$formula
+
+# save the results
+# saveRDS(object = results, file = "cache/pupillometry_results.rds")
+```
+
+## Inspect the posterior and temporal clusters
+
+Inspect the full posterior trajectory rather than reporting only the detected
+clusters. In particular, check whether the posterior difference is stable
+across adjacent times, whether its amplitude is scientifically relevant, and
+whether any cluster depends strongly on the threshold or spline flexibility.
+
+```{r print-clusters}
+# visualise the identified clusters
+print(results)
+```
+
+```{r plot-clusters}
+# visualise the data, model's predictions, and clusters
+plot(results)
+
+# check summary data
+# results$summary_data %>%
+#     ggplot(aes(x = time, y = outcome_mean, fill = predictor, colour = predictor) ) +
+#     geom_hline(yintercept = 0, linetype = 2) +
+#     geom_ribbon(
+#         aes(
+#             ymin = outcome_mean - outcome_sem,
+#             ymax = outcome_mean + outcome_sem
+#             ),
+#         alpha = 0.25,
+#         colour = NA
+#         ) +
+#     geom_line(linewidth = 1) +
+#     facet_wrap(~participant) +
+#     labs(
+#         x = "Time (ms)",
+#         y = "Mean pupil response",
+#         colour = "Condition",
+#         fill = "Condition"
+#         )
+```
+
+## Model diagnostics
+
+Start by examining the fitted model for sampling problems such as divergent
+transitions, low effective sample size, and large $\hat R$ values.
+
+```{r model-summary}
+summary(results$model)
+```
+
+Next, compare fitted values with participant trajectories. The convenience
+`ppc()` method provided by `neurogam` is useful, but inspect residual
+structure and any remaining temporal autocorrelation as well.
+
+```{r posterior-checks}
+neurogam::ppc(object = results, ppc_type = "group")
+neurogam::ppc(object = results, ppc_type = "participant")
+```
+
+## Comparison to cluster-based permutation tests
+
+Compare to the results of cluster-based permutation tests.
+
+```{r cbpt, results = "hide", fig.width = 9, fig.height = 6}
+source (file = "cache/cluster_based_permutation_tests.R")
+cluster_figure
+```

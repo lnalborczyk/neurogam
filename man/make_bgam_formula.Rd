@@ -16,6 +16,7 @@ make_bgam_formula(
   include_ar_term = FALSE,
   varying_smooth = TRUE,
   include_by_smooth = TRUE,
+  include_by_varying_smooth = FALSE,
   use_se = TRUE
 )
 }
@@ -66,8 +67,12 @@ If \code{FALSE}, only include the intercept/slope varying effects.}
 \code{predictor_type = "categorical"}, the time smooth is specified with
 \code{by = predictor}.}
 
+\item{include_by_varying_smooth}{Logical; if \code{TRUE} (non default) and
+\code{predictor_type = "categorical"}, the time varying smooth is specified with
+\code{by = predictor}.}
+
 \item{use_se}{Logical; whether to include known or internally computed
-measurement error via \code{y | se(outcome_sd)} in the model formula.}
+measurement error via \code{y | se(outcome_sem)} in the model formula.}
 }
 \value{
 A \code{\link[brms]{brmsformula}} object.
@@ -83,7 +88,7 @@ effects structure.
 The function assumes that the data passed to \code{brm()} has already been
 reshaped to use the internal column names expected by \code{testing_through_time}:
 \code{time}, \code{participant}, \code{predictor} (optional), and one of
-\code{outcome_mean} / \code{outcome_sd} (Gaussian) or \code{success} / \code{trials}
+\code{outcome_mean} / \code{outcome_sem} (Gaussian) or \code{success} / \code{trials}
 (Binomial).
 }
 \examples{

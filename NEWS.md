@@ -1,3 +1,23 @@
+# neurogam 0.0.5
+
+## New features
+
+* Implementing spatio-temporal BGAMMs for modelling EEG data in both space and time. (#8)
+* Add a `baseline_window` argument to `testing_through_time()` used to compute the ROPE (i.e., maximum absolute value of the `credible_interval`% credible interval during this baseline period).
+
+## Other changes
+
+* Allowing to pass more arguments to `brm()` in `testing_through_time()` via the `...` argument, thanks to Maël Delem. (#10)
+* When including varying smooths in `make_bgam_formula()`, the default is now to exclude varying intercept and slope.
+* When including varying smooths in `make_bgam_formula()`, the default is now to use a k-value of `floor(kvalue/2)` for the varying (by-participant) smooths.
+* Including a new vignette on modelling pupillometry data.
+* Extending the vignette on modelling spatio-temporal EEG data.
+
+## Bug fixes
+
+* Fixing the `stan_model_args` issue when using the `rstan` backend, thanks to Maël Delem. (#10)
+* Fixing the `se()` value (should be SEM instead of SD).
+
 # neurogam 0.0.4
 
 ## New features

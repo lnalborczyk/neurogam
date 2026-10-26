@@ -288,7 +288,8 @@ find_clusters <- function (
         nc <- ncol(mask)
         lab <- matrix(0L, nr, nc)
         cur <- 0L
-        qx <- integer(nr * nc); qy <- integer(nr * nc)
+        qx <- integer(nr * nc)
+        qy <- integer(nr * nc)
 
         for (r in seq_len(nr) ) for (c in seq_len(nc) ) {
 

@@ -9,7 +9,7 @@ testing_through_time(
   previous_model = NULL,
   participant_id = "participant",
   outcome_id = "eeg",
-  outcome_sd = NULL,
+  outcome_sem = NULL,
   time_id = "time",
   predictor_id = "condition",
   trials_id = NULL,
@@ -22,19 +22,23 @@ testing_through_time(
   t2_full = FALSE,
   participant_clusters = FALSE,
   varying_smooth = TRUE,
+  include_by_smooth = TRUE,
+  include_by_varying_smooth = TRUE,
   warmup = 1000,
   iter = 2000,
   chains = 4,
   cores = 4,
   threads = NULL,
-  backend = c("cmdstanr", "rstan"),
+  backend = getOption("brms.backend", "rstan"),
   stan_control = NULL,
   file = NULL,
   n_post_samples = NULL,
   threshold = 10,
   threshold_type = c("both", "above", "below"),
   chance_level = NULL,
-  credible_interval = 0.95
+  credible_interval = 0.95,
+  baseline_window = c(0, 0.1),
+  ...
 )
 }
 \arguments{
@@ -59,8 +63,8 @@ specifying participant IDs.}
 \item{outcome_id}{Character; name of the column in \code{data} containing
 the outcome values (e.g., M/EEG amplitude, decoding accuracy).}
 
-\item{outcome_sd}{Character; name of the column in \code{data} containing
-the outcome SD, when \code{outcome_id} has already been summarised (default
+\item{outcome_sem}{Character; name of the column in \code{data} containing
+the outcome SEM, when \code{outcome_id} has already been summarised (default
 value is NULL).}
 
 \item{time_id}{Character; name of the column(s) in \code{data}
@@ -110,7 +114,7 @@ structure within participant via
 \code{autocor = brms::ar(time = "time", gr = "participant", p = 1, cov = FALSE)}.}
 
 \item{use_se}{Logical; whether to include known or internally computed
-measurement error via \code{y | se(outcome_sd)} in the model formula.}
+measurement error via \code{y | se(outcome_sem)} in the model formula.}
 
 \item{t2_full}{Logical; If TRUE, then there is a separate penalty for each
 combination of null space column and range space, see \code{\link[mgcv]{t2}}.
@@ -121,6 +125,14 @@ two temporal variables).}
 
 \item{varying_smooth}{Logical; should we include a varying smooth. Default is
 \code{TRUE}. If \code{FALSE}, we only include a varying intercept and slope.}
+
+\item{include_by_smooth}{Logical; if \code{TRUE} (default) and
+\code{predictor_type = "categorical"}, the time smooth is specified with
+\code{by = predictor}.}
+
+\item{include_by_varying_smooth}{Logical; if \code{TRUE} (non default) and
+\code{predictor_type = "categorical"}, the time varying smooth is specified with
+\code{by = predictor}.}
 
 \item{warmup}{Numeric; number of warm-up iterations per chain.}
 
@@ -164,6 +176,17 @@ and the returned data include a \code{sign} column.}
 decoding accuracy).}
 
 \item{credible_interval}{Numeric; width of the credible (quantile) interval.}
+
+\item{baseline_window}{Numeric; bounds of the baseline window (in the same
+units of \code{time_id}), used to compute the baseline ROPE. Typically, this
+is a 100-200 ms window preceding stimulus onset.}
+
+\item{...}{Additional arguments passed to \code{\link[brms]{brm}},
+and from there to the selected Stan backend. This can be used, for example,
+to set \code{refresh}, \code{seed}, \code{init}, or other backend-specific
+sampling arguments. Arguments controlling the model formula, data, family,
+backend, MCMC settings, and Stan compilation are handled explicitly by
+\code{testing_through_time()} and cannot be passed through \code{...}.}
 }
 \value{
 An object of class \code{"clusters_results"}, which is a list with
@@ -174,9 +197,9 @@ An object of class \code{"clusters_results"}, which is a list with
     \item \code{predictions}: a data frame with time-resolved posterior
       summaries (posterior median, credible interval, posterior
       probabilities, and odds \code{prob_ratio});
+    \item \code{model}: the fitted \pkg{brms} model object;
     \item \code{summary_data}: data used to fit the \pkg{brms} model
       (possibly summarised);
-    \item \code{model}: the fitted \pkg{brms} model object;
     \item \code{multilevel}: the value of the \code{multilevel} argument.
   }
 

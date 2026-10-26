@@ -25,7 +25,7 @@
 #'   the cluster segments. Defaults to \code{"black"}.
 #' @param lineend Character. Line end style for cluster segments, passed to
 #'   \code{\link[ggplot2]{geom_segment}} (e.g., \code{"butt"}, \code{"round"}).
-#' @param theme A ggplot2 theme object. Defaults to \code{\link[ggplot2]{theme_bw}()}.
+#' @param theme A ggplot2 theme object. Defaults to \code{theme_neurogam()}.
 #' @param ... Currently unused. Included for S3 compatibility.
 #'
 #' @return A \code{\link[ggplot2]{ggplot}} object.
@@ -43,7 +43,7 @@ plot.clusters_results_1d <- function (
         clusters_y = -Inf,
         clusters_colour = "black",
         lineend = "butt",
-        theme = ggplot2::theme_bw(),
+        theme = theme_neurogam(),
         ...
         ) {
 
@@ -250,7 +250,7 @@ plot.clusters_results_1d <- function (
 #' @param x A \code{clusters_results_2d} object (typically returned by
 #'   \code{\link[neurogam]{testing_through_time}} for 2D time / time-generalisation).
 #' @param theme A ggplot2 theme object added to each panel. Defaults to
-#'   \code{\link[ggplot2]{theme_bw}()}.
+#'   \code{theme_neurogam()}.
 #' @param palette Character, a scico palette, see scico::scico_palette_show().
 #' @param midpoint Numeric, the midpoint for diverging color palettes.
 #' @param axes_labels Character vector, the x- and y-axis labels.
@@ -269,7 +269,7 @@ plot.clusters_results_1d <- function (
 #' @export
 plot.clusters_results_2d <- function (
         x,
-        theme = ggplot2::theme_bw(),
+        theme = theme_neurogam(),
         palette = "vik",
         midpoint = 0.5,
         axes_labels = c("Training time (s)", "Testing time (s)"),
@@ -427,7 +427,7 @@ ppc <- function (
         ndraws = 500,
         group_var = NULL,
         xlab = "Time (s)",
-        theme = ggplot2::theme_bw(),
+        theme = theme_neurogam(),
         ...
         ) {
 
@@ -515,7 +515,11 @@ ppc <- function (
             # grid for group-level prediction
             newdata <- data_fit |>
                 dplyr::summarise(
-                    dplyr::across(dplyr::where(is.numeric), mean, na.rm = TRUE),
+                    # dplyr::across(dplyr::where(is.numeric), mean, na.rm = TRUE),
+                    dplyr::across(
+                        .cols = dplyr::where(is.numeric),
+                        .fns = \(x) mean(x, na.rm = TRUE)
+                        ),
                     .by = .data$time
                     ) |>
                 dplyr::mutate(participant = NA)
@@ -575,7 +579,11 @@ ppc <- function (
 
                 newdata <- data_fit |>
                     dplyr::summarise(
-                        dplyr::across(dplyr::where(is.numeric), mean, na.rm = TRUE),
+                        # dplyr::across(dplyr::where(is.numeric), mean, na.rm = TRUE),
+                        dplyr::across(
+                            .cols = dplyr::where(is.numeric),
+                            .fns = \(x) mean(x, na.rm = TRUE)
+                            ),
                         .by = c(.data$predictor, .data$time)
                         ) |>
                     dplyr::mutate(participant = NA) |>
@@ -622,18 +630,157 @@ ppc <- function (
 
     } else { # or PPC per participant
 
-        ppc_plot <- brms::pp_check(
+        # ppc_plot <- brms::pp_check(
+        #     object = fit,
+        #     ndraws = ndraws,
+        #     type = "ribbon_grouped",
+        #     x = "time",
+        #     group = "participant",
+        #     prob = 0.5,
+        #     prob_outer = 0.5,
+        #     alpha = 0.5
+        #     ) +
+        #     theme +
+        #     ggplot2::labs(x = xlab)
+
+        # Use the original model data, preserving its row order
+        plot_data <- data.frame(data_fit)
+
+        # Predict separately for every observed participant/time/condition
+        # re_formula = NULL includes participant-specific effects
+        yrep <- brms::posterior_predict(
             object = fit,
             ndraws = ndraws,
-            type = "ribbon_grouped",
-            x = "time",
-            group = "participant",
-            prob = 0.5,
-            prob_outer = 0.5,
-            alpha = 0.5
+            re_formula = NULL
+            )
+
+        # Observed responses and predicted values
+        if (is_binom) {
+
+            # Convert binomial counts to proportions
+            y_obs <- plot_data$success / plot_data$trials
+            yrep <- sweep(yrep, 2, plot_data$trials, "/")
+
+        } else {
+
+            y_obs <- plot_data$outcome_mean
+
+        }
+
+        # Posterior predictive quantiles, one column per observation
+        pred_quantiles <- t(apply(
+            yrep,
+            2,
+            stats::quantile,
+            probs = c(0.025, 0.25, 0.5, 0.75, 0.975),
+            na.rm = TRUE
+            ) )
+
+        colnames(pred_quantiles) <- c(
+            "lower95", "lower50", "median", "upper50", "upper95"
+            )
+
+        plot_data <- cbind(plot_data, pred_quantiles)
+        plot_data$observed <- y_obs
+
+        # Define condition, if available
+        plot_data$.ppc_condition <- if (is.null(group_var) ) {
+
+            factor("All")
+
+        } else {
+
+            factor(plot_data[[group_var]])
+
+        }
+
+        plot_data$participant <- factor(plot_data$participant)
+
+        # One observation per participant, condition, and time expected
+        if (anyDuplicated(
+            plot_data[, c("participant", ".ppc_condition", "time")]
+            )) {
+            stop (
+                "Participant PPC requires one observation per ",
+                "participant, condition, and time point.",
+                call. = FALSE
+                )
+        }
+
+        # Arrange observations chronologically
+        plot_data <- plot_data |>
+            dplyr::arrange(
+                .data$participant,
+                .data$.ppc_condition,
+                .data$time
+                )
+
+        # Posterior predictive ribbons and observed trajectories
+        ppc_plot <- ggplot2::ggplot(
+            plot_data,
+            ggplot2::aes(
+                x = .data$time,
+                colour = .data$.ppc_condition,
+                fill = .data$.ppc_condition,
+                group = .data$.ppc_condition
+                )
             ) +
-            theme +
-            ggplot2::labs(x = xlab)
+            ggplot2::geom_ribbon(
+                ggplot2::aes(
+                    ymin = .data$lower95,
+                    ymax = .data$upper95
+                    ),
+                alpha = 0.2,
+                colour = NA
+                ) +
+            # ggplot2::geom_ribbon(
+            #     ggplot2::aes(
+            #         ymin = .data$lower50,
+            #         ymax = .data$upper50
+            #         ),
+            #     alpha = 0.25,
+            #     colour = NA
+            #     ) +
+            ggplot2::geom_line(
+                ggplot2::aes(
+                    y = .data$median,
+                    linetype = "Predicted"
+                    ),
+                linewidth = 0.8
+                ) +
+            ggplot2::geom_line(
+                ggplot2::aes(
+                    y = .data$observed,
+                    linetype = "Observed"
+                    ),
+                linewidth = 0.8
+                ) +
+            ggplot2::scale_linetype_manual(
+                values = c(
+                    "Observed" = "solid",
+                    "Predicted" = "dotted"
+                    )
+                ) +
+            ggplot2::facet_wrap(
+                ~ participant,
+                ncol = 4,
+                scales = "fixed"
+                ) +
+            ggplot2::guides(fill = "none") +
+            ggplot2::labs(
+                x = xlab,
+                y = if (is_binom) "Response proportion" else "Outcome",
+                colour = group_var,
+                linetype = NULL
+                ) +
+            theme
+
+        # Hide the condition legend if no predictor exists
+        if (is.null(group_var) ) {
+
+            ppc_plot <- ppc_plot + ggplot2::guides(colour = "none")
+
+        }
 
     }
 

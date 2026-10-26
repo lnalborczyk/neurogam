@@ -140,7 +140,8 @@ check_residual_autocorrelation <- function (
         seed = 666,
         acf_ndraws = 1000,
         acf_ci = 0.95,
-        theme = ggplot2::theme_bw(),
+        # theme = ggplot2::theme_bw(),
+        theme = theme_neurogam(),
         verbose = TRUE
         ) {
 
@@ -378,7 +379,7 @@ check_residual_autocorrelation <- function (
                     mean = mean(x),
                     sd = stats::sd(x),
                     q025 = stats::quantile(x, 0.025),
-                    q50  = stats::quantile(x, 0.5),
+                    q50 = stats::quantile(x, 0.5),
                     q975 = stats::quantile(x, 0.975),
                     row.names = NULL
                     )

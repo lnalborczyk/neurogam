@@ -21,11 +21,14 @@ knitr::opts_chunk$set(
     dev = "png",
     dpi = 200
     )
+
+# use the ggplot2 neurogam theme
+theme_set(theme_neurogam() )
 ```
 
-## Importing and visualising EEG data
+## Importing and visualising the EEG data
 
-Below we import and reshape EEG data from the [`eegkit` package](https://cran.r-project.org/web/packages/eegkit/index.html).
+Below we import and reshape the EEG data from the [`eegkit` package](https://cran.r-project.org/web/packages/eegkit/index.html).
 
 ```{r data-import, fig.height = 12, fig.width = 12}
 library(neurogam)
@@ -42,8 +45,7 @@ eegdata |>
     summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
     ggplot(aes(x = time, y = voltage, colour = group) ) +
     geom_line() +
-    facet_wrap(~channel) +
-    theme_bw()
+    facet_wrap(~channel)
 ```
 
 ```{r data-summary}
@@ -63,7 +65,8 @@ eeg_data <- eegdata |>
     # converting timesteps to seconds
     mutate(time = (time + 1) / 256) |>
     # rounding numeric variables
-    mutate(across(is.numeric, ~round(.x, 4) ) ) |>
+    # mutate(across(is.numeric, ~round(.x, 4) ) ) |>
+    mutate(across(where(is.numeric), ~round(.x, 4) ) ) |>
     # removing NAs
     na.omit() |>
     # scaling the variables before fitting
@@ -127,4 +130,93 @@ plot_eeg(
 
 ## Spatio-temporal modelling with BGAMs
 
-In progress.
+### Fitting the model
+
+We fit a spatio-temporal BGAMM (with a varying intercept, but no varying smooth) to identify clusters. Such models are much slower than 1D temporal models, we recommend running less chains and using within-chain parallelisation (as shown below with `threads = threading(threads = 4)`). We also recommend to start with simple models (e.g., low `kvalue`, no varying effect) to be able to diagnose potential issues rapidly. For more details on such models, see for instance [Pedersen et al. (2019)](https://peerj.com/articles/6876/).
+
+```{r model, eval = FALSE}
+library(brms)
+
+# subsetting participants for speed
+eeg_data2 <- eeg_data %>%
+    mutate(subject = as.character(subject) ) %>%
+    dplyr::filter(subject %in% unique(levels(eeg_data$subject) )[1:10]) %>%
+    # subsetting timesteps (decimation)
+    group_by(subject, channel) %>%
+    slice(seq(1, n(), by = 2) ) %>%
+    ungroup()
+
+# fitting a BGAMM with two spatial dimensions (sensors grid) and one temporal dimension
+timegen_gam <- brm(
+    formula = voltage ~ t2(
+        xproj, yproj, time,
+        # bs = "tp",
+        bs = c("ps", "ps"),
+        # k = c(25, 25),
+        k = c(15, 10),
+        d = c(2, 1)
+        # full = TRUE
+        ) + (1 | subject),
+    # data = timegen_data,
+    data = eeg_data2,
+    warmup = 1000,
+    iter = 3000,
+    chains = 2,
+    cores = 2,
+    backend = "cmdstanr",
+    threads = threading(threads = 4),
+    stan_model_args = list(stanc_options = list("O1") ),
+    file = "cache/eeg_st_model.rds"
+    )
+```
+
+### Plotting predictions
+
+...
+
+### Identifying clusters
+
+The previous model is equivalent to the following `testing_through_time()` call. This model takes around 15 hours on 4 parallel apple M4 cores.
+
+```{r clusters, eval = FALSE, results = "hide"}
+# fitting the spatio-temporal BGAMM to identify clusters
+results <- testing_through_time(
+    # cross-temporal generalisation data
+    data = timegen_data,
+    # participant column
+    participant_id = "participant",
+    # AUC column
+    outcome_id = "auc",
+    # testing against chance level
+    predictor_id = NA,
+    # defining the spatial dimension
+    space_id <- c("xproj", "yproj"),
+    # defining the temporal dimension
+    time_id = "time",
+    # basis dimension
+    kvalue = 25,
+    # only includes a per-participant varying intercept (no varying smooth)
+    multilevel = "summary",
+    use_se = FALSE,
+    varying_smooth = FALSE,
+    # threshold on posterior odds
+    threshold = 10,
+    # number of warmup iterations
+    warmup = 1000,
+    # total number of iterations (per chain)
+    iter = 3000,
+    # number of MCMCs
+    chains = 2,
+    # number of parallel cores
+    cores = 2,
+    # using with-chain parallelisation (needs 2x4 parallel cores)
+    threads = brms::threading(threads = 4),
+    # increasing adapt_delta and max_treedepth
+    stan_control = list(adapt_delta = 0.95, max_treedepth = 15)
+    )
+
+# save the results
+# saveRDS(object = results, file = "cache/eeg_st_results.rds")
+```
+
+The results can be summarised and visualised using the dedicated `print()`, `summary()`, and `plot()` methods. Clusters can be visually summarised through time (per channel) or through space (per timestep).

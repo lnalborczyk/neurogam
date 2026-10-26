@@ -4,7 +4,7 @@ make_summary_data <- function (
         data,
         participant_id = "participant",
         outcome_id = "eeg",
-        outcome_sd = NULL,
+        outcome_sem = NULL,
         time_id = "time",
         predictor_id = NA,
         trials_id = NULL,
@@ -63,16 +63,16 @@ make_summary_data <- function (
 
     if (!is.na(predictor_id) ) required <- c(required, predictor_id)
 
-    # if user provides an SD column name, require it (gaussian only)
-    if (!is.null(outcome_sd) ) {
+    # if user provides an SEM column name, require it (gaussian only)
+    if (!is.null(outcome_sem) ) {
 
-        if (!is.character(outcome_sd) || length(outcome_sd) != 1) {
+        if (!is.character(outcome_sem) || length(outcome_sem) != 1) {
 
-            stop ("`outcome_sd` must be NULL or a single character column name.", call. = FALSE)
+            stop ("`outcome_sem` must be NULL or a single character column name.", call. = FALSE)
 
         }
 
-        required <- c(required, outcome_sd)
+        required <- c(required, outcome_sem)
 
     }
 
@@ -249,9 +249,9 @@ make_summary_data <- function (
 
     } else { # gaussian summary
 
-        # if outcome_sd is provided, assume data is already summarised and
+        # if outcome_sem is provided, assume data is already summarised and
         # only validate + return it in the standard format.
-        if (!is.null(outcome_sd) ) {
+        if (!is.null(outcome_sem) ) {
 
             # build "summary-like" output directly
             summary_data <- df |>
@@ -260,25 +260,25 @@ make_summary_data <- function (
                     time = .data$time,
                     predictor = if (!is.na(predictor_id)) .data$predictor else NULL,
                     outcome_mean = .data[[outcome_id]],
-                    outcome_sd = .data[[outcome_sd]]
+                    outcome_sem = .data[[outcome_sem]]
                     )
 
             # type checks
             if (!is.numeric(summary_data$outcome_mean) ) {
 
-                stop ("`", outcome_id, "` must be numeric when providing `outcome_sd`.", call. = FALSE)
+                stop ("`", outcome_id, "` must be numeric when providing `outcome_sem`.", call. = FALSE)
 
             }
 
-            if (!is.numeric(summary_data$outcome_sd) ) {
+            if (!is.numeric(summary_data$outcome_sem) ) {
 
-                stop ("`", outcome_sd, "` must be numeric (SD values).", call. = FALSE)
+                stop ("`", outcome_sem, "` must be numeric (SEM values).", call. = FALSE)
 
             }
 
-            if (any(summary_data$outcome_sd < 0, na.rm = TRUE) ) {
+            if (any(summary_data$outcome_sem < 0, na.rm = TRUE) ) {
 
-                stop ("`outcome_sd` contains negative values; SD must be >= 0.", call. = FALSE)
+                stop ("`outcome_sem` contains negative values; SEM must be >= 0.", call. = FALSE)
 
             }
 
@@ -295,7 +295,7 @@ make_summary_data <- function (
             if (nrow(dup) > 0) {
 
                 stop (
-                    "When `outcome_sd` is provided, the input data must already be summarised ",
+                    "When `outcome_sem` is provided, the input data must already be summarised ",
                     "with one row per cell: ",
                     paste(key_cols, collapse = " x "),
                     ". Found duplicated cells.",
@@ -321,7 +321,9 @@ make_summary_data <- function (
                     dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
                     dplyr::summarise(
                         outcome_mean = mean(.data$outcome, na.rm = na_rm),
-                        outcome_sd = stats::sd(.data$outcome, na.rm = na_rm),
+                        # outcome_sd = stats::sd(.data$outcome, na.rm = na_rm),
+                        # outcome_sem = stats::sd(.data$outcome, na.rm = na_rm) / sqrt(length(.data$outcome) ),
+                        outcome_sem = stats::sd(.data$outcome, na.rm = na_rm) / sqrt(sum(!is.na(.data$outcome) ) ),
                         predictor = if (predictor_type == "continuous") agg_continuous(.data$predictor) else dplyr::first(.data$predictor),
                         .groups = "drop"
                         )
@@ -332,7 +334,9 @@ make_summary_data <- function (
                     dplyr::group_by(dplyr::across(dplyr::all_of(grp_outcome) ) ) |>
                     dplyr::summarise(
                         outcome_mean = mean(.data$outcome, na.rm = na_rm),
-                        outcome_sd = stats::sd(.data$outcome, na.rm = na_rm),
+                        # outcome_sd = stats::sd(.data$outcome, na.rm = na_rm),
+                        # outcome_sem = stats::sd(.data$outcome, na.rm = na_rm) / sqrt(length(.data$outcome) ),
+                        outcome_sem = stats::sd(.data$outcome, na.rm = na_rm) / sqrt(sum(!is.na(.data$outcome) ) ),
                         .groups = "drop"
                         )
 
@@ -507,6 +511,23 @@ st_head_radius <- function (sensors, head_expand = 1.1) {
 }
 
 #' @keywords internal
+ear_arc <- function (theta_start, theta_end, side = c("left", "right") ) {
+
+    side <- match.arg(side)
+    t <- seq(theta_start, theta_end, length.out = 120)
+    anchor_x <- r * cos(t)
+    anchor_y <- r * sin(t)
+    bump <- 0.10 * r
+
+    data.frame(
+        x = anchor_x + bump * cos(t),
+        y = anchor_y + bump * sin(t),
+        part = paste0("ear_", side)
+        )
+
+}
+
+#' @keywords internal
 st_head_outline <- function (r, n = 600) {
 
     th <- seq(0, 2*pi, length.out = n)
@@ -529,22 +550,6 @@ st_head_outline <- function (r, n = 600) {
         y = c(nose_base1[2], nose_tip[2], nose_base2[2]),
         part = "nose"
         )
-
-    ear_arc <- function (theta_start, theta_end, side = c("left", "right") ) {
-
-        side <- match.arg(side)
-        t <- seq(theta_start, theta_end, length.out = 120)
-        anchor_x <- r * cos(t)
-        anchor_y <- r * sin(t)
-        bump <- 0.10 * r
-
-        data.frame(
-            x = anchor_x + bump * cos(t),
-            y = anchor_y + bump * sin(t),
-            part = paste0("ear_", side)
-            )
-
-    }
 
     left_ear  <- ear_arc(160*pi/180, 200*pi/180, "left")
     right_ear <- ear_arc(-20*pi/180,  20*pi/180, "right")
@@ -724,8 +729,34 @@ st_interp_to_grid <- function (
 }
 
 #' @keywords internal
+get_baseline_null <- function (post_diff, baseline_window, credible_interval) {
+
+    alpha <- (1 - credible_interval) / 2
+    lower_q <- alpha
+    upper_q <- 1 - alpha
+
+    post_diff |>
+        dplyr::filter(
+            .data$time >= baseline_window[1],
+            .data$time <= baseline_window[2]
+            ) |>
+        dplyr::group_by(.data$time) |>
+        dplyr::summarise(
+            lower = stats::quantile(.data$epred_diff, lower_q),
+            upper = stats::quantile(.data$epred_diff, upper_q),
+            .groups = "drop"
+            ) |>
+        dplyr::summarise(
+            null_value = max(abs(c(.data$lower, .data$upper) ) )
+            ) |>
+        dplyr::pull(.data$null_value)
+
+}
+
+#' @keywords internal
 compute_one_sample_prob <- function (
-        post_draws, null_value, participant_clusters, n_post_samples, credible_interval
+        post_draws, null_value, participant_clusters,
+        n_post_samples, credible_interval, baseline_window = NULL
         ) {
 
     # validate credible interval
@@ -738,9 +769,89 @@ compute_one_sample_prob <- function (
 
     }
 
+    # validate baseline window
+    if (!is.null(baseline_window) ) {
+
+        if (!is.numeric(baseline_window) || length(baseline_window) != 2) {
+
+            stop ("`baseline_window` must be a numeric vector of length 2.")
+
+        }
+
+        if (baseline_window[1] >= baseline_window[2]) {
+
+            stop ("`baseline_window[1]` must be smaller than `baseline_window[2]`.")
+
+        }
+
+    }
+
     alpha <- (1 - credible_interval) / 2
     lower_q <- alpha
     upper_q <- 1 - alpha
+
+    # compute baseline-derived null value
+    if (!is.null(baseline_window) ) {
+
+        baseline_data <- post_draws |>
+            dplyr::filter(
+                .data$time >= baseline_window[1],
+                .data$time <= baseline_window[2]
+                )
+
+        if (nrow(baseline_data) == 0) {
+
+            stop ("No observations found within `baseline_window`.")
+
+        }
+
+        if (participant_clusters) {
+
+            baseline_quantiles <- baseline_data |>
+                dplyr::group_by(.data$time, .data$participant) |>
+                dplyr::summarise(
+                    lower = stats::quantile(
+                        .data$.epred,
+                        probs = lower_q,
+                        na.rm = TRUE
+                        ),
+                    upper = stats::quantile(
+                        .data$.epred,
+                        probs = upper_q,
+                        na.rm = TRUE
+                        ),
+                    .groups = "drop"
+                    )
+
+        } else {
+
+            baseline_quantiles <- baseline_data |>
+                dplyr::group_by(.data$time) |>
+                dplyr::summarise(
+                    lower = stats::quantile(
+                        .data$.epred,
+                        probs = lower_q,
+                        na.rm = TRUE
+                        ),
+                    upper = stats::quantile(
+                        .data$.epred,
+                        probs = upper_q,
+                        na.rm = TRUE
+                        ),
+                    .groups = "drop"
+                    )
+
+        }
+
+        null_value <- max(
+            abs(c(
+                baseline_quantiles$lower,
+                baseline_quantiles$upper
+                )),
+            na.rm = TRUE
+            )
+
+    }
 
     if (participant_clusters) {
 
@@ -803,7 +914,7 @@ compute_one_sample_prob <- function (
 #' @keywords internal
 compute_two_sample_prob <- function (
         post_draws, null_value, participant_clusters, n_post_samples,
-        credible_interval, predictor_type
+        credible_interval, predictor_type, baseline_window = NULL
         ) {
 
     # validate credible interval
@@ -840,18 +951,39 @@ compute_two_sample_prob <- function (
             tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
             dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
 
-        prob_y_above <- post_diff |>
-            dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(
-                prob_above = mean(.data$epred_diff > null_value)
-                ) |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            dplyr::ungroup() |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
+        if (!is.null(baseline_window) ) {
+
+            null_value <- get_baseline_null(
+                post_diff = post_diff,
+                baseline_window = baseline_window,
+                credible_interval = credible_interval
+                )
+
+        }
+
+        # prob_y_above <- post_diff |>
+        #     dplyr::group_by(.data$time, .data$participant) |>
+        #     dplyr::summarise(
+        #         prob_above = mean(.data$epred_diff > null_value)
+        #         ) |>
+        #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+        #     dplyr::ungroup() |>
+        #     dplyr::mutate(
+        #         prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+        #         prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+        #         ) |>
+        #     data.frame()
+
+        prob_y_above <- compute_directional_odds(
+            post_diff = post_diff,
+            null_value = null_value,
+            n_post_samples = n_post_samples,
+            groups = if (participant_clusters) {
+                c("time", "participant")
+                } else {
+                    "time"
+                    }
+            )
 
         post_prob_slope <- post_diff |>
             dplyr::group_by(.data$time, .data$participant) |>
@@ -874,18 +1006,40 @@ compute_two_sample_prob <- function (
             tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
             dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
 
-        prob_y_above <- post_diff |>
-            dplyr::group_by(.data$time) |>
-            dplyr::summarise(
-                prob_above = mean(.data$epred_diff > null_value)
-                ) |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            dplyr::ungroup() |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
+
+        if (!is.null(baseline_window) ) {
+
+            null_value <- get_baseline_null(
+                post_diff = post_diff,
+                baseline_window = baseline_window,
+                credible_interval = credible_interval
+                )
+
+        }
+
+        # prob_y_above <- post_diff |>
+        #     dplyr::group_by(.data$time) |>
+        #     dplyr::summarise(
+        #         prob_above = mean(.data$epred_diff > null_value)
+        #         ) |>
+        #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
+        #     dplyr::ungroup() |>
+        #     dplyr::mutate(
+        #         prob_ratio = pmin(.data$prob_ratio, n_post_samples),
+        #         prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
+        #         ) |>
+        #     data.frame()
+
+        prob_y_above <- compute_directional_odds(
+            post_diff = post_diff,
+            null_value = null_value,
+            n_post_samples = n_post_samples,
+            groups = if (participant_clusters) {
+                c("time", "participant")
+                } else {
+                    "time"
+                    }
+            )
 
         post_prob_slope <- post_diff |>
             dplyr::group_by(.data$time) |>
@@ -914,8 +1068,8 @@ add_required_dummy <- function (df, is_binom) {
 
     } else {
 
-        # required by outcome_mean | se(outcome_sd)
-        if (!"outcome_sd" %in% names(df) ) df <- dplyr::mutate(df, outcome_sd = 1)
+        # required by outcome_mean | se(outcome_sem)
+        if (!"outcome_sem" %in% names(df) ) df <- dplyr::mutate(df, outcome_sem = 1)
 
     }
 
@@ -926,7 +1080,7 @@ add_required_dummy <- function (df, is_binom) {
 #' @keywords internal
 compute_one_sample_prob_2d <- function (
         post_draws, null_value, participant_clusters, n_post_samples,
-        credible_interval
+        credible_interval, baseline_window = NULL
         ) {
 
     time_id <- c("time1", "time2")
@@ -1012,7 +1166,7 @@ compute_one_sample_prob_2d <- function (
 #' @keywords internal
 compute_two_sample_prob_2d <- function (
         post_draws, null_value, participant_clusters, n_post_samples,
-        credible_interval, predictor_type, time_id
+        credible_interval, predictor_type, time_id, baseline_window = NULL
         ) {
 
     predictor_type <- match.arg(predictor_type, c("categorical", "continuous") )
@@ -1272,7 +1426,6 @@ make_prediction_grid_from_summary <- function (
             # use model data for mean/sd
             predictor_mean <- mean(brms_gam$data$predictor, na.rm = TRUE)
             predictor_sd <- stats::sd(brms_gam$data$predictor, na.rm = TRUE)
-
             pred_vals <- c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)
 
         }
@@ -1378,5 +1531,48 @@ make_prediction_grid_from_summary <- function (
         add_required_dummy(is_binom = is_binom)
 
     return (newdata_grid)
+
+}
+
+# compute directional odds
+#' @keywords internal
+compute_directional_odds <- function (
+    post_diff,
+    null_value = 0,
+    n_post_samples,
+    groups = "time"
+    ) {
+
+    stopifnot(
+        length(null_value) == 1,
+        is.finite(null_value),
+        null_value >= 0
+        )
+
+    post_diff |>
+        dplyr::group_by(
+            dplyr::across(dplyr::all_of(groups) )
+            ) |>
+        dplyr::summarise(
+            prob_above = mean(epred_diff > null_value),
+            prob_below = mean(epred_diff < -null_value),
+            prob_inside = mean(abs(epred_diff) <= null_value),
+            .groups = "drop"
+            ) |>
+        dplyr::mutate(
+            odds_above = pmin(
+                prob_above / (1 - prob_above),
+                n_post_samples
+                ),
+            odds_below = pmin(
+                prob_below / (1 - prob_below),
+                n_post_samples
+                ),
+            prob_ratio = dplyr::case_when(
+                prob_above > 0.5 ~ odds_above,
+                prob_below > 0.5 ~ 1 / pmax(odds_below, 1 / n_post_samples),
+                TRUE ~ 1
+                )
+            )
 
 }
