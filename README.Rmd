@@ -38,6 +38,7 @@ install.packages("remotes")
 
 remotes::install_github(
     repo = "https://github.com/lnalborczyk/neurogam",
+    # ref = "develop", # to get the experimental version
     dependencies = TRUE
     )
 ```

@@ -511,23 +511,6 @@ st_head_radius <- function (sensors, head_expand = 1.1) {
 }
 
 #' @keywords internal
-ear_arc <- function (theta_start, theta_end, side = c("left", "right") ) {
-
-    side <- match.arg(side)
-    t <- seq(theta_start, theta_end, length.out = 120)
-    anchor_x <- r * cos(t)
-    anchor_y <- r * sin(t)
-    bump <- 0.10 * r
-
-    data.frame(
-        x = anchor_x + bump * cos(t),
-        y = anchor_y + bump * sin(t),
-        part = paste0("ear_", side)
-        )
-
-}
-
-#' @keywords internal
 st_head_outline <- function (r, n = 600) {
 
     th <- seq(0, 2*pi, length.out = n)
@@ -550,6 +533,22 @@ st_head_outline <- function (r, n = 600) {
         y = c(nose_base1[2], nose_tip[2], nose_base2[2]),
         part = "nose"
         )
+
+    ear_arc <- function (theta_start, theta_end, side = c("left", "right") ) {
+
+        side <- match.arg(side)
+        t <- seq(theta_start, theta_end, length.out = 120)
+        anchor_x <- r * cos(t)
+        anchor_y <- r * sin(t)
+        bump <- 0.10 * r
+
+        data.frame(
+            x = anchor_x + bump * cos(t),
+            y = anchor_y + bump * sin(t),
+            part = paste0("ear_", side)
+            )
+
+    }
 
     left_ear  <- ear_arc(160*pi/180, 200*pi/180, "left")
     right_ear <- ear_arc(-20*pi/180,  20*pi/180, "right")
@@ -1016,19 +1015,6 @@ compute_two_sample_prob <- function (
                 )
 
         }
-
-        # prob_y_above <- post_diff |>
-        #     dplyr::group_by(.data$time) |>
-        #     dplyr::summarise(
-        #         prob_above = mean(.data$epred_diff > null_value)
-        #         ) |>
-        #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-        #     dplyr::ungroup() |>
-        #     dplyr::mutate(
-        #         prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-        #         prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-        #         ) |>
-        #     data.frame()
 
         prob_y_above <- compute_directional_odds(
             post_diff = post_diff,
@@ -1554,23 +1540,23 @@ compute_directional_odds <- function (
             dplyr::across(dplyr::all_of(groups) )
             ) |>
         dplyr::summarise(
-            prob_above = mean(epred_diff > null_value),
-            prob_below = mean(epred_diff < -null_value),
-            prob_inside = mean(abs(epred_diff) <= null_value),
+            prob_above = mean(.data$epred_diff > null_value),
+            prob_below = mean(.data$epred_diff < -null_value),
+            prob_inside = mean(abs(.data$epred_diff) <= null_value),
             .groups = "drop"
             ) |>
         dplyr::mutate(
             odds_above = pmin(
-                prob_above / (1 - prob_above),
+                .data$prob_above / (1 - .data$prob_above),
                 n_post_samples
                 ),
             odds_below = pmin(
-                prob_below / (1 - prob_below),
+                .data$prob_below / (1 - .data$prob_below),
                 n_post_samples
                 ),
             prob_ratio = dplyr::case_when(
-                prob_above > 0.5 ~ odds_above,
-                prob_below > 0.5 ~ 1 / pmax(odds_below, 1 / n_post_samples),
+                .data$prob_above > 0.5 ~ odds_above,
+                .data$prob_below > 0.5 ~ 1 / pmax(odds_below, 1 / n_post_samples),
                 TRUE ~ 1
                 )
             )
