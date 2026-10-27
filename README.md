@@ -22,37 +22,17 @@ The package supports three types of analysis:
 | Analysis | Typical applications | Coordinates used for clustering |
 |:---|:---|:---|
 | **Temporal (1D)** | M/EEG time courses, pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories | Time |
-| **Temporal generalisation (2D)** | Cross-temporal decoding or representational-generalisation matrices | Training time × testing time |
-| **Spatiotemporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency × time |
-
-The three workflows share result accessors, reporting methods, and a
-unified plotting interface. They also support reusing a previously
-fitted model to explore inference thresholds without repeating costly
-Stan sampling.
-
-> **Interpretation:** Clusters identify connected locations satisfying a
-> *pointwise* posterior-odds criterion. They are descriptive regions of
-> thresholded evidence, not automatically multiplicity-corrected
-> clusters or posterior probabilities that an entire cluster is nonzero.
+| **Temporal generalisation (2D)** | Cross-temporal decoding or representational-generalisation matrices | Training time x testing time |
+| **Spatiotemporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency x time |
 
 ## Installation
 
 Install the development version from GitHub:
 
 ``` r
-install.packages("remotes")
-
-remotes::install_github(
-    "lnalborczyk/neurogam",
-    ref = "develop",
-    dependencies = TRUE
-)
+install.packages("pak")
+pak::pkg_install("lnalborczyk/neurogam")
 ```
-
-The `develop` branch contains the latest 1D/2D/3D interfaces described
-here; `main` may lag behind during development. Model fitting
-additionally requires a working Stan backend supported by `brms` (such
-as `cmdstanr` or `rstan`).
 
 ## Quick start: temporal (1D) analysis
 
@@ -96,57 +76,24 @@ results_1d <- testing_through_time(
     multilevel = "summary",
     threshold = 10,
     iter = 5000
-)
+    )
 
 # Optional: save the result so subsequent analyses need no refitting.
 saveRDS(results_1d, "neurogam_results_1d.rds")
 ```
 
-*The Stan fit above is intentionally not run while building the README.*
-Actual runtime depends on the dataset, model structure, sampling
-settings, and computer.
-
 ### Inspect and visualise results
 
 ``` r
+# Summarise the results
 print(results_1d)
 summary(results_1d)
 
-# Existing composite plot (unchanged for 1D and 2D results).
+# Visualise the results
 plot(results_1d)
-
-# New explicit, model-independent views.
 plot(results_1d, type = "predictions")
 plot(results_1d, type = "clusters")
 ```
-
-`testing_through_time()` returns a dimension-specific result object
-(e.g., `clusters_results_1d`). The original fields remain accessible for
-backward compatibility. The standardized interface is:
-
-``` r
-view <- as_neurogam_result_view(results_1d)
-
-head(view$predictions)        # posterior estimates, intervals, probabilities, odds
-view$cluster_summary         # one row per detected cluster
-head(view$cluster_membership) # locations belonging to clusters
-view$model                  # fitted brms model, when available
-
-metadata <- neurogam_result_metadata(results_1d)
-metadata$analysis_type
-metadata$model_coordinates
-metadata$cluster_coordinates
-metadata$threshold
-metadata$odds_mode
-
-validate_neurogam_result(results_1d)
-```
-
-For newly constructed results, analysis settings are also stored in the
-`neurogam_metadata` attribute and persist through `saveRDS()` /
-`readRDS()`. Older saved results can still be inspected; settings that
-were never recorded remain unknown rather than being assigned the
-package’s current defaults.
 
 ### Posterior predictive checks
 
@@ -156,7 +103,6 @@ adequacy. `neurogam` provides a convenient `ppc()` method;
 
 ``` r
 ppc(object = results_1d, ppc_type = "participant")
-
 brms::pp_check(results_1d$model)
 ```
 
@@ -181,14 +127,14 @@ results_1d_stricter <- testing_through_time(
     predictor_id = NA,
     multilevel = "summary",
     threshold = 20
-)
+    )
 
 plot(results_1d_stricter, type = "clusters")
 ```
 
 ## Cross-temporal generalisation (2D)
 
-For a temporal-generalisation matrix, supply **two temporal
+For modelling a temporal-generalisation matrix, supply **two temporal
 coordinates** using `time_id`. A typical long-format dataset has one row
 per participant, training time, and testing time (and, if applicable,
 condition or other predictor).
@@ -205,7 +151,7 @@ results_2d <- testing_through_time(
     chance_level = 0.5,
     multilevel = "summary",
     threshold = 10
-)
+    )
 
 summary(results_2d)
 plot(results_2d)                         # legacy composite plot
@@ -213,12 +159,12 @@ plot(results_2d, type = "predictions")   # posterior heatmap
 plot(results_2d, type = "clusters")      # cluster membership map
 ```
 
-The 2D smooth is fitted over both temporal coordinates. The standardized
+The 2D smooth is fitted over both temporal coordinates. The standardised
 result view exposes `cluster_summary` and `cluster_membership` in the
 same way as for 1D data, with locations identified by their two time
 coordinates.
 
-## Spatiotemporal sensor-by-time modelling (3D)
+## Spatio-temporal sensor-by-time modelling (3D)
 
 For sensor-level M/EEG, `neurogam` can model responses over **two
 projected sensor coordinates plus time**. Unlike a regular
@@ -246,7 +192,7 @@ results_st <- testing_through_time(
     threshold = 10,
     threshold_type = "above",
     adjacency_k = 4L
-)
+    )
 
 print(results_st)
 summary(results_st)
@@ -278,7 +224,7 @@ plot(
     sensor_id = "channel",
     participant_id = "subject",
     n_times = 6L
-)
+    )
 
 # Faceted sensor time courses with detected cluster segments.
 plot(
@@ -290,7 +236,7 @@ plot(
     participant_id = "subject",
     layout = "facets",
     cluster_style = "segments"
-)
+    )
 
 # Convenient shorthands for prediction-only and cluster-highlighted traces.
 plot(results_st, type = "predictions", observed_data = eeg_st)
@@ -321,7 +267,7 @@ k_res <- recommend_k(
     k_max = 40,
     k_step = 5,
     criterion = "loo"
-)
+    )
 
 summary(k_res)
 ```
@@ -354,7 +300,7 @@ results = neurogam.testing_through_time(
     time_id="time",
     predictor_id="condition",
     threshold=10
-)
+    )
 ```
 
 ### Julia (`RCall`)

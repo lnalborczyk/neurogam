@@ -185,8 +185,6 @@
 #' ppc(results)
 #' }
 #'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
-#'
 #' @seealso \code{\link[brms]{brm}}
 #'
 #' @export

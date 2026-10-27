@@ -1,7 +1,7 @@
 Package: neurogam
 Type: Package
 Title: Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
-Version: 0.0.5
+Version: 0.0.6
 Date: 2026-10-27
 Authors@R:
     c(

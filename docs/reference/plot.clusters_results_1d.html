@@ -5,7 +5,7 @@
       fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
     }
   };
-</script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Plot time-resolved GAM results (1D clusters) — plot.clusters_results_1d"><meta name="description" content="Visualises the fitted posterior effect through time for a
+</script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Plot time-resolved GAM results (1D clusters) — plot.clusters_results_1d"><meta name="description" content="Visualises the fitted posterior effect through time for a
 clusters_results_1d object. The plot shows:
 the posterior mean (x$predictions$post_prob) as a line,
 its uncertainty interval (x$predictions$lower–x$predictions$upper) as a ribbon,
@@ -25,7 +25,7 @@ and detected significant clusters (x$clusters) as thick horizontal segments.
 
     <a class="navbar-brand me-2" href="../index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,7 +36,7 @@ and detected significant clusters (x$clusters) as thick horizontal segments.
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eeg_spatio_temporal.html">Application to spatio-temporal EEG data (in progress)</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/eeg_spatio_temporal.html">Application to spatiotemporal EEG data</a></li>
     <li><a class="dropdown-item" href="../articles/eeg_temporal.html">Application to 1D temporal EEG data</a></li>
     <li><a class="dropdown-item" href="../articles/residual_autocorrelation.html">Checking and modelling residual auto-correlation (1D temporal data)</a></li>
     <li><a class="dropdown-item" href="../articles/temporal-2d.html">Modelling cross-temporal decoding generalisation matrices (2D temporal)</a></li>
@@ -73,8 +73,9 @@ and detected significant clusters (x$clusters) as thick horizontal segments.
 <span>  clusters_y <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span>,</span>
 <span>  clusters_colour <span class="op">=</span> <span class="st">"black"</span>,</span>
 <span>  lineend <span class="op">=</span> <span class="st">"butt"</span>,</span>
-<span>  theme <span class="op">=</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  theme <span class="op">=</span> <span class="fu"><a href="theme_neurogam.html">theme_neurogam</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span>,</span>
+<span>  type <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -108,11 +109,15 @@ the cluster segments. Defaults to <code>"black"</code>.</p></dd>
 
 
 <dt id="arg-theme">theme<a class="anchor" aria-label="anchor" href="#arg-theme"></a></dt>
-<dd><p>A ggplot2 theme object. Defaults to <code><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw()</a></code>.</p></dd>
+<dd><p>A ggplot2 theme object. Defaults to <code><a href="theme_neurogam.html">theme_neurogam()</a></code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Currently unused. Included for S3 compatibility.</p></dd>
+
+
+<dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
+<dd><p>Optional plot type. `NULL` (default) preserves the historical plot; `"predictions"` and `"clusters"` use the standardized result tables.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -142,7 +147,7 @@ in <code>x$clusters</code>), the plot is facetted by participant.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Ladislas Nalborczyk.</p>
+  <p>Developed by Ladislas Nalborczyk, Paul Bürkner.</p>
 </div>
 
 <div class="pkgdown-footer-right">

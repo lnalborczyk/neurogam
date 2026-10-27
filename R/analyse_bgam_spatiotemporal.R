@@ -90,7 +90,8 @@ analyse_bgam_spatiotemporal <- function(
     re_formula = NA,
     max_gap = NULL,
     adjacency_k = 4L,
-    adjacency_distance_factor = 1.8
+    adjacency_distance_factor = 1.8,
+    odds_mode = "directional_rope"
     ) {
 
     threshold_type <- match.arg(threshold_type)
@@ -216,60 +217,6 @@ analyse_bgam_spatiotemporal <- function(
 
     }
 
-    # # Use identical draw_ids and observation ordering for A and B.
-    # # Processing locations in chunks avoids allocating all posterior draws
-    # # across the entire sensor-time grid simultaneously.
-    # n <- nrow(newdata)
-    # chunks <- split(seq_len(n), ceiling(seq_len(n) / chunk_size) )
-    # summaries <- vector("list", length(chunks) )
-    #
-    # for (i in seq_along(chunks) ) {
-    #
-    #     rows <- chunks[[i]]
-    #     draws_a <- brms::posterior_epred(
-    #         model,
-    #         newdata = newdata[rows, , drop = FALSE],
-    #         re_formula = re_formula,
-    #         draw_ids = draw_ids
-    #         )
-    #
-    #     if (!is.matrix(draws_a) || ncol(draws_a) != length(rows) ) {
-    #
-    #         stop ("Expected univariate posterior predictions as draws x locations.")
-    #
-    #     }
-    #
-    #     if (!is.null(newdata_b) ) {
-    #
-    #         draws_b <- brms::posterior_epred(
-    #             model,
-    #             newdata = newdata_b[rows, , drop = FALSE],
-    #             re_formula = re_formula,
-    #             draw_ids = draw_ids
-    #             )
-    #
-    #         if (!identical(dim(draws_a), dim(draws_b) ) ) {
-    #
-    #             stop ("The two conditions produced incompatible posterior dimensions.")
-    #
-    #         }
-    #
-    #         draws_a <- draws_a - draws_b
-    #         rm(draws_b)
-    #
-    #     }
-    #
-    #     summaries[[i]] <- summarise_spatiotemporal_draws(
-    #         draws_a,
-    #         null_value = null_value,
-    #         rope = rope,
-    #         credible_interval = credible_interval
-    #         )
-    #
-    #     rm(draws_a)
-    #
-    # }
-
     summaries <- chunked_epred(
         model = model,
         newdata = newdata,
@@ -297,6 +244,16 @@ analyse_bgam_spatiotemporal <- function(
     # Clustering uses either the supplied or automatically inferred topology.
     cluster_data <- predictions[c(sensor_id, time_id, "prob_ratio")]
     names(cluster_data)[3L] <- "value"
+
+    if (identical(odds_mode, "directional_rope")) {
+
+        cluster_data$value <- directional_rope_cluster_score(
+            odds_above = predictions$odds_above,
+            odds_below = predictions$odds_below,
+            threshold = threshold
+        )
+
+    }
 
     components <- find_clusters_nd(
         data = cluster_data,

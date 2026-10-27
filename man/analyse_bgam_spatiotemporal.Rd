@@ -22,7 +22,8 @@ analyse_bgam_spatiotemporal(
   re_formula = NA,
   max_gap = NULL,
   adjacency_k = 4L,
-  adjacency_distance_factor = 1.8
+  adjacency_distance_factor = 1.8,
+  odds_mode = "directional_rope"
 )
 }
 \arguments{

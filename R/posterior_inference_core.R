@@ -26,7 +26,13 @@ summarise_posterior_matrix <- function (
     null_value = 0,
     rope = 0,
     credible_interval = 0.95,
-    odds_mode = c("legacy_one_sided", "legacy_directional", "spatiotemporal"),
+    # odds_mode = c("legacy_one_sided", "legacy_directional", "spatiotemporal"),
+    odds_mode = c(
+        "directional_rope",
+        "legacy_one_sided",
+        "legacy_directional",
+        "spatiotemporal"
+        ),
     odds_cap = NULL
     ) {
 
@@ -80,8 +86,23 @@ summarise_posterior_matrix <- function (
     odds_above <- prob_above / (1 - prob_above)
     odds_below <- prob_below / (1 - prob_below)
 
-    if (odds_mode == "legacy_one_sided") {
-        prob_ratio <- pmax(pmin(odds_above, odds_cap), 1 / odds_cap)
+    # if (odds_mode == "legacy_one_sided") {
+    #     prob_ratio <- pmax(pmin(odds_above, odds_cap), 1 / odds_cap)
+
+    if (odds_mode == "directional_rope") {
+
+        # Compatibility field only. Actual directional inference uses
+        # odds_above and odds_below independently.
+        prob_ratio <- odds_above
+
+    } else if (odds_mode == "legacy_one_sided") {
+
+        # Keep the existing legacy implementation unchanged.
+        prob_ratio <- pmax(
+            pmin(odds_above, odds_cap),
+            1 / odds_cap
+        )
+
     } else if (odds_mode == "legacy_directional") {
         odds_above <- pmin(odds_above, odds_cap)
         odds_below <- pmin(odds_below, odds_cap)

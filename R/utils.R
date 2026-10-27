@@ -760,7 +760,7 @@ compute_one_sample_prob <- function(
     n_post_samples,
     credible_interval,
     baseline_window = NULL
-) {
+    ) {
     if (!is.null(baseline_window)) {
         if (!is.numeric(baseline_window) || length(baseline_window) != 2L ||
             anyNA(baseline_window) || baseline_window[1L] >= baseline_window[2L]) {
@@ -802,7 +802,12 @@ compute_one_sample_prob <- function(
         odds_cap = n_post_samples
     )
     out$post_prob <- out$estimate
-    out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
+    #out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
+    out[c(groups,
+        "prob_above", "prob_below", "prob_inside",
+        "odds_above", "odds_below", "prob_ratio",
+        "post_prob", "lower", "upper"
+    )]
 }
 
 #' @keywords internal
@@ -892,7 +897,12 @@ compute_one_sample_prob_2d <- function(
         odds_cap = n_post_samples
     )
     out$post_prob <- out$estimate
-    out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
+    #out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
+    out[c(groups,
+        "prob_above", "prob_below", "prob_inside",
+        "odds_above", "odds_below", "prob_ratio",
+        "post_prob", "lower", "upper"
+    )]
 }
 
 #' @keywords internal
@@ -924,7 +934,12 @@ compute_two_sample_prob_2d <- function(
         odds_cap = n_post_samples
     )
     out$post_prob <- out$estimate
-    out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
+    #out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
+    out[c(groups,
+        "prob_above", "prob_below", "prob_inside",
+        "odds_above", "odds_below", "prob_ratio",
+        "post_prob", "lower", "upper"
+    )]
 }
 
 # null-coalescing (avoid importing rlang just for %||%)

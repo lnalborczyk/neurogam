@@ -1,3 +1,9 @@
+# neurogam 0.0.6
+
+## Other changes
+
+* New ROPE default (`odds_mode = "directional_rope"`).
+
 # neurogam 0.0.5
 
 ## New features

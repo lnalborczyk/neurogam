@@ -37,8 +37,6 @@ The package supports three types of analysis:
 | **Temporal generalisation (2D)** | Cross-temporal decoding or representational-generalisation matrices | Training time x testing time |
 | **Spatiotemporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency x time |
 
-The three workflows share result accessors, reporting methods, and a unified plotting interface. They also support reusing a previously fitted model to explore inference thresholds without repeating costly Stan sampling.
-
 ## Installation
 
 Install the development version from GitHub:
@@ -78,8 +76,6 @@ results_1d <- testing_through_time(
 # Optional: save the result so subsequent analyses need no refitting.
 saveRDS(results_1d, "neurogam_results_1d.rds")
 ```
-
-*The Stan fit above is intentionally not run while building the README.* Actual runtime depends on the dataset, model structure, sampling settings, and computer.
 
 ### Inspect and visualise results
 
@@ -148,7 +144,7 @@ plot(results_2d, type = "predictions")   # posterior heatmap
 plot(results_2d, type = "clusters")      # cluster membership map
 ```
 
-The 2D smooth is fitted over both temporal coordinates. The standardized result view exposes `cluster_summary` and `cluster_membership` in the same way as for 1D data, with locations identified by their two time coordinates.
+The 2D smooth is fitted over both temporal coordinates. The standardised result view exposes `cluster_summary` and `cluster_membership` in the same way as for 1D data, with locations identified by their two time coordinates.
 
 ## Spatio-temporal sensor-by-time modelling (3D)
 
