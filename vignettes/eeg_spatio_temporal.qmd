@@ -36,11 +36,11 @@ library(ggplot2)
 library(eegkit)
 library(dplyr)
 
-# retrieving some EEG data
+# retrieve some EEG data
 data(eegdata)
 head(eegdata)
 
-# plotting the average ERP per group and channel
+# plot the average ERP per group and channel
 eegdata |>
     summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
     ggplot(aes(x = time, y = voltage, colour = group) ) +
@@ -49,27 +49,26 @@ eegdata |>
 ```
 
 ```{r data-summary}
-# retrieving sensors x and y coordinates
+# retrieve sensors x and y coordinates
 data(eegcoord)
 enames <- rownames(eegcoord)
 
-# merging the data
+# subset the sensors coordinates
 eeg_coords <- eegcoord |>
     mutate(channel = enames) |>
     select(channel, xproj, yproj)
 
-# summarising the data
+# summarise the data
 eeg_data <- eegdata |>
     summarise(voltage = mean(voltage), .by = c(subject, channel, time) ) |>
     left_join(eeg_coords, by = "channel") |>
-    # converting timesteps to seconds
+    # convert timesteps to seconds
     mutate(time = (time + 1) / 256) |>
-    # rounding numeric variables
-    # mutate(across(is.numeric, ~round(.x, 4) ) ) |>
+    # round numeric variables
     mutate(across(where(is.numeric), ~round(.x, 4) ) ) |>
-    # removing NAs
+    # removz NAs
     na.omit() |>
-    # scaling the variables before fitting
+    # scale the variables before fitting
     mutate(
         xproj = xproj / sd(xproj),
         yproj = yproj / sd(yproj),
@@ -86,7 +85,7 @@ head(sensors)
 We visualise the sensors grid using the `plot_sensors()` function.
 
 ```{r plot-sensors, fig.height = 6, fig.width = 12}
-# plotting the sensors grid
+# visualise the sensors grid
 plot_sensors(
     sensors,
     show_points = TRUE,
@@ -103,13 +102,13 @@ plot_sensors(
 We visualise the average EEG topography through time using the `plot_eeg()` function. 
 
 ```{r plot-eeg, fig.height = 6, fig.width = 12}
-# retrieving the first 100 unique timesteps
+# retrieve the first 100 unique timesteps
 time_steps <- unique(eeg_data$time)[1:100]
 
-# taking 8 equally spaced timesteps
+# take 8 equally spaced timesteps
 time_steps_discrete <- st_take_n_times(time_vec = time_steps, N = 8)
 
-# averaging EEG data per channel and timestep
+# average EEG data per channel and timestep
 eeg_data_summary <- eeg_data %>%
     summarise(voltage = mean(voltage), .by = c(channel, time, xproj, yproj) ) |>
     dplyr::filter(time %in% time_steps_discrete)
@@ -137,27 +136,23 @@ We fit a spatio-temporal BGAMM (with a varying intercept, but no varying smooth)
 ```{r model, eval = FALSE}
 library(brms)
 
-# subsetting participants for speed
+# subset participants for speed
 eeg_data2 <- eeg_data %>%
     mutate(subject = as.character(subject) ) %>%
     dplyr::filter(subject %in% unique(levels(eeg_data$subject) )[1:10]) %>%
-    # subsetting timesteps (decimation)
+    # subset timesteps (decimation) for speed
     group_by(subject, channel) %>%
     slice(seq(1, n(), by = 2) ) %>%
     ungroup()
 
-# fitting a BGAMM with two spatial dimensions (sensors grid) and one temporal dimension
-timegen_gam <- brm(
+# fit a BGAMM with two spatial dimensions (sensors grid) and one temporal dimension
+st_gam <- brm(
     formula = voltage ~ t2(
         xproj, yproj, time,
-        # bs = "tp",
         bs = c("ps", "ps"),
-        # k = c(25, 25),
         k = c(15, 10),
         d = c(2, 1)
-        # full = TRUE
         ) + (1 | subject),
-    # data = timegen_data,
     data = eeg_data2,
     warmup = 1000,
     iter = 3000,
@@ -170,16 +165,12 @@ timegen_gam <- brm(
     )
 ```
 
-### Plotting predictions
-
-...
-
 ### Identifying clusters
 
 The previous model is equivalent to the following `testing_through_time()` call. This model takes around 15 hours on 4 parallel apple M4 cores.
 
 ```{r clusters, eval = FALSE, results = "hide"}
-# fitting the spatio-temporal BGAMM to identify clusters
+# fit the spatio-temporal BGAMM to identify clusters
 results <- testing_through_time(
     # cross-temporal generalisation data
     data = timegen_data,

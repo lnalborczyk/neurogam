@@ -742,12 +742,12 @@ get_baseline_null <- function (post_diff, baseline_window, credible_interval) {
         dplyr::group_by(.data$time) |>
         dplyr::summarise(
             lower = stats::quantile(.data$epred_diff, lower_q),
+            median = stats::quantile(.data$epred_diff, 0.5),
             upper = stats::quantile(.data$epred_diff, upper_q),
             .groups = "drop"
             ) |>
-        dplyr::summarise(
-            null_value = max(abs(c(.data$lower, .data$upper) ) )
-            ) |>
+        # dplyr::summarise(null_value = max(abs(c(.data$lower, .data$upper) ) ) ) |>
+        dplyr::summarise(null_value = max(abs(.data$median) ) ) |>
         dplyr::pull(.data$null_value)
 
 }

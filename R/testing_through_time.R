@@ -255,13 +255,13 @@ testing_through_time <- function (
 
     stan_model_args_backend <- if (backend == "cmdstanr") {
 
-        list(stanc_options = list("O1") )
+        list(stanc_options = list("O1"))
 
-        } else {
+    } else {
 
-            list()
+        list()
 
-        }
+    }
 
     if (warmup >= iter) {
 
@@ -280,17 +280,27 @@ testing_through_time <- function (
     }
 
     # Restrict supported response distributions
-    fam_name <- tryCatch ({
-        if (is.list(family) && !is.null(family$family) ) {
+    fam_name <- tryCatch (
+        {
+            if (is.list(family) && !is.null(family$family) ) {
+
                 as.character(family$family)
+
             } else {
+
                 stop ("not a family object")
+
             }
+
         },
+
         error = function (e) {
+
             stop ("`family` must be a valid family object (see ?brm).", call. = FALSE)
-            }
-        )
+
+        }
+
+    )
 
     allowed_families <- c("gaussian", "binomial")
 
@@ -302,7 +312,7 @@ testing_through_time <- function (
             call. = FALSE
             )
 
-    }
+        }
 
     # Time_id can be 1D or 2D (character vector of length 1 or 2)
     if (!is.character(time_id) ) {
@@ -329,6 +339,7 @@ testing_through_time <- function (
 
     # Check columns exist
     missing_time_cols <- setdiff(time_id, names(data) )
+
     if (length(missing_time_cols) > 0) {
 
         stop (
@@ -360,7 +371,9 @@ testing_through_time <- function (
 
     if (is_binom && is.null(trials_id) ) {
 
-        message ("NB: When trials_id = NULL (default), neurogam assumes a binary outcome and summarise it internally in counts.\n")
+        message (
+            "NB: When trials_id = NULL (default), neurogam assumes a binary outcome and summarise it internally in counts.\n"
+            )
 
         # Retrieve outcome (should be 0/1)
         y <- data[[outcome_id]]
@@ -408,7 +421,6 @@ testing_through_time <- function (
             # Message for the user
             message ("Assuming null_value (chance_level) = 0 by default when family = gaussian().\n")
 
-
         }
 
     }
@@ -437,7 +449,7 @@ testing_through_time <- function (
     # Check predictor type
     predictor_type <- "none"
 
-    if (!is.na(predictor_id) ) {
+    if (!is.na(predictor_id)) {
 
         pred_vec <- data[[predictor_id]]
 
@@ -521,10 +533,13 @@ testing_through_time <- function (
         # Test whether outcome_sem contains NAs
         if (!is_binom && use_se && any(is.na(summary_data$outcome_sem) ) ) {
 
-            na_count <- sum(is.na(summary_data$outcome_sem) )
+            na_count <- sum(is.na(summary_data$outcome_sem))
 
             stop (
-                paste0("Internal data summary returned ", na_count, " NAs. If the input data is already summarised, please use the `outcome_sem` argument. Otherwise, make sure to input trial-by-trial data in long format (i.e., one observation/trial per row)."),
+                paste0(
+                    "Internal data summary returned ", na_count,
+                    " NAs. If the input data is already summarised, please use the `outcome_sem` argument. Otherwise, make sure to input trial-by-trial data in long format (i.e., one observation/trial per row)."
+                    ),
                 call. = FALSE
                 )
 
@@ -541,21 +556,6 @@ testing_through_time <- function (
         #####################################################
 
         if (!use_previous_model) {
-
-            # brms_gam <- brms::brm(
-            #     formula = formula_obj,
-            #     data = summary_data,
-            #     family = family,
-            #     warmup = warmup,
-            #     iter = iter,
-            #     chains = chains,
-            #     cores = cores,
-            #     threads = threads,
-            #     backend = backend,
-            #     control = stan_control,
-            #     file = file,
-            #     stan_model_args = stan_model_args_backend
-            #     )
 
             brm_args <- c(
                 list(
@@ -605,47 +605,6 @@ testing_through_time <- function (
             include_ar_term = include_ar_term,
             continuous_mode = "pm1sd"
             )
-
-        # Sanity check
-        # print(data.frame(newdata_grid) )
-
-        ################
-        # TESTS
-        ################
-
-        # # Check the prediction grid
-        # print(table(is.na(newdata_grid$participant) ) )
-        # print(unique(newdata_grid$participant) )
-        # print(nrow(newdata_grid) )
-        #
-        # # Same observations and same posterior draws
-        # draw_ids <- seq_len(min(500, brms::ndraws(brms_gam) ) )
-        #
-        # pred_na <- brms::posterior_epred(
-        #     brms_gam,
-        #     newdata = newdata_grid,
-        #     re_formula = NA,
-        #     incl_autocor = FALSE,
-        #     draw_ids = draw_ids
-        #     )
-        #
-        # pred_null <- brms::posterior_epred(
-        #     brms_gam,
-        #     newdata = newdata_grid,
-        #     re_formula = NULL,
-        #     incl_autocor = FALSE,
-        #     draw_ids = draw_ids
-        #     )
-        #
-        # # Compare the predictions, draw by draw
-        # print(max(abs(pred_null - pred_na) ) )
-        #
-        # # Compare posterior uncertainty
-        # print(c(sd_na = sd(pred_na[, 1]), sd_null = sd(pred_null[, 1]) ) )
-
-        ################
-        # END TESTS
-        ################
 
         ##################################
         # Retrieve posterior predictions #
@@ -712,7 +671,7 @@ testing_through_time <- function (
         # Display the model formula
         message (
             "Fitting model with formula: ",
-            paste(utils::capture.output(print(formula_obj) ), collapse = " "), "\n"
+            paste(utils::capture.output(print(formula_obj)), collapse = " "), "\n"
             )
 
         #####################################################
@@ -720,21 +679,6 @@ testing_through_time <- function (
         #####################################################
 
         if (!use_previous_model) {
-
-            # brms_gam <- brms::brm(
-            #     formula = formula_obj,
-            #     data = summary_data,
-            #     family = family,
-            #     warmup = warmup,
-            #     iter = iter,
-            #     chains = chains,
-            #     cores = cores,
-            #     threads = threads,
-            #     backend = backend,
-            #     control = stan_control,
-            #     file = file,
-            #     stan_model_args = stan_model_args_backend
-            #     )
 
             brm_args <- c(
                 list(
@@ -793,7 +737,7 @@ testing_through_time <- function (
                 # Newdata grid over time
                 newdata_grid <- tidyr::crossing(time = sort(unique(brms_gam$data$time) ) )
 
-                }
+            }
 
         } else if (predictor_type == "categorical") {
 
@@ -801,7 +745,10 @@ testing_through_time <- function (
 
                 if (participant_clusters) {
 
-                    stop ("`participant_clusters = TRUE` is not supported for 2D temporal models yet.", call. = FALSE)
+                    stop (
+                        "`participant_clusters = TRUE` is not supported for 2D temporal models yet.",
+                        call. = FALSE
+                        )
 
                 }
 
@@ -831,7 +778,10 @@ testing_through_time <- function (
 
                 if (participant_clusters) {
 
-                    stop ("`participant_clusters = TRUE` is not supported for 2D temporal models yet.", call. = FALSE)
+                    stop (
+                        "`participant_clusters = TRUE` is not supported for 2D temporal models yet.",
+                        call. = FALSE
+                        )
 
                 }
 
@@ -874,10 +824,7 @@ testing_through_time <- function (
 
     }
 
-    ###########################################
-    # Compute the posterior odds and clusters #
-    ###########################################
-
+    # Compute posterior probabilities using the existing inference functions.
     if (!is_2d_time) {
 
         if (is.na(predictor_id) ) {
@@ -895,7 +842,6 @@ testing_through_time <- function (
 
             prob_y_above <- compute_two_sample_prob(
                 post_draws = post_draws,
-                # When comparing two groups/conditions, null value should be 0
                 null_value = 0,
                 participant_clusters = participant_clusters,
                 n_post_samples = n_post_samples,
@@ -906,35 +852,12 @@ testing_through_time <- function (
 
         }
 
-        if (participant_clusters) {
-
-            # Find the clusters
-            clusters <- find_clusters(
-                data = prob_y_above |> dplyr::select(.data$time, .data$participant, value = .data$prob_ratio),
-                group = "participant",
-                threshold = threshold,
-                threshold_type = threshold_type
-                )
-
-        } else {
-
-            # Find the clusters
-            clusters <- find_clusters(
-                data = prob_y_above |> dplyr::select(.data$time, value = .data$prob_ratio),
-                group = NULL,
-                threshold = threshold,
-                threshold_type
-                )
-
-        }
-
-    } else { # 2D clusters
+    } else {
 
         if (participant_clusters) {
 
             stop (
-                "`participant_clusters = TRUE` is not supported for 2D temporal models yet. ",
-                "Please set `participant_clusters = FALSE`.",
+                "`participant_clusters = TRUE` is not supported for 2D temporal models.",
                 call. = FALSE
                 )
 
@@ -955,7 +878,6 @@ testing_through_time <- function (
 
             prob_y_above <- compute_two_sample_prob_2d(
                 post_draws = post_draws,
-                # When comparing two groups/conditions, null value should be 0
                 null_value = 0,
                 participant_clusters = FALSE,
                 n_post_samples = n_post_samples,
@@ -966,39 +888,64 @@ testing_through_time <- function (
 
         }
 
-        time_id <- c("time1", "time2")
+    }
 
-        clusters <- find_clusters(
-            data = prob_y_above |> dplyr::select(dplyr::all_of(time_id), value = .data$prob_ratio),
-            group = NULL,
-            threshold = threshold,
-            threshold_type = threshold_type,
-            time_id = time_id
-            )
+    # Use a single connected-components engine for 1D and 2D data.
+    coordinates <- if (is_2d_time) c("time1", "time2") else "time"
+    cluster_group <- if (participant_clusters) "participant" else NULL
+    cluster_columns <- c(coordinates, cluster_group)
+
+    if (!all(c(cluster_columns, "prob_ratio") %in% names(prob_y_above) ) ) {
+
+        stop ("Posterior summaries lack the required clustering columns.", call. = FALSE)
 
     }
 
-    # Combine the results in a list
+    cluster_data <- as.data.frame(prob_y_above[, c(cluster_columns, "prob_ratio")])
+    names(cluster_data)[names(cluster_data) == "prob_ratio"] <- "value"
+    cluster_data <- cluster_data[stats::complete.cases(cluster_data), , drop = FALSE]
+
+    if (!nrow(cluster_data) ) {
+
+        stop ("No complete posterior-odds observations available for clustering.", call. = FALSE)
+
+    }
+
+    cluster_nd <- find_clusters_nd(
+        data = cluster_data,
+        coordinates = coordinates,
+        value = "value",
+        group = cluster_group,
+        threshold = threshold,
+        threshold_type = threshold_type
+        )
+
+    clusters <- cluster_nd_to_legacy(
+        result = cluster_nd,
+        time_id = coordinates,
+        group = cluster_group
+        )
+
     clusters_results <- list(
         clusters = clusters,
+        cluster_summary = cluster_nd$clusters,
+        cluster_membership = cluster_nd$membership,
         predictions = prob_y_above,
         model = brms_gam,
         summary_data = summary_data,
         multilevel = multilevel
         )
 
-    # Assign a new class to the list
-    if (is_2d_time) {
+    class(clusters_results) <- if (is_2d_time) {
 
-        class(clusters_results) <- "clusters_results_2d"
+        "clusters_results_2d"
 
     } else {
 
-        class(clusters_results) <- "clusters_results_1d"
+        "clusters_results_1d"
 
     }
 
-    # Return the clusters and posterior probabilities
     return (clusters_results)
 
 }
