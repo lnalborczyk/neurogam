@@ -81,7 +81,7 @@ A ggplot object.
 Plots interpolated maps of observed sensor-level means, population-level
 posterior median expected responses, and residuals (`observed - predicted`).
 Inferences and clusters remain at the *original sensor locations*, not at
-interpolated pixels. Interpolation is for visualization only and uses
+interpolated pixels. Interpolation is for visualisation only and uses
 inverse-distance weighting (IDW) without additional package dependencies.
 }
 \examples{
@@ -91,4 +91,8 @@ plot_spatiotemporal_topography(
     sensor_id = "channel", n_times = 8
 )
 }
+
+}
+\author{
+Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }

@@ -103,3 +103,6 @@ plot_sensor_trajectories(
 )
 }
 }
+\author{
+Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
+}

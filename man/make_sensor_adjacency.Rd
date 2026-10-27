@@ -22,11 +22,11 @@ provided each sensor has a single consistent position.}
 
 \item{spatial_id}{Two numeric spatial coordinate columns.}
 
-\item{k}{Number of nearest neighbours considered per electrode. The
+\item{k}{Number of nearest neighbors considered per electrode. The
 resulting undirected graph may have more than `k` edges per sensor.}
 
 \item{distance_factor}{Maximum candidate edge length divided by the
-median nearest-neighbour distance. Use `NULL` to disable filtering.}
+median nearest-neighbor distance. Use `NULL` to disable filtering.}
 
 \item{warn_disconnected}{Issue a warning if the inferred graph has
 more than one connected component.}
@@ -37,11 +37,8 @@ Symmetric logical matrix with sensor names on both axes and
 }
 \description{
 Builds a symmetric, named logical adjacency matrix using spatial
-k-nearest neighbours. To avoid connecting distant sensors, candidate edges
-longer than `distance_factor` times the median nearest-neighbour distance
+k-nearest neighbors. To avoid connecting distant sensors, candidate edges
+longer than `distance_factor` times the median nearest-neighbor distance
 are omitted. The result is an *approximation* based on 2D positions;
 inspect the graph before scientific use.
-}
-\author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }

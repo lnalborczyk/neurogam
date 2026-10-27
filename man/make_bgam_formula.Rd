@@ -17,7 +17,9 @@ make_bgam_formula(
   varying_smooth = TRUE,
   include_by_smooth = TRUE,
   include_by_varying_smooth = FALSE,
-  use_se = TRUE
+  use_se = TRUE,
+  space_id = NULL,
+  tensor_d = c(2L, 1L)
 )
 }
 \arguments{
@@ -73,6 +75,12 @@ If \code{FALSE}, only include the intercept/slope varying effects.}
 
 \item{use_se}{Logical; whether to include known or internally computed
 measurement error via \code{y | se(outcome_sem)} in the model formula.}
+
+\item{space_id}{Optional vector of two spatial coordinate names. If given,
+build a 3D spatial-temporal `t2()` smooth instead of the 1D/2D smooth.}
+
+\item{tensor_d}{Tensor marginal dimensions (currently `c(2, 1)` for
+two spatial coordinates jointly and one temporal coordinate).}
 }
 \value{
 A \code{\link[brms]{brmsformula}} object.

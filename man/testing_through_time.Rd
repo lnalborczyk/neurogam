@@ -38,6 +38,16 @@ testing_through_time(
   chance_level = NULL,
   credible_interval = 0.95,
   baseline_window = c(0, 0.1),
+  space_id = NULL,
+  sensor_id = NULL,
+  tensor_d = c(2L, 1L),
+  sensor_adjacency = NULL,
+  adjacency_k = 4L,
+  adjacency_distance_factor = 1.8,
+  rope = 0,
+  contrast_levels = NULL,
+  chunk_size = 256L,
+  re_formula = NA,
   ...
 )
 }
@@ -180,6 +190,27 @@ decoding accuracy).}
 \item{baseline_window}{Numeric; bounds of the baseline window (in the same
 units of \code{time_id}), used to compute the baseline ROPE. Typically, this
 is a 100-200 ms window preceding stimulus onset.}
+
+\item{space_id}{Optional length-two spatial coordinate names. Non-NULL
+selects the spatiotemporal Gaussian multilevel workflow.}
+
+\item{sensor_id}{Sensor column name, required when `space_id` is supplied.}
+
+\item{tensor_d}{Tensor marginal dimensions; currently `c(2, 1)`.}
+
+\item{sensor_adjacency}{Optional named sensor adjacency matrix or edge list.}
+
+\item{adjacency_k, adjacency_distance_factor}{Parameters for automatic
+sensor adjacency construction when no graph is supplied.}
+
+\item{rope}{Fixed symmetric ROPE half-width for spatiotemporal inference.}
+
+\item{contrast_levels}{Two condition labels specifying the A - B contrast.}
+
+\item{chunk_size}{Number of sensor/time rows per posterior prediction chunk.}
+
+\item{re_formula}{Group-level effects in posterior predictions; by default
+`NA` excludes subject-specific random effects.}
 
 \item{...}{Additional arguments passed to \code{\link[brms]{brm}},
 and from there to the selected Stan backend. This can be used, for example,

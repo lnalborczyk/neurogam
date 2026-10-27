@@ -23,7 +23,4 @@ One row per sensor, sorted by sensor identifier.
 \description{
 Prepare a sensor coordinate table
 }
-\author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
-}
 \keyword{internal}

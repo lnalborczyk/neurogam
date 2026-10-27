@@ -77,8 +77,12 @@
 #'
 #' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
 #'
+#' @param space_id Optional vector of two spatial coordinate names. If given,
+#'   build a 3D spatial-temporal `t2()` smooth instead of the 1D/2D smooth.
+#' @param tensor_d Tensor marginal dimensions (currently `c(2, 1)` for
+#'   two spatial coordinates jointly and one temporal coordinate).
 #' @export
-make_bgam_formula <- function (
+make_bgam_formula <- function(
         family,
         multilevel = c("summary", "group"),
         predictor_type = c("none", "categorical", "continuous"),
@@ -91,8 +95,31 @@ make_bgam_formula <- function (
         varying_smooth = TRUE,
         include_by_smooth = TRUE,
         include_by_varying_smooth = FALSE,
-        use_se = TRUE
+        use_se = TRUE,
+        space_id = NULL,
+        tensor_d = c(2L, 1L)
         ) {
+    # STAGE 3 DISPATCH: leave all existing 1D and 2D paths unchanged.
+    if (!is.null(space_id)) {
+        return(make_bgam_formula_spatiotemporal(
+            family = family,
+            multilevel = match.arg(multilevel),
+            predictor_type = match.arg(predictor_type),
+            within_between = within_between[1L],
+            time_id = time_id,
+            space_id = space_id,
+            tensor_d = tensor_d,
+            kvalue = kvalue,
+            bs = bs,
+            t2_full = t2_full,
+            varying_smooth = varying_smooth,
+            include_ar_term = include_ar_term,
+            include_by_smooth = include_by_smooth,
+            use_se = use_se
+        ))
+    }
+
+
 
     multilevel <- match.arg(multilevel)
     predictor_type <- match.arg(predictor_type)

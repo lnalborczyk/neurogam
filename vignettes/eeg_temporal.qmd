@@ -21,9 +21,6 @@ knitr::opts_chunk$set(
     dev = "png",
     dpi = 300
     )
-
-# use the ggplot2 neurogam theme
-theme_set(theme_neurogam() )
 ```
 
 ## Importing and visualising EEG data
@@ -35,6 +32,9 @@ library(neurogam)
 library(ggplot2)
 library(eegkit)
 library(dplyr)
+
+# Use the ggplot2 neurogam theme
+theme_set(theme_neurogam() )
 
 # retrieving some EEG data
 data(eegdata)

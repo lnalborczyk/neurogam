@@ -68,6 +68,7 @@ summarise_spatiotemporal_draws <- function (
     prob_ratio[negative] <- 1 / odds_below[negative]
 
     alpha <- (1 - credible_interval) / 2
+
     interval <- vapply(
         seq_len(ncol(draws) ),
         function (j) {

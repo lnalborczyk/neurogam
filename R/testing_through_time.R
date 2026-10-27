@@ -177,8 +177,20 @@
 #'
 #' @seealso \code{\link[brms]{brm}}
 #'
+#' @param space_id Optional length-two spatial coordinate names. Non-NULL
+#'   selects the spatiotemporal Gaussian multilevel workflow.
+#' @param sensor_id Sensor column name, required when `space_id` is supplied.
+#' @param tensor_d Tensor marginal dimensions; currently `c(2, 1)`.
+#' @param sensor_adjacency Optional named sensor adjacency matrix or edge list.
+#' @param adjacency_k,adjacency_distance_factor Parameters for automatic
+#'   sensor adjacency construction when no graph is supplied.
+#' @param rope Fixed symmetric ROPE half-width for spatiotemporal inference.
+#' @param contrast_levels Two condition labels specifying the A - B contrast.
+#' @param chunk_size Number of sensor/time rows per posterior prediction chunk.
+#' @param re_formula Group-level effects in posterior predictions; by default
+#'   `NA` excludes subject-specific random effects.
 #' @export
-testing_through_time <- function (
+testing_through_time <- function(
         data,
         previous_model = NULL,
         participant_id = "participant", outcome_id = "eeg", outcome_sem = NULL,
@@ -199,8 +211,107 @@ testing_through_time <- function (
         chance_level = NULL,
         credible_interval = 0.95,
         baseline_window = c(0, 0.1),
+        space_id = NULL, sensor_id = NULL, tensor_d = c(2L, 1L),
+        sensor_adjacency = NULL, adjacency_k = 4L,
+        adjacency_distance_factor = 1.8, rope = 0,
+        contrast_levels = NULL, chunk_size = 256L, re_formula = NA,
         ...
         ) {
+
+    # Spatiotemporal analyses use the validated Stage 2 engine
+    if (!is.null(space_id) ) {
+
+        if (is.null(sensor_id) || length(sensor_id) != 1L ||
+            !is.character(sensor_id) || is.na(sensor_id) ) {
+
+            stop ("Provide `sensor_id` when using `space_id`.", call. = FALSE)
+
+        }
+
+        if (!identical(baseline_window, c(0, 0.1) ) &&
+            !is.null(baseline_window) ) {
+
+            stop (
+                "Baseline-derived ROPEs are not implemented for 3D models; use `rope` instead.",
+                call. = FALSE
+                )
+
+        }
+
+        if (isTRUE(varying_smooth) ) {
+
+            if (!missing(varying_smooth) ) {
+
+                stop (
+                    "Participant-specific 3D smooths are not implemented; set varying_smooth = FALSE.",
+                    call. = FALSE
+                    )
+
+            }
+
+            message ("Spatiotemporal model: using participant-level intercepts without 3D varying smooths.")
+
+        }
+
+        if (missing(kvalue) ) {
+
+            kvalue <- c(15L, 10L)
+
+        }
+
+        if (missing(bs) ) {
+
+            bs <- c("ps", "ps")
+
+        }
+
+        return (
+            testing_through_time_spatiotemporal(
+                data = data,
+                previous_model = previous_model,
+                participant_id = participant_id,
+                outcome_id = outcome_id,
+                outcome_sem = outcome_sem,
+                time_id = time_id,
+                sensor_id = sensor_id,
+                space_id = space_id,
+                predictor_id = predictor_id,
+                family = family,
+                kvalue = kvalue,
+                bs = bs,
+                tensor_d = tensor_d,
+                t2_full = t2_full,
+                multilevel = match.arg(multilevel),
+                include_ar_term = include_ar_term,
+                use_se = use_se,
+                varying_smooth = FALSE,
+                include_by_smooth = include_by_smooth,
+                participant_clusters = participant_clusters,
+                warmup = warmup,
+                iter = iter,
+                chains = chains,
+                cores = cores,
+                threads = threads,
+                backend = backend,
+                stan_control = stan_control,
+                file = file,
+                n_post_samples = n_post_samples,
+                threshold = threshold,
+                threshold_type = match.arg(threshold_type),
+                chance_level = if (is.null(chance_level)) 0 else chance_level,
+                credible_interval = credible_interval,
+                rope = rope,
+                contrast_levels = contrast_levels,
+                sensor_adjacency = sensor_adjacency,
+                adjacency_k = adjacency_k,
+                adjacency_distance_factor = adjacency_distance_factor,
+                chunk_size = chunk_size,
+                re_formula = re_formula,
+                ...
+                )
+            )
+
+    }
 
     # Some tests for variable types
     stopifnot("data must be a dataframe..." = is.data.frame(data) )
