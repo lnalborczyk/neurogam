@@ -935,7 +935,30 @@ testing_through_time <- function(
         model = brms_gam,
         summary_data = summary_data,
         multilevel = multilevel,
-        is_2d_time = is_2d_time
+        is_2d_time = is_2d_time,
+        metadata = make_neurogam_metadata(
+            analysis_type = if (is_2d_time) "temporal_generalization" else "temporal",
+            time_id = if (is_2d_time) c("time1", "time2") else "time",
+            participant_id = participant_id,
+            outcome_id = outcome_id,
+            predictor_id = if (is.na(predictor_id)) NULL else predictor_id,
+            multilevel = multilevel,
+            threshold = threshold,
+            threshold_type = threshold_type,
+            null_value = if (is.na(predictor_id)) chance_level else 0,
+            baseline_window = if (is_2d_time) NULL else baseline_window,
+            credible_interval = credible_interval,
+            odds_mode = "legacy_one_sided",
+            contrast = if (is.na(predictor_id)) {
+                "one_sample"
+            } else if (identical(predictor_type, "continuous")) {
+                "continuous_difference"
+            } else {
+                "condition_difference"
+            },
+            participant_clusters = participant_clusters,
+            n_post_samples = n_post_samples
+        )
         )
 
     return (clusters_results)

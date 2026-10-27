@@ -10,7 +10,8 @@ assemble_temporal_results(
   model,
   summary_data,
   multilevel,
-  is_2d_time
+  is_2d_time,
+  metadata = NULL
 )
 }
 \arguments{

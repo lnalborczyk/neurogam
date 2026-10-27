@@ -185,7 +185,7 @@ neurogam_result_metadata <- function(x) {
         time_id
     }
 
-    list(
+    metadata <- list(
         analysis_type = analysis_type,
         model_coordinates = model_coordinates,
         cluster_coordinates = cluster_coordinates,
@@ -206,6 +206,26 @@ neurogam_result_metadata <- function(x) {
         contrast_levels = x$contrast_levels,
         adjacency_source = x$adjacency_source
     )
+
+    # P2.2: use recorded settings when present, preserving the P2.1 fallback
+    # for historical objects that have no attached metadata.
+    recorded <- attr(x, "neurogam_metadata", exact = TRUE)
+    if (!is.null(recorded)) {
+        if (!is.list(recorded)) {
+            stop("Stored neurogam metadata must be a list.", call. = FALSE)
+        }
+        for (name in names(recorded)) {
+            metadata[name] <- list(recorded[[name]])
+        }
+    }
+
+    # Counts describe the object as it exists now; do not cache them as
+    # construction-time metadata that may become stale after subsetting.
+    metadata$n_prediction_locations <- nrow(x$predictions)
+    metadata$n_clusters <- nrow(x$cluster_summary)
+    metadata$n_cluster_members <- nrow(x$cluster_membership)
+
+    metadata
 }
 
 #' Create a standardized read-only view of neurogam results

@@ -326,6 +326,25 @@ analyse_bgam_spatiotemporal <- function(
 
     class(result) <- "clusters_results_st"
 
-    return (result)
+    result <- set_neurogam_result_metadata(
+        result,
+        make_neurogam_metadata(
+            analysis_type = "spatiotemporal",
+            time_id = time_id,
+            space_id = spatial_id,
+            sensor_id = sensor_id,
+            threshold = threshold,
+            threshold_type = threshold_type,
+            null_value = null_value,
+            rope = rope,
+            credible_interval = credible_interval,
+            odds_mode = "legacy_one_sided",
+            contrast = if (is.null(newdata_b)) "one_sample" else "A_minus_B",
+            adjacency_source = adjacency_source,
+            n_post_samples = if (is.null(draw_ids)) NULL else length(draw_ids)
+        )
+    )
+
+    return(result)
 
 }

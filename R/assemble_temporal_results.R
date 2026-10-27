@@ -99,8 +99,9 @@ assemble_temporal_results <- function (
     model,
     summary_data,
     multilevel,
-    is_2d_time
-    ) {
+    is_2d_time,
+    metadata = NULL
+) {
 
     results <- list(
         clusters = clustering$clusters,
@@ -120,6 +121,10 @@ assemble_temporal_results <- function (
 
         "clusters_results_1d"
 
+    }
+
+    if (!is.null(metadata)) {
+        results <- set_neurogam_result_metadata(results, metadata)
     }
 
     return (results)
