@@ -123,8 +123,6 @@
 #' k_res$plot
 #' }
 #'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
-#'
 #' @seealso
 #'   \code{\link{testing_through_time}},
 #'   \code{\link[brms]{brm}},
@@ -139,7 +137,7 @@ recommend_k <- function (
         k_min = 10,
         k_max = 40,
         k_step = 5,
-        criterion = c("waic", "loo"),
+        criterion = c("loo", "waic"),
         knee_method = c("geometric_smooth", "geometric"),
         loess_span = 0.5,
         cores = 4,
@@ -432,7 +430,8 @@ recommend_k <- function (
                 xintercept = recommended_k,
                 linetype = 2
                 ) +
-            ggplot2::theme_bw() +
+            # ggplot2::theme_bw() +
+            theme_neurogam() +
             ggplot2::labs(
                 x = "Smooth basis dimension (k)",
                 y = paste0("Model complexity (", knee_on, ")"),

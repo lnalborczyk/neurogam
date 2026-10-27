@@ -2,46 +2,20 @@
 % Please edit documentation in R/summary.R
 \name{summary.clusters_results_1d}
 \alias{summary.clusters_results_1d}
-\title{Summary method for 1D \code{clusters_results} objects}
+\title{Summarize a temporal neurogam analysis}
 \usage{
-\method{summary}{clusters_results_1d}(object, digits = 3, ...)
+\method{summary}{clusters_results_1d}(object, digits = 3L, ...)
 }
 \arguments{
-\item{object}{An object of class \code{"clusters_results"} created by
-\code{\link{testing_through_time}}.}
+\item{object}{A result of class `clusters_results_1d`.}
 
-\item{digits}{Integer; number of decimal places used when printing numeric
-values (default: \code{3}).}
+\item{digits}{Number of decimal places to print.}
 
-\item{...}{Additional arguments (currently ignored).}
+\item{...}{Reserved for future use.}
 }
 \value{
-The object \code{object}, returned invisibly.
+The input object, invisibly.
 }
 \description{
-Produces a detailed textual summary of a time-resolved Bayesian GAMM
-analysis, including model metadata, the number of clusters detected, and
-descriptive statistics of cluster durations. A rounded cluster table is
-also printed.
-}
-\details{
-The summary prints:
-\itemize{
-  \item the model type used (\code{"full"}, \code{"summary"},
-    or \code{"group"});
-  \item the class of the underlying \pkg{brms} model and the number of
-    posterior draws;
-  \item the number of clusters detected by the posterior odds threshold;
-  \item descriptive statistics for cluster durations (minimum, maximum,
-    mean, median, and total duration);
-  \item a neatly formatted table listing each cluster's onset, offset,
-    and duration.
-}
-
-If no clusters were detected, the function prints a message and returns
-invisibly.
-}
-\seealso{
-\code{\link{print.clusters_results_1d}},
-  \code{\link{testing_through_time}}
+Summarize a temporal neurogam analysis
 }

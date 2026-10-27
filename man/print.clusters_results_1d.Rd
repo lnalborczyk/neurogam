@@ -2,42 +2,20 @@
 % Please edit documentation in R/summary.R
 \name{print.clusters_results_1d}
 \alias{print.clusters_results_1d}
-\title{Print method for 1D \code{clusters_results} objects}
+\title{Print a temporal neurogam analysis}
 \usage{
-\method{print}{clusters_results_1d}(x, digits = 3, ...)
+\method{print}{clusters_results_1d}(x, digits = 3L, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"clusters_results"} as returned by
-\code{\link{testing_through_time}}.}
+\item{x}{A result of class `clusters_results_1d`.}
 
-\item{digits}{Integer; number of decimal places used when printing numeric
-values (default: \code{3}).}
+\item{digits}{Number of decimal places to print.}
 
-\item{...}{Additional arguments (currently ignored).}
+\item{...}{Reserved for future use.}
 }
 \value{
-The input object \code{x}, returned invisibly.
+The input object, invisibly.
 }
 \description{
-This method provides a concise console representation of the output from
-\code{\link{testing_through_time}}, including the number of detected
-clusters and a compact table summarising each cluster's onset, offset,
-and duration. Values are rounded for readability.
-}
-\details{
-The printed cluster table includes:
-\itemize{
-  \item \code{cluster_id}: numeric identifier of the cluster;
-  \item \code{cluster_onset}: estimated temporal onset of the cluster;
-  \item \code{cluster_offset}: estimated temporal offset of the cluster;
-  \item \code{duration}: duration of the cluster, computed as
-    \code{cluster_offset - cluster_onset}.
-}
-
-If no clusters exceed the posterior odds threshold, an informative message
-is displayed and no table is printed.
-}
-\seealso{
-\code{\link{summary.clusters_results_1d}},
-  \code{\link{testing_through_time}}
+Print a temporal neurogam analysis
 }

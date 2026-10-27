@@ -33,6 +33,9 @@ library(ggplot2)
 library(eegkit)
 library(dplyr)
 
+# Use the ggplot2 neurogam theme
+theme_set(theme_neurogam() )
+
 # retrieving some EEG data
 data(eegdata)
 head(eegdata)
@@ -42,8 +45,7 @@ eegdata |>
     summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
     ggplot(aes(x = time, y = voltage, colour = group) ) +
     geom_line() +
-    facet_wrap(~channel) +
-    theme_bw()
+    facet_wrap(~channel)
 ```
 
 ```{r data-reshape}
@@ -78,11 +80,12 @@ results <- testing_through_time(
     # name of predictor in data
     predictor_id = "group",
     # basis dimension
-    kvalue = 40,
+    kvalue = 20,
     # we recommend fitting the GAMM on summary statistics (mean and SD)
     multilevel = "summary",
     # threshold on posterior odds
     threshold = 10,
+    varying_smooth = FALSE,
     # number of MCMCs
     chains = 4,
     # number of parallel cores

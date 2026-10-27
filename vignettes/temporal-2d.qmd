@@ -55,7 +55,7 @@ timegen_data |>
 
 ## Fitting the model
 
-We fit a 2D BGAMM (with a varying intercept, but no varying smooth) to identify clusters with above-chance decoding accuracy. Such models are much slower than 1D temporal models, we recommend running less chains and using within-chain parallelisation (as shown below with `threads = threading(threads = 4)`) We also recommend to start with simple models (e.g., low `kvalue`, no varying effect) to be able to diagnose potential issues rapidly. For more details on such models, see for instance [Pedersen et al. (2019)](https://peerj.com/articles/6876/).
+We fit a 2D BGAMM (with a varying intercept, but no varying smooth) to identify clusters with above-chance decoding accuracy. Such models are much slower than 1D temporal models, we recommend running less chains and using within-chain parallelisation (as shown below with `threads = threading(threads = 4)`). We also recommend to start with simple models (e.g., low `kvalue`, no varying effect) to be able to diagnose potential issues rapidly. For more details on such models, see for instance [Pedersen et al. (2019)](https://peerj.com/articles/6876/).
 
 ```{r model, eval = FALSE}
 library(brms)

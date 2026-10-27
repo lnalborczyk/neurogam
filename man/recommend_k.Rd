@@ -9,7 +9,7 @@ recommend_k(
   k_min = 10,
   k_max = 40,
   k_step = 5,
-  criterion = c("waic", "loo"),
+  criterion = c("loo", "waic"),
   knee_method = c("geometric_smooth", "geometric"),
   loess_span = 0.5,
   cores = 4,
@@ -156,7 +156,4 @@ k_res$plot
   \code{\link[brms]{brm}},
   \code{\link[brms]{add_criterion}}
   \code{\link[stats]{loess}}
-}
-\author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }

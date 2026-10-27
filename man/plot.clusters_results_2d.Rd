@@ -6,12 +6,13 @@
 \usage{
 \method{plot}{clusters_results_2d}(
   x,
-  theme = ggplot2::theme_bw(),
+  theme = theme_neurogam(),
   palette = "vik",
   midpoint = 0.5,
   axes_labels = c("Training time (s)", "Testing time (s)"),
   cluster_outline_colour = "black",
-  ...
+  ...,
+  type = NULL
 )
 }
 \arguments{
@@ -19,7 +20,7 @@
 \code{\link[neurogam]{testing_through_time}} for 2D time / time-generalisation).}
 
 \item{theme}{A ggplot2 theme object added to each panel. Defaults to
-\code{\link[ggplot2]{theme_bw}()}.}
+\code{theme_neurogam()}.}
 
 \item{palette}{Character, a scico palette, see scico::scico_palette_show().}
 
@@ -31,6 +32,8 @@
 Defaults to \code{"white"}.}
 
 \item{...}{Currently unused. Included for S3 compatibility.}
+
+\item{type}{Optional plot type. `NULL` (default) preserves the historical plot; `"predictions"` and `"clusters"` use the standardized result tables.}
 }
 \value{
 A \code{\link[ggplot2]{ggplot}} object (a patchwork composition of two ggplots).
