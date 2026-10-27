@@ -17,6 +17,13 @@
 #' @param warmup,iter,chains,cores,threads,backend,stan_control,file Fit options.
 #' @param n_post_samples Number of posterior draws, or `NULL` for all.
 #' @param threshold,threshold_type,credible_interval Clustering parameters.
+#' @param odds_mode Posterior-odds inference strategy. The default,
+#'   `"directional_rope"`, computes independent continuous posterior odds
+#'   for effects above and below the ROPE. These odds are thresholded
+#'   separately to identify positive and negative clusters.
+#'   `"legacy_one_sided"` reproduces the historical capped one-sided odds.
+#'   `"legacy_directional"` and `"spatiotemporal"` are retained for
+#'   backward compatibility.
 #' @param chance_level Null value for one-sample inference.
 #' @param rope Symmetric fixed ROPE half-width.
 #' @param contrast_levels Optional A - B ordering for two conditions.

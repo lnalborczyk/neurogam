@@ -71,6 +71,14 @@ is generated automatically.}
 \item{adjacency_distance_factor}{Maximum auto-generated edge length
 relative to the median nearest-neighbor distance. Set to `NULL` to
 disable distance pruning.}
+
+\item{odds_mode}{Posterior-odds inference strategy. The default,
+`"directional_rope"`, computes independent continuous posterior odds
+for effects above and below the ROPE. These odds are thresholded
+separately to identify positive and negative clusters.
+`"legacy_one_sided"` reproduces the historical capped one-sided odds.
+`"legacy_directional"` and `"spatiotemporal"` are retained for
+backward compatibility.}
 }
 \value{
 List with `predictions`, `cluster_summary`, `cluster_membership`,

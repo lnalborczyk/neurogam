@@ -124,7 +124,8 @@ results <- testing_through_time(
     threads = brms::threading(threads = 4),
     # increasing max_treedepth
     stan_control = list(max_treedepth = 15),
-    file = "../cache/timegen_model.rds"
+    backend = "cmdstanr",
+    file = "../cache/timegen_results"
     )
 ```
 

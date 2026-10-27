@@ -8,10 +8,15 @@
 #' @param null_value Null value against which draws are assessed.
 #' @param rope Non-negative half-width of a ROPE around `null_value`.
 #' @param credible_interval Width of equal-tailed credible intervals.
+#' @param odds_mode Posterior-odds inference strategy. The default,
+#'   `"directional_rope"`, computes independent continuous posterior odds
+#'   for effects above and below the ROPE. These odds are thresholded
+#'   separately to identify positive and negative clusters.
+#'   `"legacy_one_sided"` reproduces the historical capped one-sided odds.
+#'   `"legacy_directional"` and `"spatiotemporal"` are retained for
+#'   backward compatibility.
 #'
 #' @return Data frame with posterior estimates, probabilities, and odds.
-#'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
 #'
 #' @keywords internal
 summarise_spatiotemporal_draws <- function(
@@ -19,8 +24,8 @@ summarise_spatiotemporal_draws <- function(
     null_value = 0,
     rope = 0,
     credible_interval = 0.95,
-    odds_mode = "legacy_one_sided"
-) {
+    odds_mode = "directional_rope"
+    ) {
     summarise_posterior_matrix(
         draws = draws,
         null_value = null_value,
@@ -64,6 +69,13 @@ summarise_spatiotemporal_draws <- function(
 #' @param adjacency_distance_factor Maximum auto-generated edge length
 #'   relative to the median nearest-neighbor distance. Set to `NULL` to
 #'   disable distance pruning.
+#' @param odds_mode Posterior-odds inference strategy. The default,
+#'   `"directional_rope"`, computes independent continuous posterior odds
+#'   for effects above and below the ROPE. These odds are thresholded
+#'   separately to identify positive and negative clusters.
+#'   `"legacy_one_sided"` reproduces the historical capped one-sided odds.
+#'   `"legacy_directional"` and `"spatiotemporal"` are retained for
+#'   backward compatibility.
 #'
 #' @return List with `predictions`, `cluster_summary`, `cluster_membership`,
 #'   `model`, `sensor_adjacency`, `adjacency_source`, and metadata.
@@ -313,13 +325,14 @@ analyse_bgam_spatiotemporal <- function(
             null_value = null_value,
             rope = rope,
             credible_interval = credible_interval,
-            odds_mode = "legacy_one_sided",
+            #odds_mode = "legacy_one_sided",
+            odds_mode = odds_mode,
             contrast = if (is.null(newdata_b)) "one_sample" else "A_minus_B",
             adjacency_source = adjacency_source,
             n_post_samples = if (is.null(draw_ids)) NULL else length(draw_ids)
+            )
         )
-    )
 
-    return(result)
+    return (result)
 
 }

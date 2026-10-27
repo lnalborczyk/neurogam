@@ -68,12 +68,31 @@ test_that("one-sample adapters preserve temporal columns and grouping", {
     df <- expand.grid(time = c(0, 0.1), participant = c("s1", "s2"), .draw = 1:6)
     df$.epred <- ifelse(df$time == 0, -2, 2)
 
+    # one <- compute_one_sample_prob(
+    #     df, 0, FALSE, 6, 0.95, baseline_window = NULL
+    # )
+
     one <- compute_one_sample_prob(
-        df, 0, FALSE, 6, 0.95, baseline_window = NULL
+        df,
+        null_value = 0,
+        participant_clusters = FALSE,
+        n_post_samples = 6,
+        credible_interval = 0.95,
+        baseline_window = NULL,
+        odds_mode = "legacy_one_sided"
     )
-    expect_named(one, c("time", "prob_above", "prob_ratio",
-                        "post_prob", "lower", "upper"))
+
     expect_equal(one$prob_ratio, c(1 / 6, 6))
+
+    # expect_named(one, c("time", "prob_above", "prob_ratio",
+    #                     "post_prob", "lower", "upper"))
+    expect_named(one, c(
+        "time",
+        "prob_above", "prob_below", "prob_inside",
+        "odds_above", "odds_below", "prob_ratio",
+        "post_prob", "lower", "upper"
+    ))
+    # expect_equal(one$prob_ratio, c(1 / 6, 6))
 
     by_subject <- compute_one_sample_prob(
         df, 0, TRUE, 6, 0.95, baseline_window = NULL
@@ -95,6 +114,16 @@ test_that("paired contrasts respect draw matching and predictor order", {
     paired <- pair_posterior_contrasts(data, coordinates = "time")
     expect_true(all(paired$epred_diff == 1))
 
+    # out <- compute_two_sample_prob(
+    #     data,
+    #     null_value = 0,
+    #     participant_clusters = FALSE,
+    #     n_post_samples = 8,
+    #     credible_interval = 0.95,
+    #     predictor_type = "categorical",
+    #     baseline_window = NULL
+    # )
+
     out <- compute_two_sample_prob(
         data,
         null_value = 0,
@@ -102,8 +131,10 @@ test_that("paired contrasts respect draw matching and predictor order", {
         n_post_samples = 8,
         credible_interval = 0.95,
         predictor_type = "categorical",
-        baseline_window = NULL
+        baseline_window = NULL,
+        odds_mode = "legacy_one_sided"
     )
+
     expect_equal(out$prob_ratio, c(8, 8))
     expect_equal(out$post_prob, c(1, 1))
 
@@ -124,18 +155,35 @@ test_that("2D adapters preserve one-sided odds and coordinate columns", {
     )
     data$.epred <- ifelse(data$predictor == "B", 2, 0)
 
+    # out <- compute_two_sample_prob_2d(
+    #     data,
+    #     null_value = 0,
+    #     participant_clusters = FALSE,
+    #     n_post_samples = 5,
+    #     credible_interval = 0.95,
+    #     predictor_type = "categorical"
+    # )
+
     out <- compute_two_sample_prob_2d(
         data,
         null_value = 0,
         participant_clusters = FALSE,
         n_post_samples = 5,
         credible_interval = 0.95,
-        predictor_type = "categorical"
+        predictor_type = "categorical",
+        odds_mode = "legacy_one_sided"
     )
+
     expect_equal(nrow(out), 4L)
     expect_true(all(out$prob_ratio == 5))
-    expect_named(out, c("time1", "time2", "prob_above", "prob_ratio",
-                        "post_prob", "lower", "upper"))
+    # expect_named(out, c("time1", "time2", "prob_above", "prob_ratio",
+    #                     "post_prob", "lower", "upper"))
+    expect_named(out, c(
+        "time1", "time2",
+        "prob_above", "prob_below", "prob_inside",
+        "odds_above", "odds_below", "prob_ratio",
+        "post_prob", "lower", "upper"
+    ))
 })
 
 test_that("core rejects invalid draws and unsupported settings", {
@@ -158,8 +206,15 @@ test_that("core rejects invalid draws and unsupported settings", {
     )
 
     # The finite-sample odds cap defaults to the number of draws.
+    # out <- summarise_posterior_matrix(
+    #     matrix(1, 2, 2)
+    # )
+    #
+    # expect_equal(out$prob_ratio, c(2, 2))
+    # expect_true(all(is.finite(out$prob_ratio)))
     out <- summarise_posterior_matrix(
-        matrix(1, 2, 2)
+        matrix(1, 2, 2),
+        odds_mode = "legacy_one_sided"
     )
 
     expect_equal(out$prob_ratio, c(2, 2))

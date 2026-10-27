@@ -108,6 +108,13 @@
 #'   \code{value >= threshold}. When \code{"below"}, clusters are formed where
 #'   \code{value <= 1/threshold}. When \code{"both"}, both types are detected
 #'   and the returned data include a \code{sign} column.
+#' @param odds_mode Posterior-odds inference strategy. The default,
+#'   `"directional_rope"`, computes independent continuous posterior odds
+#'   for effects above and below the ROPE. These odds are thresholded
+#'   separately to identify positive and negative clusters.
+#'   `"legacy_one_sided"` reproduces the historical capped one-sided odds.
+#'   `"legacy_directional"` and `"spatiotemporal"` are retained for
+#'   backward compatibility.
 #' @param chance_level Numeric; null value for the outcome (e.g., 0.5 for
 #'   decoding accuracy).
 #' @param credible_interval Numeric; width of the credible (quantile) interval.

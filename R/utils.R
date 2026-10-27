@@ -759,7 +759,8 @@ compute_one_sample_prob <- function(
     participant_clusters,
     n_post_samples,
     credible_interval,
-    baseline_window = NULL
+    baseline_window = NULL,
+    odds_mode = "directional_rope"
     ) {
     if (!is.null(baseline_window)) {
         if (!is.numeric(baseline_window) || length(baseline_window) != 2L ||
@@ -798,7 +799,7 @@ compute_one_sample_prob <- function(
         value = ".epred",
         null_value = null_value,
         credible_interval = credible_interval,
-        odds_mode = "legacy_one_sided",
+        odds_mode = odds_mode,
         odds_cap = n_post_samples
     )
     out$post_prob <- out$estimate
@@ -819,8 +820,9 @@ compute_two_sample_prob <- function(
     credible_interval,
     predictor_type,
     baseline_window = NULL,
-    odds_mode = "legacy_one_sided"
-) {
+    odds_mode = "directional_rope"
+    ) {
+
     groups <- if (participant_clusters) c("time", "participant") else "time"
     paired <- pair_posterior_contrasts(post_draws, groups, predictor_type)
 
@@ -880,7 +882,8 @@ compute_one_sample_prob_2d <- function(
     participant_clusters,
     n_post_samples,
     credible_interval,
-    baseline_window = NULL
+    baseline_window = NULL,
+    odds_mode = "directional_rope"
 ) {
     groups <- c("time1", "time2")
     if (participant_clusters) {
@@ -893,7 +896,7 @@ compute_one_sample_prob_2d <- function(
         value = ".epred",
         null_value = null_value,
         credible_interval = credible_interval,
-        odds_mode = "legacy_one_sided",
+        odds_mode = odds_mode,
         odds_cap = n_post_samples
     )
     out$post_prob <- out$estimate
@@ -915,7 +918,7 @@ compute_two_sample_prob_2d <- function(
     predictor_type,
     time_id = c("time1", "time2"),
     baseline_window = NULL,
-    odds_mode = "legacy_one_sided"
+    odds_mode = "directional_rope"
 ) {
     groups <- c("time1", "time2")
     if (participant_clusters) {
@@ -1201,7 +1204,7 @@ compute_directional_odds <- function(
     null_value = 0,
     n_post_samples,
     groups = "time",
-    odds_mode = "legacy_one_sided"
+    odds_mode = "directional_rope"
 ) {
     if (!is.numeric(null_value) || length(null_value) != 1L ||
         !is.finite(null_value) || null_value < 0) {

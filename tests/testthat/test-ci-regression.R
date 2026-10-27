@@ -190,10 +190,14 @@ test_that("posterior summaries use one-sided odds by default", {
     expect_equal(x$prob_inside, c(0, 0, 1))
 
     # One-sided odds, capped using 40 posterior draws.
-    expect_equal(
-        x$prob_ratio,
-        c(40, 1 / 40, 1 / 40)
-    )
+    # expect_equal(
+    #     x$prob_ratio,
+    #     c(40, 1 / 40, 1 / 40)
+    # )
+
+    expect_equal(x$prob_ratio, c(Inf, 0, 0))
+    expect_equal(x$odds_above, c(Inf, 0, 0))
+    expect_equal(x$odds_below, c(0, Inf, 0))
 
     # Confirm the historical mode is still available.
     historical <- summarise_spatiotemporal_draws(
