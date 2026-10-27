@@ -11,7 +11,8 @@
   clusters_colour = "black",
   lineend = "butt",
   theme = theme_neurogam(),
-  ...
+  ...,
+  type = NULL
 )
 }
 \arguments{
@@ -33,6 +34,8 @@ the cluster segments. Defaults to \code{"black"}.}
 \item{theme}{A ggplot2 theme object. Defaults to \code{theme_neurogam()}.}
 
 \item{...}{Currently unused. Included for S3 compatibility.}
+
+\item{type}{Optional plot type. `NULL` (default) preserves the historical plot; `"predictions"` and `"clusters"` use the standardized result tables.}
 }
 \value{
 A \code{\link[ggplot2]{ggplot}} object.

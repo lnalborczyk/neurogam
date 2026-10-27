@@ -1,60 +1,68 @@
 
-# Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models <a href="https://lnalborczyk.github.io/neurogam/"><img src="man/figures/logo.png" align="right" height="139" alt="neurogam website" /></a>
+# neurogam: Bayesian modelling of time-resolved electrophysiological data <a href="https://lnalborczyk.github.io/neurogam/"><img src="man/figures/logo.png" align="right" height="139" alt="neurogam website" /></a>
 
 <!-- badges: start -->
 
 [![Repo
-status](http://www.repostatus.org/badges/latest/wip.svg)](http://www.repostatus.org/#wip)
+status](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![Repo
 size](https://img.shields.io/github/repo-size/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
 [![Last
 commit](https://img.shields.io/github/last-commit/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
 <!-- badges: end -->
 
-The goal of `neurogam` is to provide utilities for estimating the onset
-and offset of time-resolved effects, such as those found in M/EEG,
-pupillometry, or finger/mouse-tracking data (amongst others). It is
-designed as a lightweight interface to the
-[`brms`](https://github.com/paul-buerkner/brms) package. The current
-version allows fitting 1D temporal data (e.g., pupillometry, single
-M/EEG channel, or decoding timecourses) or 2D temporal (e.g.,
-cross-temporal decoding generalisation matrices) data but will be
-extended in the near future to support 3D spatiotemporal (e.g., time x
-sensors M/EEG) data.
+`neurogam` provides tools to analyse time-resolved effects with
+**Bayesian generalised additive multilevel models** (BGAMMs). Built on
+[`brms`](https://github.com/paul-buerkner/brms), it combines smooth
+estimation of temporal dynamics, posterior inference, and detection and
+visualisation of connected regions exceeding a posterior-odds threshold.
+
+The package supports three types of analysis:
+
+| Analysis | Typical applications | Coordinates used for clustering |
+|:---|:---|:---|
+| **Temporal (1D)** | M/EEG time courses, pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories | Time |
+| **Temporal generalisation (2D)** | Cross-temporal decoding or representational-generalisation matrices | Training time × testing time |
+| **Spatiotemporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency × time |
+
+The three workflows share result accessors, reporting methods, and a
+unified plotting interface. They also support reusing a previously
+fitted model to explore inference thresholds without repeating costly
+Stan sampling.
+
+> **Interpretation:** Clusters identify connected locations satisfying a
+> *pointwise* posterior-odds criterion. They are descriptive regions of
+> thresholded evidence, not automatically multiplicity-corrected
+> clusters or posterior probabilities that an entire cluster is nonzero.
 
 ## Installation
 
-You can install the development version of `neurogam` from GitHub with:
+Install the development version from GitHub:
 
 ``` r
 install.packages("remotes")
 
 remotes::install_github(
-    repo = "https://github.com/lnalborczyk/neurogam",
+    "lnalborczyk/neurogam",
+    ref = "develop",
     dependencies = TRUE
-    )
+)
 ```
 
-## Usage
+The `develop` branch contains the latest 1D/2D/3D interfaces described
+here; `main` may lag behind during development. Model fitting
+additionally requires a working Stan backend supported by `brms` (such
+as `cmdstanr` or `rstan`).
 
-### Model fitting
+## Quick start: temporal (1D) analysis
 
-Below we fit a Bayesian generalised additive multilevel model (BGAMM)
-with varying intercept, slope, and smooth (per participant) to estimate
-the onset and offset of a difference between conditions. Note that we
-recommend fitting the BGAMM on time-resolved summary statistics (mean
-and SD, computed internally) as the full (i.e., trial-by-trial) BGAMM
-may be too slow, and the group-level BGAM (i.e., without random/varying
-effect) may provide anticonservative cluster estimates.
+The bundled `eeg_data` dataset illustrates the long-format input
+expected by `testing_through_time()`. Each row represents an observation
+at a particular time, with participant identifiers and relevant
+predictors.
 
 ``` r
-# loading the neurogam package
-library(neurogam)
-
-# importing some simulated EEG data
-data(eeg_data)
-
-# displaying some rows
+data(eeg_data, package = "neurogam")
 head(eeg_data)
 #>      participant condition trial  time       eeg
 #> 1 participant_01     cond1     1 0.000 0.8618045
@@ -65,198 +73,295 @@ head(eeg_data)
 #> 6 participant_01     cond1     1 0.010 0.1548358
 ```
 
+### Fit a Bayesian GAMM
+
+The following one-sample analysis tests whether the time-resolved
+outcome differs from its null reference. Setting `predictor_id = NA`
+selects the one-sample analysis; use a binary predictor name (e.g.,
+`"condition"`) to analyse a two-condition contrast.
+
+We generally recommend starting with `multilevel = "summary"`, which
+retains participant-level information while avoiding the cost of a
+trial-by-trial multilevel fit. An aggregate group-only model
+(`multilevel = "group"`) is also available, but it does not represent
+between-participant variability in the same way.
+
 ``` r
-# fitting the BGAMM to identify clusters (around 10 minutes on a recent laptop)
-results <- testing_through_time(
-    # simulated EEG data
+results_1d <- testing_through_time(
     data = eeg_data,
-    # name of predictor in data
-    # predictor_id = "condition",
-    # when predictor_id = NA, tests average level against 0
+    participant_id = "participant",
+    outcome_id = "eeg",
+    time_id = "time",
     predictor_id = NA,
-    # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
-    # threshold on posterior odds
     threshold = 10,
-    # number of iterations (per MCMC)
     iter = 5000
-    )
+)
+
+# Optional: save the result so subsequent analyses need no refitting.
+saveRDS(results_1d, "neurogam_results_1d.rds")
 ```
 
-The `testing_through_time()` function returns an object of class
-`clusters_results`, which is a list containing:
+*The Stan fit above is intentionally not run while building the README.*
+Actual runtime depends on the dataset, model structure, sampling
+settings, and computer.
 
-- clusters: a data frame with one row per detected cluster;
-- predictions: a data frame with time-resolved posterior summaries;
-- model: the fitted `brms` model object;
-- summary_data: the summary data used internally for fitting;
-- multilevel: the value of the `multilevel` argument.
+### Inspect and visualise results
 
 ``` r
-# results structure
-names(results)
-#> [1] "clusters"    "predictions" "model"       "multilevel"
+print(results_1d)
+summary(results_1d)
 
-# model formula (see also ?make_bgam_formula)
-results$model$formula
-#> outcome_mean | se(outcome_sd) ~ 1 + (1 | participant) + s(time, bs = "tp", k = 20) + s(participant, time, bs = "fs", m = 1, k = 20)
+# Existing composite plot (unchanged for 1D and 2D results).
+plot(results_1d)
+
+# New explicit, model-independent views.
+plot(results_1d, type = "predictions")
+plot(results_1d, type = "clusters")
 ```
 
-### Visualising the results
+`testing_through_time()` returns a dimension-specific result object
+(e.g., `clusters_results_1d`). The original fields remain accessible for
+backward compatibility. The standardized interface is:
 
 ``` r
-# displaying the identified clusters
-print(results)
-#> 
-#> ==== Time-resolved GAMM results ===============================
-#> 
-#> Clusters found: 
-#> 
-#>      sign id onset offset duration
-#>  positive  1 0.162  0.348    0.186
-#> 
-#> =================================================================
+view <- as_neurogam_result_view(results_1d)
+
+head(view$predictions)        # posterior estimates, intervals, probabilities, odds
+view$cluster_summary         # one row per detected cluster
+head(view$cluster_membership) # locations belonging to clusters
+view$model                  # fitted brms model, when available
+
+metadata <- neurogam_result_metadata(results_1d)
+metadata$analysis_type
+metadata$model_coordinates
+metadata$cluster_coordinates
+metadata$threshold
+metadata$odds_mode
+
+validate_neurogam_result(results_1d)
 ```
 
-``` r
-# plotting the data, model's predictions, and clusters
-plot(results)
-```
-
-<img src="man/figures/README-fig-clusters-1.png" width="100%" />
+For newly constructed results, analysis settings are also stored in the
+`neurogam_metadata` attribute and persist through `saveRDS()` /
+`readRDS()`. Older saved results can still be inspected; settings that
+were never recorded remain unknown rather than being assigned the
+package’s current defaults.
 
 ### Posterior predictive checks
 
-We recommend visually assessing the predictions of the model against the
-observed data. We provide a lightweight `ppc()` method, but you can
-conduct various PPCs with `brms::pp_check(results$model, ...)` (for all
-available PPCs, see
-<https://mc-stan.org/bayesplot/reference/PPC-overview.html>).
+Posterior predictive checks (PPCs) are important for evaluating model
+adequacy. `neurogam` provides a convenient `ppc()` method;
+`brms::pp_check()` provides additional options.
 
 ``` r
-# posterior predictive checks (PPCs)
-ppc(object = results, ppc_type = "participant")
+ppc(object = results_1d, ppc_type = "participant")
+
+brms::pp_check(results_1d$model)
 ```
 
-<img src="man/figures/README-fig-ppc-1.png" width="100%" />
+See the [`bayesplot` PPC
+reference](https://mc-stan.org/bayesplot/reference/PPC-overview.html)
+for further diagnostics.
 
-### Reusing a previously fitted model
+### Reuse an existing fit
 
-The `previous_model` argument allows passing an existing `neurogam`
-model (previously fitted with `testing_through_time()`), which may be
-useful for exploring the effects of the `threshold` parameters (while
-avoiding re-fitting the model).
+`previous_model` lets you recompute predictions and cluster detection
+without refitting the same model, for example to examine sensitivity to
+the posterior-odds threshold. Keep the data, predictor specification,
+and model structure compatible with the original fit.
 
 ``` r
-# fitting the BGAMM to identify clusters
-results2 <- testing_through_time(
-    # simulated EEG data
+results_1d_stricter <- testing_through_time(
     data = eeg_data,
-    # previously fitted model
-    previous_model = results$model,
-    # when predictor_id = NA, tests average level against 0
+    previous_model = results_1d$model,
+    participant_id = "participant",
+    outcome_id = "eeg",
+    time_id = "time",
     predictor_id = NA,
-    # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
-    # new threshold on posterior odds
     threshold = 20
-    )
+)
+
+plot(results_1d_stricter, type = "clusters")
 ```
 
+## Cross-temporal generalisation (2D)
+
+For a temporal-generalisation matrix, supply **two temporal
+coordinates** using `time_id`. A typical long-format dataset has one row
+per participant, training time, and testing time (and, if applicable,
+condition or other predictor).
+
 ``` r
-# plotting the data, model's predictions, and clusters
-plot(results2)
+# Illustrative input: `ctg_data` must contain participant, time1,
+# time2, accuracy, and any predictor columns used in the model.
+results_2d <- testing_through_time(
+    data = ctg_data,
+    participant_id = "participant",
+    outcome_id = "accuracy",
+    time_id = c("time1", "time2"),
+    predictor_id = NA,
+    chance_level = 0.5,
+    multilevel = "summary",
+    threshold = 10
+)
+
+summary(results_2d)
+plot(results_2d)                         # legacy composite plot
+plot(results_2d, type = "predictions")   # posterior heatmap
+plot(results_2d, type = "clusters")      # cluster membership map
 ```
 
-<img src="man/figures/README-fig-clusters2-1.png" width="100%" />
+The 2D smooth is fitted over both temporal coordinates. The standardized
+result view exposes `cluster_summary` and `cluster_membership` in the
+same way as for 1D data, with locations identified by their two time
+coordinates.
 
-### How to define the basis dimension?
+## Spatiotemporal sensor-by-time modelling (3D)
 
-We cannot provide a single universal recommendation for choosing the
-optimal value of $k$, as it depends on several factors, including the
-sampling rate, preprocessing steps (e.g., signal-to-noise ratio,
-low-pass filtering), and the underlying temporal dynamics of the effect
-of interest. One strategy is to set $k$ as high as computational
-constraints allow (acknowledging that the $k$-value only provides an
-upper bound on the *effective* basis dimension). Alternatively, one can
-fit a series of models with different $k$ values and compare these
-models using information criteria such as LOOIC or WAIC, alongside with
-posterior predictive checks (PPCs), to select the model that best
-captures the structure of the data. We illustrate this approach below.
+For sensor-level M/EEG, `neurogam` can model responses over **two
+projected sensor coordinates plus time**. Unlike a regular
+three-dimensional voxel grid, connected clusters are defined over the
+actual sensors and their adjacency graph, together with temporal
+neighbours. Interpolated scalp images are used for display only.
+
+The long-format input should contain a participant identifier, sensor
+identifier, time, observed outcome, and two projected sensor positions
+(for example, `xproj` and `yproj`). The same sensor should have
+consistent spatial coordinates throughout the analysis.
 
 ``` r
-# recommend an optimal smooth basis dimension k
+# Illustrative input: `eeg_st` contains subject, channel, time,
+# xproj, yproj, voltage, and any predictors used by the model.
+results_st <- testing_through_time(
+    data = eeg_st,
+    participant_id = "subject",
+    outcome_id = "voltage",
+    time_id = "time",
+    sensor_id = "channel",
+    space_id = c("xproj", "yproj"),
+    predictor_id = NA,
+    multilevel = "summary",
+    threshold = 10,
+    threshold_type = "above",
+    adjacency_k = 4L
+)
+
+print(results_st)
+summary(results_st)
+
+view_st <- as_neurogam_result_view(results_st)
+view_st$cluster_summary
+neurogam_result_metadata(results_st)$adjacency_source
+```
+
+When no sensor adjacency is supplied, the package can construct an
+approximate graph from projected positions. For confirmatory
+applications, supplying a well-justified montage-specific adjacency
+graph is preferable.
+
+### Spatiotemporal visualisation
+
+The unified plotting API delegates to specialized functions. Because
+scalp maps and sensor trajectories compare model predictions with
+observed data, **3D plots require the original observations** through
+`observed_data`.
+
+``` r
+# Observed, predicted, and residual scalp maps.
+plot(
+    results_st,
+    type = "topography",
+    observed_data = eeg_st,
+    outcome_id = "voltage",
+    sensor_id = "channel",
+    participant_id = "subject",
+    n_times = 6L
+)
+
+# Faceted sensor time courses with detected cluster segments.
+plot(
+    results_st,
+    type = "trajectories",
+    observed_data = eeg_st,
+    outcome_id = "voltage",
+    sensor_id = "channel",
+    participant_id = "subject",
+    layout = "facets",
+    cluster_style = "segments"
+)
+
+# Convenient shorthands for prediction-only and cluster-highlighted traces.
+plot(results_st, type = "predictions", observed_data = eeg_st)
+plot(results_st, type = "clusters", observed_data = eeg_st)
+```
+
+The specialised `plot_spatiotemporal_topography()` and
+`plot_sensor_trajectories()` functions remain available when more
+detailed control is needed. For condition contrasts, supply the
+corresponding second observed dataset when required by the plotter.
+
+## Choosing the smooth basis dimension
+
+The smooth basis dimension `k` limits the flexibility of the fitted time
+course; it is not the model’s effective degrees of freedom. Appropriate
+values depend on the signal’s temporal dynamics, sampling density,
+preprocessing, and the amount of information available. Increase `k`
+where needed, check that it is not overly restrictive, and use posterior
+predictive checks and model comparison as complementary diagnostics.
+
+`recommend_k()` can fit and compare candidate models using LOO-based
+criteria, although this can be computationally expensive:
+
+``` r
 k_res <- recommend_k(
-    object = results,
+    object = results_1d,
     k_min = 10,
     k_max = 40,
     k_step = 5,
-    criterion = "waic"
-    )
-```
+    criterion = "loo"
+)
 
-<img src="man/figures/README-fig-reco-k-1.png" width="100%" />
-
-``` r
-# results summary
 summary(k_res)
-#> 
-#> ==== Summary of k recommendation ===================================
-#> 
-#> Number of models fitted  : 7
-#> k values tested          : 10, 15, 20, 25, 30, 35, 40
-#> Range of k values        : [10, 40]
-#> Knee based on            : p_waic
-#> Recommended k (knee)     : 15
-#> 
-#> Comparison table (rounded):
-#> 
-#>   k   model waic_elpd waic_elpd_se p_waic p_waic_se     waic p_waic_smooth
-#>  10 gam_k10 -4703.617        5.394  0.145     0.003 9407.234         0.145
-#>  15 gam_k15 -4703.966        5.395  0.155     0.003 9407.932         0.155
-#>  20 gam_k20 -4704.013        5.395  0.156     0.003 9408.026         0.156
-#>  30 gam_k30 -4704.064        5.395  0.156     0.003 9408.128         0.156
-#>  25 gam_k25 -4704.094        5.395  0.157     0.003 9408.189         0.157
-#>  35 gam_k35 -4704.104        5.395  0.157     0.003 9408.207         0.157
-#>  40 gam_k40 -4704.159        5.395  0.159     0.003 9408.319         0.159
-#> 
-#> ====================================================================
 ```
 
-## Polyglot use of `neurogam`
+## Using neurogam from Python or Julia
 
-To use `neurogam` functions in Python (e.g., on MNE epochs), we
-recommend using the `rpy2` interface (<https://github.com/rpy2/rpy2>),
-as shown below. It simply requires reshaping MNE epochs into long format
-(one trial/observation per row) (see for instance
-`epochs.to_data_frame(long_format=True)`,
-<https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.to_data_frame>).
+### Python (`rpy2`)
+
+[`rpy2`](https://rpy2.github.io/) allows Python workflows (e.g.,
+MNE-Python) to call `neurogam`. First convert the data to a long-form
+table, with the columns required by the chosen analysis.
 
 ``` python
-# loading the Python modules
 import rpy2.robjects as robjects
-from rpy2.robjects.packages import importr
+from rpy2.robjects import default_converter, pandas2ri
 from rpy2.robjects.conversion import localconverter
+from rpy2.robjects.packages import importr
 
-# importing the "neurogam" R package
 neurogam = importr("neurogam")
 
-# reshaping epochs into long format
-# long_df = epochs.to_data_frame(long_format=True)
-
-# assuming long_df is some M/EEG data reshaped in long format
-with localconverter(robjects.default_converter + pandas2ri.converter):
-    
+# Example: long_df = epochs.to_data_frame(long_format=True)
+# Adapt column names to the neurogam API before conversion.
+with localconverter(default_converter + pandas2ri.converter):
     long_df_r = robjects.conversion.py2rpy(long_df)
-    
 
-# using the testing_through_time() function from the neurogam package
-results = neurogam.testing_through_time(data=long_df_r, threshold=10)
+results = neurogam.testing_through_time(
+    data=long_df_r,
+    participant_id="participant",
+    outcome_id="eeg",
+    time_id="time",
+    predictor_id="condition",
+    threshold=10
+)
 ```
 
-To use `neurogam` functions in Julia, we recommend using the `RCall`
-package (<https://juliainterop.github.io/RCall.jl/stable/>) (thanks to
-Benedikt Ehinger for sharing this code snippet).
+### Julia (`RCall`)
+
+Julia users can access R functions via
+[`RCall.jl`](https://juliainterop.github.io/RCall.jl/stable/) (thanks to
+Benedikt Ehinger for the original example).
 
 ``` r
 # loading the RCall module
@@ -271,25 +376,25 @@ results = neurogam.testing_through_time(data=long_df, threshold=10)
 
 ## Citation
 
-When using `neurogam`, please cite the following publication:
+When using `neurogam`, please cite:
 
-- Nalborczyk, L., & Bürkner, P. (2025). Precise temporal localisation of
-  M/EEG effects with Bayesian generalised additive multilevel models.
-  *biorXiv*. Preprint available at:
-  <https://doi.org/10.1101/2025.08.29.672336>.
+- Nalborczyk, L., & Bürkner, P. (2025). *Precise temporal localisation
+  of M/EEG effects with Bayesian generalised additive multilevel
+  models*. bioRxiv. <https://doi.org/10.1101/2025.08.29.672336>
 
-As `neurogam` is an interface to the `brms` package, please additionally
-cite one or more of the following publications:
+As `neurogam` builds on `brms`, please also cite the relevant
+publications:
 
-- Bürkner P. C. (2017). brms: An R Package for Bayesian Multilevel
-  Models using Stan. Journal of Statistical Software. 80(1), 1-28.
-  doi.org/10.18637/jss.v080.i01
-- Bürkner P. C. (2018). Advanced Bayesian Multilevel Modeling with the R
-  Package brms. The R Journal. 10(1), 395-411.
-  doi.org/10.32614/RJ-2018-017
+- Bürkner, P.-C. (2017). brms: An R Package for Bayesian Multilevel
+  Models Using Stan. *Journal of Statistical Software, 80*(1), 1–28.
+  <https://doi.org/10.18637/jss.v080.i01>
+- Bürkner, P.-C. (2018). Advanced Bayesian Multilevel Modeling with the
+  R Package brms. *The R Journal, 10*(1), 395–411.
+  <https://doi.org/10.32614/RJ-2018-017>
 
 ## Getting help
 
-If you encounter a bug or have a question please file an issue with a
-minimal reproducible example on
-[GitHub](https://github.com/lnalborczyk/neurogam/issues).
+For bug reports, questions, or feature requests, [open a GitHub
+issue](https://github.com/lnalborczyk/neurogam/issues), preferably with
+a minimal reproducible example, session information, and the version or
+Git branch of `neurogam` you are using.

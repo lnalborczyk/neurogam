@@ -36,6 +36,7 @@
 #' plot(res)
 #' }
 #'
+#' @param type Optional plot type. `NULL` (default) preserves the historical plot; `"predictions"` and `"clusters"` use the standardized result tables.
 #' @export
 plot.clusters_results_1d <- function (
         x,
@@ -44,8 +45,16 @@ plot.clusters_results_1d <- function (
         clusters_colour = "black",
         lineend = "butt",
         theme = theme_neurogam(),
-        ...
+        ...,
+        type = NULL
         ) {
+    if (!is.null(type)) {
+        return(neurogam_plot_typed_1d(
+            x, type = type, null_value = null_value,
+            clusters_colour = clusters_colour, theme = theme, ...
+        ))
+    }
+
 
     if (!ggplot2::is.theme(theme) ) {
 
@@ -266,6 +275,7 @@ plot.clusters_results_1d <- function (
 #' plot(res2d)
 #' }
 #'
+#' @param type Optional plot type. `NULL` (default) preserves the historical plot; `"predictions"` and `"clusters"` use the standardized result tables.
 #' @export
 plot.clusters_results_2d <- function (
         x,
@@ -274,8 +284,16 @@ plot.clusters_results_2d <- function (
         midpoint = 0.5,
         axes_labels = c("Training time (s)", "Testing time (s)"),
         cluster_outline_colour = "black",
-        ...
+        ...,
+        type = NULL
         ) {
+    if (!is.null(type)) {
+        return(neurogam_plot_typed_2d(
+            x, type = type, theme = theme, palette = palette,
+            midpoint = midpoint, axes_labels = axes_labels, ...
+        ))
+    }
+
 
     if (!palette %in% scico::scico_palette_names() ) {
 
@@ -629,19 +647,6 @@ ppc <- function (
         }
 
     } else { # or PPC per participant
-
-        # ppc_plot <- brms::pp_check(
-        #     object = fit,
-        #     ndraws = ndraws,
-        #     type = "ribbon_grouped",
-        #     x = "time",
-        #     group = "participant",
-        #     prob = 0.5,
-        #     prob_outer = 0.5,
-        #     alpha = 0.5
-        #     ) +
-        #     theme +
-        #     ggplot2::labs(x = xlab)
 
         # Use the original model data, preserving its row order
         plot_data <- data.frame(data_fit)

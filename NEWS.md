@@ -3,6 +3,7 @@
 ## New features
 
 * Implementing spatio-temporal BGAMMs for modelling EEG data in both space and time. (#8)
+* Unified API for processing results.
 * Re-structuring the `find_clusters()` approach (now work with any number of dimensions and accepts input adjacency matrices).
 * Adding a `baseline_window` argument to `testing_through_time()` used to compute the ROPE (i.e., maximum absolute value of the `credible_interval`% credible interval during this baseline period).
 
