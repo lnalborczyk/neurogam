@@ -114,6 +114,18 @@
 #' @param baseline_window Numeric; bounds of the baseline window (in the same
 #'   units of \code{time_id}), used to compute the baseline ROPE. Typically, this
 #'   is a 100-200 ms window preceding stimulus onset.
+#' @param space_id Optional length-two spatial coordinate names. Non-NULL
+#'   selects the spatiotemporal Gaussian multilevel workflow.
+#' @param sensor_id Sensor column name, required when `space_id` is supplied.
+#' @param tensor_d Tensor marginal dimensions; currently `c(2, 1)`.
+#' @param sensor_adjacency Optional named sensor adjacency matrix or edge list.
+#' @param adjacency_k,adjacency_distance_factor Parameters for automatic
+#'   sensor adjacency construction when no graph is supplied.
+#' @param rope Fixed symmetric ROPE half-width for spatiotemporal inference.
+#' @param contrast_levels Two condition labels specifying the A - B contrast.
+#' @param chunk_size Number of sensor/time rows per posterior prediction chunk.
+#' @param re_formula Group-level effects in posterior predictions; by default
+#'   `NA` excludes subject-specific random effects.
 #' @param ... Additional arguments passed to \code{\link[brms]{brm}},
 #'   and from there to the selected Stan backend. This can be used, for example,
 #'   to set \code{refresh}, \code{seed}, \code{init}, or other backend-specific
@@ -177,18 +189,6 @@
 #'
 #' @seealso \code{\link[brms]{brm}}
 #'
-#' @param space_id Optional length-two spatial coordinate names. Non-NULL
-#'   selects the spatiotemporal Gaussian multilevel workflow.
-#' @param sensor_id Sensor column name, required when `space_id` is supplied.
-#' @param tensor_d Tensor marginal dimensions; currently `c(2, 1)`.
-#' @param sensor_adjacency Optional named sensor adjacency matrix or edge list.
-#' @param adjacency_k,adjacency_distance_factor Parameters for automatic
-#'   sensor adjacency construction when no graph is supplied.
-#' @param rope Fixed symmetric ROPE half-width for spatiotemporal inference.
-#' @param contrast_levels Two condition labels specifying the A - B contrast.
-#' @param chunk_size Number of sensor/time rows per posterior prediction chunk.
-#' @param re_formula Group-level effects in posterior predictions; by default
-#'   `NA` excludes subject-specific random effects.
 #' @export
 testing_through_time <- function(
         data,
@@ -536,27 +536,6 @@ testing_through_time <- function(
 
     }
 
-    # Allow reusing an already fitted model
-    use_previous_model <- !is.null(previous_model)
-
-    if (use_previous_model) {
-
-        if (!inherits(previous_model, "brmsfit") ) {
-
-            stop ("`previous_model` must be a valid `brmsfit` object.", call. = FALSE)
-
-        }
-
-        brms_gam <- previous_model
-
-        if (is.null(n_post_samples) ) {
-
-            n_post_samples <- brms::ndraws(brms_gam)
-
-        }
-
-    }
-
     # Check predictor type
     predictor_type <- "none"
 
@@ -666,39 +645,25 @@ testing_through_time <- function(
         # Fit the model (unless previous_model is provided) #
         #####################################################
 
-        if (!use_previous_model) {
-
-            brm_args <- c(
-                list(
-                    formula = formula_obj,
-                    data = summary_data,
-                    family = family,
-                    warmup = warmup,
-                    iter = iter,
-                    chains = chains,
-                    cores = cores,
-                    threads = threads,
-                    backend = backend,
-                    control = stan_control,
-                    file = file,
-                    stan_model_args = stan_model_args_backend
-                    ),
-                brm_dots
-                )
-
-            brms_gam <- do.call(brms::brm, brm_args)
-
-            if (is.null(n_post_samples) ) {
-
-                n_post_samples <- brms::ndraws(brms_gam)
-
-            }
-
-        } else {
-
-            message ("Using `previous_model`: skipping model fitting.")
-
-        }
+        fit_result <- fit_or_reuse_bgam(
+            formula = formula_obj,
+            data = summary_data,
+            family = family,
+            previous_model = previous_model,
+            n_post_samples = n_post_samples,
+            warmup = warmup,
+            iter = iter,
+            chains = chains,
+            cores = cores,
+            threads = threads,
+            backend = backend,
+            stan_control = stan_control,
+            file = file,
+            stan_model_args = stan_model_args_backend,
+            extra_args = brm_dots
+        )
+        brms_gam <- fit_result$model
+        n_post_samples <- fit_result$n_post_samples
 
         ###########################################
         # Build prediction grid from summary_data #
@@ -789,39 +754,25 @@ testing_through_time <- function(
         # Fit the model (unless previous_model is provided) #
         #####################################################
 
-        if (!use_previous_model) {
-
-            brm_args <- c(
-                list(
-                    formula = formula_obj,
-                    data = summary_data,
-                    family = family,
-                    warmup = warmup,
-                    iter = iter,
-                    chains = chains,
-                    cores = cores,
-                    threads = threads,
-                    backend = backend,
-                    control = stan_control,
-                    file = file,
-                    stan_model_args = stan_model_args_backend
-                    ),
-                brm_dots
-                )
-
-            brms_gam <- do.call(brms::brm, brm_args)
-
-            if (is.null(n_post_samples) ) {
-
-                n_post_samples <- brms::ndraws(brms_gam)
-
-            }
-
-        } else {
-
-            message ("Using `previous_model`: skipping model fitting.")
-
-        }
+        fit_result <- fit_or_reuse_bgam(
+            formula = formula_obj,
+            data = summary_data,
+            family = family,
+            previous_model = previous_model,
+            n_post_samples = n_post_samples,
+            warmup = warmup,
+            iter = iter,
+            chains = chains,
+            cores = cores,
+            threads = threads,
+            backend = backend,
+            stan_control = stan_control,
+            file = file,
+            stan_model_args = stan_model_args_backend,
+            extra_args = brm_dots
+        )
+        brms_gam <- fit_result$model
+        n_post_samples <- fit_result$n_post_samples
 
         # Compute the posterior odds over time
         if (is.na(predictor_id) ) {

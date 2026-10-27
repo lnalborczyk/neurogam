@@ -283,59 +283,76 @@ analyse_bgam_spatiotemporal <- function(
 
     }
 
-    # Use identical draw_ids and observation ordering for A and B.
-    # Processing locations in chunks avoids allocating all posterior draws
-    # across the entire sensor-time grid simultaneously.
-    n <- nrow(newdata)
-    chunks <- split(seq_len(n), ceiling(seq_len(n) / chunk_size) )
-    summaries <- vector("list", length(chunks) )
+    # # Use identical draw_ids and observation ordering for A and B.
+    # # Processing locations in chunks avoids allocating all posterior draws
+    # # across the entire sensor-time grid simultaneously.
+    # n <- nrow(newdata)
+    # chunks <- split(seq_len(n), ceiling(seq_len(n) / chunk_size) )
+    # summaries <- vector("list", length(chunks) )
+    #
+    # for (i in seq_along(chunks) ) {
+    #
+    #     rows <- chunks[[i]]
+    #     draws_a <- brms::posterior_epred(
+    #         model,
+    #         newdata = newdata[rows, , drop = FALSE],
+    #         re_formula = re_formula,
+    #         draw_ids = draw_ids
+    #         )
+    #
+    #     if (!is.matrix(draws_a) || ncol(draws_a) != length(rows) ) {
+    #
+    #         stop ("Expected univariate posterior predictions as draws x locations.")
+    #
+    #     }
+    #
+    #     if (!is.null(newdata_b) ) {
+    #
+    #         draws_b <- brms::posterior_epred(
+    #             model,
+    #             newdata = newdata_b[rows, , drop = FALSE],
+    #             re_formula = re_formula,
+    #             draw_ids = draw_ids
+    #             )
+    #
+    #         if (!identical(dim(draws_a), dim(draws_b) ) ) {
+    #
+    #             stop ("The two conditions produced incompatible posterior dimensions.")
+    #
+    #         }
+    #
+    #         draws_a <- draws_a - draws_b
+    #         rm(draws_b)
+    #
+    #     }
+    #
+    #     summaries[[i]] <- summarise_spatiotemporal_draws(
+    #         draws_a,
+    #         null_value = null_value,
+    #         rope = rope,
+    #         credible_interval = credible_interval
+    #         )
+    #
+    #     rm(draws_a)
+    #
+    # }
 
-    for (i in seq_along(chunks) ) {
-
-        rows <- chunks[[i]]
-        draws_a <- brms::posterior_epred(
-            model,
-            newdata = newdata[rows, , drop = FALSE],
-            re_formula = re_formula,
-            draw_ids = draw_ids
+    summaries <- chunked_epred(
+        model = model,
+        newdata = newdata,
+        newdata_b = newdata_b,
+        draw_ids = draw_ids,
+        chunk_size = chunk_size,
+        re_formula = re_formula,
+        summarise_fun = function(draws) {
+            summarise_spatiotemporal_draws(
+                draws,
+                null_value = null_value,
+                rope = rope,
+                credible_interval = credible_interval
             )
-
-        if (!is.matrix(draws_a) || ncol(draws_a) != length(rows) ) {
-
-            stop ("Expected univariate posterior predictions as draws x locations.")
-
         }
-
-        if (!is.null(newdata_b) ) {
-
-            draws_b <- brms::posterior_epred(
-                model,
-                newdata = newdata_b[rows, , drop = FALSE],
-                re_formula = re_formula,
-                draw_ids = draw_ids
-                )
-
-            if (!identical(dim(draws_a), dim(draws_b) ) ) {
-
-                stop ("The two conditions produced incompatible posterior dimensions.")
-
-            }
-
-            draws_a <- draws_a - draws_b
-            rm(draws_b)
-
-        }
-
-        summaries[[i]] <- summarise_spatiotemporal_draws(
-            draws_a,
-            null_value = null_value,
-            rope = rope,
-            credible_interval = credible_interval
-            )
-
-        rm(draws_a)
-
-    }
+    )
 
     predictions <- cbind(
         newdata[position_columns],

@@ -171,62 +171,53 @@ testing_through_time_spatiotemporal <- function (
         use_se = use_se
     )
 
-    if (is.null(previous_model)) {
-        extra <- list(...)
-        reserved <- c(
-            "formula", "data", "family", "warmup", "iter", "chains",
-            "cores", "threads", "backend", "control", "file",
-            "stan_model_args"
-        )
-        if (any(names(extra) %in% reserved)) {
-            stop("Do not pass controlled model-fitting arguments through `...`.",
-                 call. = FALSE)
-        }
-        if (!is.numeric(warmup) || !is.numeric(iter) || warmup >= iter) {
-            stop("`iter` must be larger than `warmup`.", call. = FALSE)
-        }
-        args <- c(
-            list(
-                formula = formula_obj,
-                data = summarized,
-                family = family,
-                warmup = warmup,
-                iter = iter,
-                chains = chains,
-                cores = cores,
-                threads = threads,
-                backend = backend,
-                control = stan_control,
-                file = file,
-                stan_model_args = if (identical(backend, "cmdstanr")) {
-                    list(stanc_options = list("O1"))
-                } else {
-                    list()
-                }
-            ),
-            extra
-        )
-        message("Fitting spatial-temporal BGAMM with formula: ",
-                paste(deparse(formula_obj$formula), collapse = " "))
-        fitted <- do.call(brms::brm, args)
-    } else {
+    if (!is.null(previous_model)) {
         if (!inherits(previous_model, "brmsfit")) {
             stop("`previous_model` must be a fitted `brmsfit` object.",
                  call. = FALSE)
         }
         needed <- c("outcome_mean", "participant", "time", "xproj", "yproj")
         if (!all(needed %in% names(previous_model$data))) {
-            stop("`previous_model` is not compatible with the Stage 3 summarized-data interface. Use `analyse_bgam_spatiotemporal()` for externally fitted models.",
-                 call. = FALSE)
+            stop(
+                "`previous_model` is not compatible with the Stage 3 summarized-data interface. Use `analyse_bgam_spatiotemporal()` for externally fitted models.",
+                call. = FALSE
+            )
         }
         if (identical(predictor_type, "categorical") !=
             ("predictor" %in% names(previous_model$data))) {
             stop("`previous_model` has incompatible predictor structure.",
                  call. = FALSE)
         }
-        fitted <- previous_model
-        message("Using `previous_model`: skipping spatial-temporal model fitting.")
     }
+
+    if (is.null(previous_model)) {
+        message(
+            "Fitting spatial-temporal BGAMM with formula: ",
+            paste(deparse(formula_obj$formula), collapse = " ")
+        )
+    }
+
+    fit_result <- fit_or_reuse_bgam(
+        formula = formula_obj,
+        data = summarized,
+        family = family,
+        previous_model = previous_model,
+        n_post_samples = n_post_samples,
+        warmup = warmup,
+        iter = iter,
+        chains = chains,
+        cores = cores,
+        threads = threads,
+        backend = backend,
+        stan_control = stan_control,
+        file = file,
+        extra_args = list(...),
+        resolve_draws = FALSE,
+        reuse_message = paste0(
+            "Using `previous_model`: skipping spatial-temporal model fitting."
+        )
+    )
+    fitted <- fit_result$model
 
     grids <- make_spatiotemporal_prediction_grid(
         summarized,
@@ -241,18 +232,24 @@ testing_through_time_spatiotemporal <- function (
         grids$b$outcome_sem <- 0
     }
 
-    draws_available <- brms::ndraws(fitted)
-    if (is.null(n_post_samples)) {
-        draw_ids <- NULL
-    } else {
-        if (n_post_samples > draws_available) {
-            stop("Requested more posterior draws than the model contains.",
-                 call. = FALSE)
-        }
-        draw_ids <- as.integer(round(seq(
-            1, draws_available, length.out = n_post_samples
-        )))
-    }
+    # draws_available <- brms::ndraws(fitted)
+    # if (is.null(n_post_samples)) {
+    #     draw_ids <- NULL
+    # } else {
+    #     if (n_post_samples > draws_available) {
+    #         stop("Requested more posterior draws than the model contains.",
+    #              call. = FALSE)
+    #     }
+    #     draw_ids <- as.integer(round(seq(
+    #         1, draws_available, length.out = n_post_samples
+    #     )))
+    # }
+
+    draw_ids <- select_prediction_draws(
+        n_available = brms::ndraws(fitted),
+        n_requested = n_post_samples
+        )
+
     analysed <- analyse_bgam_spatiotemporal(
         model = fitted,
         newdata = grids$a,
