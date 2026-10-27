@@ -1001,61 +1001,80 @@ testing_through_time <- function(
 
     }
 
-    # Use a single connected-components engine for 1D and 2D data.
-    coordinates <- if (is_2d_time) c("time1", "time2") else "time"
-    cluster_group <- if (participant_clusters) "participant" else NULL
-    cluster_columns <- c(coordinates, cluster_group)
+    # # Use a single connected-components engine for 1D and 2D data.
+    # coordinates <- if (is_2d_time) c("time1", "time2") else "time"
+    # cluster_group <- if (participant_clusters) "participant" else NULL
+    # cluster_columns <- c(coordinates, cluster_group)
+    #
+    # if (!all(c(cluster_columns, "prob_ratio") %in% names(prob_y_above) ) ) {
+    #
+    #     stop ("Posterior summaries lack the required clustering columns.", call. = FALSE)
+    #
+    # }
+    #
+    # cluster_data <- as.data.frame(prob_y_above[, c(cluster_columns, "prob_ratio")])
+    # names(cluster_data)[names(cluster_data) == "prob_ratio"] <- "value"
+    # cluster_data <- cluster_data[stats::complete.cases(cluster_data), , drop = FALSE]
+    #
+    # if (!nrow(cluster_data) ) {
+    #
+    #     stop ("No complete posterior-odds observations available for clustering.", call. = FALSE)
+    #
+    # }
+    #
+    # cluster_nd <- find_clusters_nd(
+    #     data = cluster_data,
+    #     coordinates = coordinates,
+    #     value = "value",
+    #     group = cluster_group,
+    #     threshold = threshold,
+    #     threshold_type = threshold_type
+    #     )
+    #
+    # clusters <- cluster_nd_to_legacy(
+    #     result = cluster_nd,
+    #     time_id = coordinates,
+    #     group = cluster_group
+    #     )
+    #
+    # clusters_results <- list(
+    #     clusters = clusters,
+    #     cluster_summary = cluster_nd$clusters,
+    #     cluster_membership = cluster_nd$membership,
+    #     predictions = prob_y_above,
+    #     model = brms_gam,
+    #     summary_data = summary_data,
+    #     multilevel = multilevel
+    #     )
+    #
+    # class(clusters_results) <- if (is_2d_time) {
+    #
+    #     "clusters_results_2d"
+    #
+    # } else {
+    #
+    #     "clusters_results_1d"
+    #
+    # }
+    #
+    # return (clusters_results)
 
-    if (!all(c(cluster_columns, "prob_ratio") %in% names(prob_y_above) ) ) {
-
-        stop ("Posterior summaries lack the required clustering columns.", call. = FALSE)
-
-    }
-
-    cluster_data <- as.data.frame(prob_y_above[, c(cluster_columns, "prob_ratio")])
-    names(cluster_data)[names(cluster_data) == "prob_ratio"] <- "value"
-    cluster_data <- cluster_data[stats::complete.cases(cluster_data), , drop = FALSE]
-
-    if (!nrow(cluster_data) ) {
-
-        stop ("No complete posterior-odds observations available for clustering.", call. = FALSE)
-
-    }
-
-    cluster_nd <- find_clusters_nd(
-        data = cluster_data,
-        coordinates = coordinates,
-        value = "value",
-        group = cluster_group,
+    clustering <- assemble_temporal_clusters(
+        predictions = prob_y_above,
+        is_2d_time = is_2d_time,
+        participant_clusters = participant_clusters,
         threshold = threshold,
         threshold_type = threshold_type
         )
 
-    clusters <- cluster_nd_to_legacy(
-        result = cluster_nd,
-        time_id = coordinates,
-        group = cluster_group
-        )
-
-    clusters_results <- list(
-        clusters = clusters,
-        cluster_summary = cluster_nd$clusters,
-        cluster_membership = cluster_nd$membership,
+    clusters_results <- assemble_temporal_results(
+        clustering = clustering,
         predictions = prob_y_above,
         model = brms_gam,
         summary_data = summary_data,
-        multilevel = multilevel
+        multilevel = multilevel,
+        is_2d_time = is_2d_time
         )
-
-    class(clusters_results) <- if (is_2d_time) {
-
-        "clusters_results_2d"
-
-    } else {
-
-        "clusters_results_1d"
-
-    }
 
     return (clusters_results)
 
