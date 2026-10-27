@@ -206,6 +206,12 @@ testing_through_time <- function(
         n_post_samples = NULL,
         threshold = 10,
         threshold_type = c("both", "above", "below"),
+        odds_mode = c(
+            "directional_rope",
+            "legacy_one_sided",
+            "legacy_directional",
+            "spatiotemporal"
+            ),
         chance_level = NULL,
         credible_interval = 0.95,
         baseline_window = c(0, 0.1),
@@ -265,6 +271,7 @@ testing_through_time <- function(
                 n_post_samples = n_post_samples,
                 threshold = threshold,
                 threshold_type = match.arg(threshold_type),
+                odds_mode = odds_mode,
                 chance_level = if (is.null(chance_level)) 0 else chance_level,
                 credible_interval = credible_interval,
                 rope = rope,
@@ -293,6 +300,9 @@ testing_through_time <- function(
 
     # Multilevel should be one of above
     multilevel <- match.arg(multilevel)
+
+    # odds_mode should be one of above
+    odds_mode <- match.arg(odds_mode)
 
     # Backend should be one of above
     backend <- match.arg(backend, c("rstan", "cmdstanr") )
@@ -864,7 +874,8 @@ testing_through_time <- function(
                 null_value = chance_level,
                 n_post_samples = n_post_samples,
                 credible_interval = credible_interval,
-                baseline_window = baseline_window
+                baseline_window = baseline_window,
+                odds_mode = odds_mode
                 )
 
         } else {
@@ -876,7 +887,8 @@ testing_through_time <- function(
                 n_post_samples = n_post_samples,
                 credible_interval = credible_interval,
                 predictor_type = predictor_type,
-                baseline_window = baseline_window
+                baseline_window = baseline_window,
+                odds_mode = odds_mode
                 )
 
         }
@@ -924,7 +936,8 @@ testing_through_time <- function(
         is_2d_time = is_2d_time,
         participant_clusters = participant_clusters,
         threshold = threshold,
-        threshold_type = threshold_type
+        threshold_type = threshold_type,
+        odds_mode = odds_mode
         )
 
     clusters_results <- assemble_temporal_results(

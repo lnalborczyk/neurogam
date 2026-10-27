@@ -62,6 +62,12 @@ testing_through_time_spatiotemporal <- function (
     n_post_samples = NULL,
     threshold = 10,
     threshold_type = "both",
+    odds_mode = c(
+        "directional_rope",
+        "legacy_one_sided",
+        "legacy_directional",
+        "spatiotemporal"
+        ),
     chance_level = 0,
     credible_interval = 0.95,
     rope = 0,
@@ -264,11 +270,12 @@ testing_through_time_spatiotemporal <- function (
         rope = rope,
         threshold = threshold,
         threshold_type = threshold_type,
+        odds_mode = odds_mode,
         credible_interval = credible_interval,
         draw_ids = draw_ids,
         chunk_size = chunk_size,
         re_formula = re_formula
-    )
+        )
     # Restore the external sensor and spatial names expected by the plotting
     # functions. Other standard output columns are unchanged.
     rename_output <- function(tab) {

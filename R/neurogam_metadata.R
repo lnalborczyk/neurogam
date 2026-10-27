@@ -87,7 +87,13 @@ make_neurogam_metadata <- function(
     if (!is.null(odds_mode)) {
         odds_mode <- match.arg(
             odds_mode,
-            c("legacy_one_sided", "legacy_directional", "spatiotemporal")
+            #c("legacy_one_sided", "legacy_directional", "spatiotemporal")
+            c(
+                "directional_rope",
+                "legacy_one_sided",
+                "legacy_directional",
+                "spatiotemporal"
+            )
         )
     }
 

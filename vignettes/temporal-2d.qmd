@@ -123,7 +123,8 @@ results <- testing_through_time(
     # using with-chain parallelisation (needs 2x4 parallel cores)
     threads = brms::threading(threads = 4),
     # increasing max_treedepth
-    stan_control = list(max_treedepth = 15)
+    stan_control = list(max_treedepth = 15),
+    file = "../cache/timegen_model.rds"
     )
 ```
 

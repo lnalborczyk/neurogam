@@ -229,7 +229,8 @@ analyse_bgam_spatiotemporal <- function(
                 draws,
                 null_value = null_value,
                 rope = rope,
-                credible_interval = credible_interval
+                credible_interval = credible_interval,
+                odds_mode = odds_mode
             )
         }
     )
@@ -241,17 +242,34 @@ analyse_bgam_spatiotemporal <- function(
 
     rownames(predictions) <- NULL
 
-    # Clustering uses either the supplied or automatically inferred topology.
-    cluster_data <- predictions[c(sensor_id, time_id, "prob_ratio")]
-    names(cluster_data)[3L] <- "value"
+    # # Clustering uses either the supplied or automatically inferred topology.
+    # cluster_data <- predictions[c(sensor_id, time_id, "prob_ratio")]
+    # names(cluster_data)[3L] <- "value"
+    #
+    # if (identical(odds_mode, "directional_rope")) {
+    #
+    #     cluster_data$value <- directional_rope_cluster_score(
+    #         odds_above = predictions$odds_above,
+    #         odds_below = predictions$odds_below,
+    #         threshold = threshold
+    #     )
+    #
+    # }
+    cluster_data <- predictions[c(sensor_id, time_id)]
 
-    if (identical(odds_mode, "directional_rope")) {
+    cluster_data$value <- if (
+        identical(odds_mode, "directional_rope")
+    ) {
 
-        cluster_data$value <- directional_rope_cluster_score(
+        directional_rope_cluster_score(
             odds_above = predictions$odds_above,
             odds_below = predictions$odds_below,
             threshold = threshold
         )
+
+    } else {
+
+        predictions$prob_ratio
 
     }
 
