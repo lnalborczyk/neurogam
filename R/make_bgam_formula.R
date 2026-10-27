@@ -75,8 +75,6 @@
 #'   )
 #' }
 #'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
-#'
 #' @param space_id Optional vector of two spatial coordinate names. If given,
 #'   build a 3D spatial-temporal `t2()` smooth instead of the 1D/2D smooth.
 #' @param tensor_d Tensor marginal dimensions (currently `c(2, 1)` for
@@ -99,27 +97,30 @@ make_bgam_formula <- function(
         space_id = NULL,
         tensor_d = c(2L, 1L)
         ) {
+
     # STAGE 3 DISPATCH: leave all existing 1D and 2D paths unchanged.
-    if (!is.null(space_id)) {
-        return(make_bgam_formula_spatiotemporal(
-            family = family,
-            multilevel = match.arg(multilevel),
-            predictor_type = match.arg(predictor_type),
-            within_between = within_between[1L],
-            time_id = time_id,
-            space_id = space_id,
-            tensor_d = tensor_d,
-            kvalue = kvalue,
-            bs = bs,
-            t2_full = t2_full,
-            varying_smooth = varying_smooth,
-            include_ar_term = include_ar_term,
-            include_by_smooth = include_by_smooth,
-            use_se = use_se
-        ))
+    if (!is.null(space_id) ) {
+
+        return (
+            make_bgam_formula_spatiotemporal(
+                family = family,
+                multilevel = match.arg(multilevel),
+                predictor_type = match.arg(predictor_type),
+                within_between = within_between[1L],
+                time_id = time_id,
+                space_id = space_id,
+                tensor_d = tensor_d,
+                kvalue = kvalue,
+                bs = bs,
+                t2_full = t2_full,
+                varying_smooth = varying_smooth,
+                include_ar_term = include_ar_term,
+                include_by_smooth = include_by_smooth,
+                use_se = use_se
+                )
+            )
+
     }
-
-
 
     multilevel <- match.arg(multilevel)
     predictor_type <- match.arg(predictor_type)
@@ -187,213 +188,40 @@ make_bgam_formula <- function(
 
     }
 
-    # LHS
-    formula_lhs <- if (identical(fam_name, "binomial") ) {
+    # Compose the temporal model from independently testable components.
+    # All formulas and term ordering retain the pre-refactor conventions.
+    formula_lhs <- bgam_formula_response_lhs(
+        family_name = fam_name,
+        multilevel = multilevel,
+        use_se = use_se,
+        include_ar_term = include_ar_term
+    )
 
-        # expects columns: success, trials
-        "success | trials(trials)"
+    smooth_terms <- bgam_formula_temporal_smooth_terms(
+        is_2d_time = is_2d_time,
+        predictor_type = predictor_type,
+        within_between = within_between,
+        kvalue = kvalue,
+        bs = bs,
+        t2_full = t2_full,
+        include_by_smooth = include_by_smooth,
+        include_by_varying_smooth = include_by_varying_smooth
+    )
 
-    } else {
+    formula_rhs <- bgam_formula_temporal_rhs(
+        multilevel = multilevel,
+        predictor_type = predictor_type,
+        within_between = within_between,
+        varying_smooth = varying_smooth,
+        smooth = smooth_terms$smooth,
+        varying = smooth_terms$varying
+    )
 
-        if (multilevel == "group") {
-
-            # expects column outcome_mean
-            "outcome_mean"
-
-        } else {
-
-            if (isTRUE(include_ar_term) ) {
-
-                # expects columns: outcome_mean, outcome_sem
-                "outcome_mean | se(outcome_sem, sigma = TRUE)"
-
-            } else {
-
-                if (use_se) {
-
-                    # expects columns: outcome_mean, outcome_sem
-                    # "outcome_mean | se(outcome_sem)"
-                    # "outcome_mean | se(outcome_sem, sigma = FALSE)"
-                    "outcome_mean | se(outcome_sem, sigma = TRUE)"
-
-                } else {
-
-                    "outcome_mean"
-
-                }
-
-            }
-
-        }
-
+    formula_str <- paste0(formula_lhs, " ~ ", formula_rhs)
+    if (isTRUE(include_ar_term)) {
+        return(brms::bf(formula_str, autocor = autocor_term))
     }
 
-    # predictor_type == "categorical"
-    wb <- within_between[1]
-
-    # smooth terms (1D vs 2D)
-    if (!is_2d_time) {
-
-        # smooth terms
-        if (predictor_type == "none") {
-
-            smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
-            # varying_smooth_term <- glue::glue("s(participant, time, bs = 'fs', m = 1, k = {kvalue})")
-            # varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {kvalue})")
-            varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {floor(kvalue/2)})")
-
-        } else {
-
-            if (include_by_smooth) {
-
-                smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue}, by = predictor)")
-
-                if (wb == "within-subject" && include_by_varying_smooth) {
-
-                    varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {floor(kvalue/2)}, by = predictor)")
-
-                } else {
-
-                    varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {floor(kvalue/2)})")
-
-                }
-
-            } else {
-
-                smooth_term <- glue::glue("s(time, bs = '{bs}', k = {kvalue})")
-                varying_smooth_term <- glue::glue("s(time, participant, bs = 'fs', m = 1, k = {kvalue})")
-
-            }
-
-        }
-
-    } else {
-
-        # 2D temporal
-        # Use t2(time1, time2, ...) and mirror kvalue across both dimensions
-
-        if (predictor_type == "none") {
-
-            smooth_term <- glue::glue("t2(time1, time2, bs = '{bs}', k = c({kvalue}, {kvalue}), full = {t2_full})")
-            varying_smooth_term <- glue::glue("t2(time1, time2, participant, bs = 'fs', k = {floor(kvalue/2)})")
-
-        } else {
-
-            if (include_by_smooth) {
-
-                smooth_term <- glue::glue("t2(time1, time2, by = predictor, bs = '{bs}', k = c({kvalue}, {kvalue}), full = {t2_full})")
-
-                if (wb == "within-subject") {
-
-                    varying_smooth_term <- glue::glue("t2(time1, time2, participant, by = predictor, bs = 'fs', k = {floor(kvalue/2)})")
-
-                } else {
-
-                    varying_smooth_term <- glue::glue("t2(time1, time2, participant, bs = 'fs', k = {floor(kvalue/2)})")
-
-                }
-
-            } else {
-
-                smooth_term <- glue::glue("t2(time1, time2, bs = '{bs}', k = c({kvalue}, {kvalue}), full = {t2_full})")
-                varying_smooth_term <- glue::glue("t2(time1, time2, bs = '{bs}', k = c({floor(kvalue/2)}, {floor(kvalue/2)}), full = {t2_full})")
-
-            }
-
-        }
-
-    }
-
-    # group-level model (no varying effect)
-    if (multilevel == "group") {
-
-        rhs <- if (predictor_type == "none") {
-
-            glue::glue("1 + {smooth_term}")
-
-        } else {
-
-            glue::glue("1 + predictor + {smooth_term}")
-
-        }
-
-        formula_str <- glue::glue("{formula_lhs} ~ {rhs}")
-
-        if (include_ar_term) {
-
-            return (brms::bf(formula = as.character(formula_str), autocor = autocor_term) )
-
-        } else {
-
-            return (brms::bf(formula = as.character(formula_str) ) )
-
-        }
-
-    }
-
-    # summary-level model (varying effects)
-    if (predictor_type == "none") {
-
-        rhs_parts <- c(
-            "1",
-            "(1 | participant)",
-            as.character(smooth_term)
-            )
-
-        if (varying_smooth) {
-
-            rhs_parts <- c(rhs_parts, as.character(varying_smooth_term) )
-
-        }
-
-        formula_str <- paste0(formula_lhs, " ~ ", paste(rhs_parts, collapse = " + ") )
-
-        if (isTRUE(include_ar_term) ) {
-
-            return (brms::bf(formula_str, autocor = autocor_term) )
-
-        } else {
-
-            return (brms::bf(formula_str) )
-
-        }
-
-    }
-
-    rand_eff <- if (identical(wb, "within-subject") ) {
-
-        "(1 + predictor | participant)"
-
-    } else {
-
-        "(1 | participant)"
-
-    }
-
-    rhs_parts <- c(
-        "1",
-        "predictor",
-        rand_eff,
-        as.character(smooth_term)
-        )
-
-    if (isTRUE(varying_smooth) ) {
-
-        # remove the varying intercept and slope if there are varying smooths
-        rhs_parts <- c(rhs_parts[-3], as.character(varying_smooth_term) )
-
-    }
-
-    formula_str <- paste0(formula_lhs, " ~ ", paste(rhs_parts, collapse = " + ") )
-
-    if (isTRUE(include_ar_term) ) {
-
-        return (brms::bf(formula_str, autocor = autocor_term) )
-
-    } else {
-
-        return (brms::bf(formula_str) )
-
-    }
+    brms::bf(formula_str)
 
 }

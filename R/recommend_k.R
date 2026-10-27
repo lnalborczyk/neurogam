@@ -123,8 +123,6 @@
 #' k_res$plot
 #' }
 #'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
-#'
 #' @seealso
 #'   \code{\link{testing_through_time}},
 #'   \code{\link[brms]{brm}},

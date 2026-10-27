@@ -17,16 +17,19 @@
 #'   `spatiotemporal`.
 #' @param odds_cap Finite-sample cap for legacy odds. Defaults to the number
 #'   of posterior draws supplied; ignored for `spatiotemporal`.
+#'
 #' @return Data frame with one row per prediction location.
+#'
 #' @keywords internal
-summarise_posterior_matrix <- function(
+summarise_posterior_matrix <- function (
     draws,
     null_value = 0,
     rope = 0,
     credible_interval = 0.95,
     odds_mode = c("legacy_one_sided", "legacy_directional", "spatiotemporal"),
     odds_cap = NULL
-) {
+    ) {
+
     odds_mode <- match.arg(odds_mode)
 
     if (!is.matrix(draws) || !is.numeric(draws) ||
@@ -112,18 +115,21 @@ summarise_posterior_matrix <- function(
         numeric(2L)
     )
 
-    data.frame(
-        estimate = apply(draws, 2L, stats::median),
-        lower = interval[1L, ],
-        upper = interval[2L, ],
-        prob_above = prob_above,
-        prob_below = prob_below,
-        prob_inside = prob_inside,
-        odds_above = odds_above,
-        odds_below = odds_below,
-        prob_ratio = prob_ratio,
-        row.names = NULL
-    )
+    return (
+        data.frame(
+            estimate = apply(draws, 2L, stats::median),
+            lower = interval[1L, ],
+            upper = interval[2L, ],
+            prob_above = prob_above,
+            prob_below = prob_below,
+            prob_inside = prob_inside,
+            odds_above = odds_above,
+            odds_below = odds_below,
+            prob_ratio = prob_ratio,
+            row.names = NULL
+            )
+        )
+
 }
 
 #' Group long-format posterior draws and use the shared inference core
@@ -133,8 +139,9 @@ summarise_posterior_matrix <- function(
 #' @param value Column containing posterior draw values.
 #' @param ... Arguments passed to `summarise_posterior_matrix()`.
 #' @return A data frame in coordinate order with one row per location.
+#'
 #' @keywords internal
-summarise_posterior_long <- function(data, groups, value = ".epred", ...) {
+summarise_posterior_long <- function (data, groups, value = ".epred", ...) {
     if (!is.data.frame(data) || !length(groups) ||
         anyDuplicated(groups) ||
         !all(c(groups, value) %in% names(data))) {
@@ -163,8 +170,10 @@ summarise_posterior_long <- function(data, groups, value = ".epred", ...) {
     result <- dplyr::bind_cols(
         group_keys,
         dplyr::bind_rows(summaries)
-    )
-    as.data.frame(result)
+        )
+
+    return (as.data.frame(result) )
+
 }
 
 #' Create paired A/B posterior contrasts in long format
@@ -175,12 +184,13 @@ summarise_posterior_long <- function(data, groups, value = ".epred", ...) {
 #' @return A data frame with `epred_diff = level2 - level1` by draw/location.
 #'   Categorical factor levels determine order; character values are sorted;
 #'   numeric continuous levels are sorted numerically after rounding.
+#'
 #' @keywords internal
 pair_posterior_contrasts <- function(
     post_draws,
     coordinates,
     predictor_type = c("categorical", "continuous")
-) {
+    ) {
     predictor_type <- match.arg(predictor_type)
     required <- c(coordinates, "predictor", ".epred", ".draw")
 
@@ -242,5 +252,7 @@ pair_posterior_contrasts <- function(
     }
 
     paired$epred_diff <- paired[[conditions[2L]]] - paired[[conditions[1L]]]
-    as.data.frame(paired)
+
+    return (as.data.frame(paired) )
+
 }

@@ -120,6 +120,3 @@ make_bgam_formula(
 }
 
 }
-\author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
-}

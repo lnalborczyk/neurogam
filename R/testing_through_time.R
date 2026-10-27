@@ -219,51 +219,20 @@ testing_through_time <- function(
         ) {
 
     # Spatiotemporal analyses use the validated Stage 2 engine
-    if (!is.null(space_id) ) {
+    if (identical(classify_bgam_analysis(space_id), "spatiotemporal")) {
 
-        if (is.null(sensor_id) || length(sensor_id) != 1L ||
-            !is.character(sensor_id) || is.na(sensor_id) ) {
-
-            stop ("Provide `sensor_id` when using `space_id`.", call. = FALSE)
-
-        }
-
-        if (!identical(baseline_window, c(0, 0.1) ) &&
-            !is.null(baseline_window) ) {
-
-            stop (
-                "Baseline-derived ROPEs are not implemented for 3D models; use `rope` instead.",
-                call. = FALSE
-                )
-
-        }
-
-        if (isTRUE(varying_smooth) ) {
-
-            if (!missing(varying_smooth) ) {
-
-                stop (
-                    "Participant-specific 3D smooths are not implemented; set varying_smooth = FALSE.",
-                    call. = FALSE
-                    )
-
-            }
-
-            message ("Spatiotemporal model: using participant-level intercepts without 3D varying smooths.")
-
-        }
-
-        if (missing(kvalue) ) {
-
-            kvalue <- c(15L, 10L)
-
-        }
-
-        if (missing(bs) ) {
-
-            bs <- c("ps", "ps")
-
-        }
+        st_options <- normalize_spatiotemporal_dispatch(
+            sensor_id = sensor_id,
+            baseline_window = baseline_window,
+            varying_smooth = varying_smooth,
+            varying_smooth_missing = missing(varying_smooth),
+            kvalue = kvalue,
+            kvalue_missing = missing(kvalue),
+            bs = bs,
+            bs_missing = missing(bs)
+        )
+        kvalue <- st_options$kvalue
+        bs <- st_options$bs
 
         return (
             testing_through_time_spatiotemporal(

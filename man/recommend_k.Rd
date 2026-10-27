@@ -157,6 +157,3 @@ k_res$plot
   \code{\link[brms]{add_criterion}}
   \code{\link[stats]{loess}}
 }
-\author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
-}
