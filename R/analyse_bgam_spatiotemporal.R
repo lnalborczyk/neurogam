@@ -14,87 +14,20 @@
 #' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
 #'
 #' @keywords internal
-summarise_spatiotemporal_draws <- function (
+summarise_spatiotemporal_draws <- function(
     draws,
     null_value = 0,
     rope = 0,
-    credible_interval = 0.95
-    ) {
-
-    if (!is.matrix(draws) || !is.numeric(draws) ||
-        nrow(draws) < 1L || ncol(draws) < 1L ||
-        any(!is.finite(draws) ) ) {
-
-        stop ("`draws` must be a finite numeric matrix with positive dimensions.")
-
-    }
-
-    if (!is.numeric(null_value) || length(null_value) != 1L ||
-        !is.finite(null_value) ) {
-
-        stop ("`null_value` must be a finite numeric scalar.")
-
-    }
-
-    if (!is.numeric(rope) || length(rope) != 1L ||
-        !is.finite(rope) || rope < 0) {
-
-        stop ("`rope` must be a nonnegative finite numeric scalar.")
-
-    }
-
-    if (!is.numeric(credible_interval) || length(credible_interval) != 1L ||
-        !is.finite(credible_interval) ||
-        credible_interval <= 0 || credible_interval >= 1) {
-
-        stop ("`credible_interval` must be strictly between zero and one.")
-
-    }
-
-    prob_above <- colMeans(draws > (null_value + rope) )
-    prob_below <- colMeans(draws < (null_value - rope) )
-    prob_inside <- 1 - prob_above - prob_below
-
-    odds_above <- prob_above / (1 - prob_above)
-    odds_below <- prob_below / (1 - prob_below)
-
-    # Preserve the existing neurogam convention:
-    # values > 1 favour positive effects; values < 1 favour negative effects.
-    # A posterior majority inside the ROPE maps to the neutral value 1.
-    prob_ratio <- rep(1, ncol(draws) )
-    positive <- prob_above > 0.5
-    negative <- !positive & (prob_below > 0.5)
-    prob_ratio[positive] <- odds_above[positive]
-    prob_ratio[negative] <- 1 / odds_below[negative]
-
-    alpha <- (1 - credible_interval) / 2
-
-    interval <- vapply(
-        seq_len(ncol(draws) ),
-        function (j) {
-            stats::quantile(
-                draws[, j],
-                probs = c(alpha, 1 - alpha),
-                names = FALSE
-                )
-            },
-        numeric(2)
-        )
-
-    return (
-        data.frame(
-            estimate = apply(draws, 2L, stats::median),
-            lower = interval[1L, ],
-            upper = interval[2L, ],
-            prob_above = prob_above,
-            prob_below = prob_below,
-            prob_inside = prob_inside,
-            odds_above = odds_above,
-            odds_below = odds_below,
-            prob_ratio = prob_ratio
-            )
-        )
-
+    credible_interval = 0.95,
+    odds_mode = "legacy_one_sided"
+) {
+    summarise_posterior_matrix(
+        draws = draws,
+        null_value = null_value,
+        rope = rope,
+        credible_interval = credible_interval,
+        odds_mode = odds_mode
+    )
 }
 
 #' Identify posterior-odds clusters in sensor-by-time BGAMM predictions

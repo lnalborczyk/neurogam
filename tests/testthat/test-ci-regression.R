@@ -169,7 +169,8 @@ test_that("sensor adjacency and spatiotemporal clustering are deterministic", {
     )
 })
 
-test_that("posterior summaries are stable for deterministic draws", {
+test_that("posterior summaries use one-sided odds by default", {
+
     draws <- cbind(
         positive = rep(3, 40),
         negative = rep(-2, 40),
@@ -187,8 +188,24 @@ test_that("posterior summaries are stable for deterministic draws", {
     expect_equal(x$prob_above, c(1, 0, 0))
     expect_equal(x$prob_below, c(0, 1, 0))
     expect_equal(x$prob_inside, c(0, 0, 1))
-    expect_true(is.infinite(x$prob_ratio[1]))
-    expect_equal(x$prob_ratio[2:3], c(0, 1))
+
+    # One-sided odds, capped using 40 posterior draws.
+    expect_equal(
+        x$prob_ratio,
+        c(40, 1 / 40, 1 / 40)
+    )
+
+    # Confirm the historical mode is still available.
+    historical <- summarise_spatiotemporal_draws(
+        draws,
+        null_value = 0,
+        rope = 0.1,
+        credible_interval = 0.95,
+        odds_mode = "spatiotemporal"
+    )
+
+    expect_true(is.infinite(historical$prob_ratio[1]))
+    expect_equal(historical$prob_ratio[2:3], c(0, 1))
 })
 
 

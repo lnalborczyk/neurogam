@@ -8,7 +8,8 @@ summarise_spatiotemporal_draws(
   draws,
   null_value = 0,
   rope = 0,
-  credible_interval = 0.95
+  credible_interval = 0.95,
+  odds_mode = "legacy_one_sided"
 )
 }
 \arguments{

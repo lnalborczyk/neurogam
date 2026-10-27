@@ -753,295 +753,100 @@ get_baseline_null <- function (post_diff, baseline_window, credible_interval) {
 }
 
 #' @keywords internal
-compute_one_sample_prob <- function (
-        post_draws, null_value, participant_clusters,
-        n_post_samples, credible_interval, baseline_window = NULL
-        ) {
-
-    # validate credible interval
-    if (!is.numeric(credible_interval) ||
-
-        length(credible_interval) != 1 ||
-        credible_interval <= 0 || credible_interval >= 1) {
-
-        stop ("`credible_interval` must be a number strictly between 0 and 1.")
-
+compute_one_sample_prob <- function(
+    post_draws,
+    null_value,
+    participant_clusters,
+    n_post_samples,
+    credible_interval,
+    baseline_window = NULL
+) {
+    if (!is.null(baseline_window)) {
+        if (!is.numeric(baseline_window) || length(baseline_window) != 2L ||
+            anyNA(baseline_window) || baseline_window[1L] >= baseline_window[2L]) {
+            stop("`baseline_window` must contain increasing numeric bounds.",
+                 call. = FALSE)
+        }
+        baseline <- post_draws[
+            post_draws$time >= baseline_window[1L] &
+                post_draws$time <= baseline_window[2L],
+            , drop = FALSE
+        ]
+        if (!nrow(baseline)) {
+            stop("No observations found within `baseline_window`.",
+                 call. = FALSE)
+        }
+        groups <- if (participant_clusters) c("time", "participant") else "time"
+        baseline_groups <- dplyr::group_by(
+            baseline,
+            dplyr::across(dplyr::all_of(groups))
+        )
+        alpha <- (1 - credible_interval) / 2
+        limits <- dplyr::summarise(
+            baseline_groups,
+            lower = stats::quantile(.data$.epred, probs = alpha, na.rm = TRUE),
+            upper = stats::quantile(.data$.epred, probs = 1 - alpha, na.rm = TRUE),
+            .groups = "drop"
+        )
+        null_value <- max(abs(c(limits$lower, limits$upper)), na.rm = TRUE)
     }
 
-    # validate baseline window
-    if (!is.null(baseline_window) ) {
-
-        if (!is.numeric(baseline_window) || length(baseline_window) != 2) {
-
-            stop ("`baseline_window` must be a numeric vector of length 2.")
-
-        }
-
-        if (baseline_window[1] >= baseline_window[2]) {
-
-            stop ("`baseline_window[1]` must be smaller than `baseline_window[2]`.")
-
-        }
-
-    }
-
-    alpha <- (1 - credible_interval) / 2
-    lower_q <- alpha
-    upper_q <- 1 - alpha
-
-    # compute baseline-derived null value
-    if (!is.null(baseline_window) ) {
-
-        baseline_data <- post_draws |>
-            dplyr::filter(
-                .data$time >= baseline_window[1],
-                .data$time <= baseline_window[2]
-                )
-
-        if (nrow(baseline_data) == 0) {
-
-            stop ("No observations found within `baseline_window`.")
-
-        }
-
-        if (participant_clusters) {
-
-            baseline_quantiles <- baseline_data |>
-                dplyr::group_by(.data$time, .data$participant) |>
-                dplyr::summarise(
-                    lower = stats::quantile(
-                        .data$.epred,
-                        probs = lower_q,
-                        na.rm = TRUE
-                        ),
-                    upper = stats::quantile(
-                        .data$.epred,
-                        probs = upper_q,
-                        na.rm = TRUE
-                        ),
-                    .groups = "drop"
-                    )
-
-        } else {
-
-            baseline_quantiles <- baseline_data |>
-                dplyr::group_by(.data$time) |>
-                dplyr::summarise(
-                    lower = stats::quantile(
-                        .data$.epred,
-                        probs = lower_q,
-                        na.rm = TRUE
-                        ),
-                    upper = stats::quantile(
-                        .data$.epred,
-                        probs = upper_q,
-                        na.rm = TRUE
-                        ),
-                    .groups = "drop"
-                    )
-
-        }
-
-        null_value <- max(
-            abs(c(
-                baseline_quantiles$lower,
-                baseline_quantiles$upper
-                )),
-            na.rm = TRUE
-            )
-
-    }
-
-    if (participant_clusters) {
-
-        prob_y_above <- post_draws |>
-            dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(prob_above = mean(.data$.epred > null_value) ) |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            dplyr::ungroup() |>
-            data.frame()
-
-        post_prob_slope <- post_draws |>
-            dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
-                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
-                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE)
-                ) |>
-            dplyr::ungroup()
-
-        results <- dplyr::left_join(
-            prob_y_above, post_prob_slope, by = c("time", "participant")
-            )
-
-    } else {
-
-        prob_y_above <- post_draws |>
-            dplyr::group_by(.data$time) |>
-            dplyr::summarise(
-                prob_above = mean(.data$.epred > null_value)
-                ) |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-            dplyr::ungroup() |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
-
-        post_prob_slope <- post_draws |>
-            dplyr::group_by(.data$time) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
-                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
-                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE)
-                ) |>
-            dplyr::ungroup()
-
-        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
-
-    }
-
-    return (results)
-
+    groups <- if (participant_clusters) c("time", "participant") else "time"
+    out <- summarise_posterior_long(
+        data = post_draws,
+        groups = groups,
+        value = ".epred",
+        null_value = null_value,
+        credible_interval = credible_interval,
+        odds_mode = "legacy_one_sided",
+        odds_cap = n_post_samples
+    )
+    out$post_prob <- out$estimate
+    out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
 }
 
 #' @keywords internal
-compute_two_sample_prob <- function (
-        post_draws, null_value, participant_clusters, n_post_samples,
-        credible_interval, predictor_type, baseline_window = NULL
-        ) {
+compute_two_sample_prob <- function(
+    post_draws,
+    null_value,
+    participant_clusters,
+    n_post_samples,
+    credible_interval,
+    predictor_type,
+    baseline_window = NULL,
+    odds_mode = "legacy_one_sided"
+) {
+    groups <- if (participant_clusters) c("time", "participant") else "time"
+    paired <- pair_posterior_contrasts(post_draws, groups, predictor_type)
 
-    # validate credible interval
-    if (!is.numeric(credible_interval) ||
-
-        length(credible_interval) != 1 ||
-        credible_interval <= 0 || credible_interval >= 1) {
-
-        stop ("`credible_interval` must be a number strictly between 0 and 1.")
-
+    if (!is.null(baseline_window)) {
+        # Preserve the existing 1D contrast definition: maximum absolute
+        # median difference across baseline time points, not CI endpoints.
+        null_value <- get_baseline_null(
+            post_diff = paired,
+            baseline_window = baseline_window,
+            credible_interval = credible_interval
+        )
+    }
+    if (!is.finite(null_value) || null_value < 0) {
+        stop("Contrast ROPE half-width must be finite and nonnegative.",
+             call. = FALSE)
     }
 
-    # convert continuous predictor to factor
-    if (predictor_type == "continuous") {
-
-        post_draws$predictor <- as.character(round(x = post_draws$predictor, digits = 3) )
-
-    }
-
-    alpha <- (1 - credible_interval) / 2
-    lower_q <- alpha
-    upper_q <- 1 - alpha
-
-    cond1 <- unique(post_draws$predictor)[1]
-    cond2 <- unique(post_draws$predictor)[2]
-
-    if (participant_clusters) {
-
-        post_diff <- post_draws |>
-            dplyr::select(
-                .data$time, .data$predictor, .data$participant,
-                .data$.epred, .data$.draw
-                ) |>
-            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
-
-        if (!is.null(baseline_window) ) {
-
-            null_value <- get_baseline_null(
-                post_diff = post_diff,
-                baseline_window = baseline_window,
-                credible_interval = credible_interval
-                )
-
-        }
-
-        # prob_y_above <- post_diff |>
-        #     dplyr::group_by(.data$time, .data$participant) |>
-        #     dplyr::summarise(
-        #         prob_above = mean(.data$epred_diff > null_value)
-        #         ) |>
-        #     dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above) ) |>
-        #     dplyr::ungroup() |>
-        #     dplyr::mutate(
-        #         prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-        #         prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-        #         ) |>
-        #     data.frame()
-
-        prob_y_above <- compute_directional_odds(
-            post_diff = post_diff,
-            null_value = null_value,
-            n_post_samples = n_post_samples,
-            groups = if (participant_clusters) {
-                c("time", "participant")
-                } else {
-                    "time"
-                    }
-            )
-
-        post_prob_slope <- post_diff |>
-            dplyr::group_by(.data$time, .data$participant) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
-                lower = stats::quantile(x = .data$epred_diff, probs = lower_q),
-                upper = stats::quantile(x = .data$epred_diff, probs = upper_q)
-                ) |>
-            dplyr::ungroup()
-
-        results <- dplyr::left_join(
-            prob_y_above, post_prob_slope,
-            by = c("time", "participant")
-            )
-
-    } else {
-
-        post_diff <- post_draws |>
-            dplyr::select(.data$time, .data$predictor, .data$.epred, .data$.draw) |>
-            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
-
-
-        if (!is.null(baseline_window) ) {
-
-            null_value <- get_baseline_null(
-                post_diff = post_diff,
-                baseline_window = baseline_window,
-                credible_interval = credible_interval
-                )
-
-        }
-
-        prob_y_above <- compute_directional_odds(
-            post_diff = post_diff,
-            null_value = null_value,
-            n_post_samples = n_post_samples,
-            groups = if (participant_clusters) {
-                c("time", "participant")
-                } else {
-                    "time"
-                    }
-            )
-
-        post_prob_slope <- post_diff |>
-            dplyr::group_by(.data$time) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5),
-                lower = stats::quantile(x = .data$epred_diff, probs = lower_q),
-                upper = stats::quantile(x = .data$epred_diff, probs = upper_q)
-                ) |>
-            dplyr::ungroup()
-
-        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = "time")
-
-    }
-
-    return (results)
-
+    out <- summarise_posterior_long(
+        data = paired,
+        groups = groups,
+        value = "epred_diff",
+        null_value = 0,
+        rope = null_value,
+        credible_interval = credible_interval,
+        odds_mode = odds_mode,
+        odds_cap = n_post_samples
+    )
+    out$post_prob <- out$estimate
+    out[c(groups, "prob_above", "prob_below", "prob_inside",
+          "odds_above", "odds_below", "prob_ratio",
+          "post_prob", "lower", "upper")]
 }
 
 #' @keywords internal
@@ -1064,208 +869,62 @@ add_required_dummy <- function (df, is_binom) {
 }
 
 #' @keywords internal
-compute_one_sample_prob_2d <- function (
-        post_draws, null_value, participant_clusters, n_post_samples,
-        credible_interval, baseline_window = NULL
-        ) {
-
-    time_id <- c("time1", "time2")
-    t1 <- time_id[1]
-    t2 <- time_id[2]
-
-    # validate time_id
-    if (!all(time_id %in% colnames(post_draws) ) ) {
-
-        stop ("`time_id` must be a character vector of length 2.", call. = FALSE)
-
-    }
-
-    # validate credible interval
-    if (!is.numeric(credible_interval) ||
-
-        length(credible_interval) != 1 ||
-        credible_interval <= 0 || credible_interval >= 1) {
-
-        stop ("`credible_interval` must be a number strictly between 0 and 1.")
-
-    }
-
-    alpha <- (1 - credible_interval) / 2
-    lower_q <- alpha
-    upper_q <- 1 - alpha
-
+compute_one_sample_prob_2d <- function(
+    post_draws,
+    null_value,
+    participant_clusters,
+    n_post_samples,
+    credible_interval,
+    baseline_window = NULL
+) {
+    groups <- c("time1", "time2")
     if (participant_clusters) {
-
-        prob_y_above <- post_draws |>
-            dplyr::group_by(.data[[t1]], .data[[t2]], .data$participant) |>
-            dplyr::summarise(prob_above = mean(.data$.epred > null_value), .groups = "drop") |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above)) |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
-
-        post_prob_slope <- post_draws |>
-            dplyr::group_by(.data[[t1]], .data[[t2]], .data$participant) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
-                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
-                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE),
-                .groups = "drop"
-                )
-
-        results <- dplyr::left_join(
-            prob_y_above, post_prob_slope,
-            by = c(t1, t2, "participant")
-            )
-
-    } else {
-
-        prob_y_above <- post_draws |>
-            dplyr::group_by(.data[[t1]], .data[[t2]]) |>
-            dplyr::summarise(prob_above = mean(.data$.epred > null_value), .groups = "drop") |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above)) |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
-
-        post_prob_slope <- post_draws |>
-            dplyr::group_by(.data[[t1]], .data[[t2]]) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(.data$.epred, probs = 0.5, na.rm = TRUE),
-                lower = stats::quantile(.data$.epred, probs = lower_q, na.rm = TRUE),
-                upper = stats::quantile(.data$.epred, probs = upper_q, na.rm = TRUE),
-                .groups = "drop"
-                )
-
-        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = c(t1, t2) )
-
+        groups <- c(groups, "participant")
     }
-
-    return (results)
-
+    # Existing 2D one-sample implementation does not use baseline_window.
+    out <- summarise_posterior_long(
+        data = post_draws,
+        groups = groups,
+        value = ".epred",
+        null_value = null_value,
+        credible_interval = credible_interval,
+        odds_mode = "legacy_one_sided",
+        odds_cap = n_post_samples
+    )
+    out$post_prob <- out$estimate
+    out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
 }
 
 #' @keywords internal
-compute_two_sample_prob_2d <- function (
-        post_draws, null_value, participant_clusters, n_post_samples,
-        credible_interval, predictor_type, time_id, baseline_window = NULL
-        ) {
-
-    predictor_type <- match.arg(predictor_type, c("categorical", "continuous") )
-
-    time_id <- c("time1", "time2")
-    t1 <- time_id[1]
-    t2 <- time_id[2]
-
-    # validate time_id
-    if (!all(time_id %in% colnames(post_draws) ) ) {
-
-        stop ("`time_id` must be a character vector of length 2.", call. = FALSE)
-
-    }
-
-    # validate credible interval
-    if (!is.numeric(credible_interval) ||
-
-        length(credible_interval) != 1 ||
-        credible_interval <= 0 || credible_interval >= 1) {
-
-        stop ("`credible_interval` must be a number strictly between 0 and 1.")
-
-    }
-
-    # mirror 1D: convert continuous predictor to factor-like character labels
-    if (predictor_type == "continuous") {
-
-        post_draws$predictor <- as.character(round(x = post_draws$predictor, digits = 3) )
-
-    }
-
-    alpha <- (1 - credible_interval) / 2
-    lower_q <- alpha
-    upper_q <- 1 - alpha
-
-    conds <- unique(post_draws$predictor)
-
-    if (length(conds) != 2) {
-
-        stop ("`post_draws$predictor` must contain exactly 2 unique values/levels.", call. = FALSE)
-
-    }
-
-    cond1 <- conds[1]
-    cond2 <- conds[2]
-
+compute_two_sample_prob_2d <- function(
+    post_draws,
+    null_value,
+    participant_clusters,
+    n_post_samples,
+    credible_interval,
+    predictor_type,
+    time_id = c("time1", "time2"),
+    baseline_window = NULL,
+    odds_mode = "legacy_one_sided"
+) {
+    groups <- c("time1", "time2")
     if (participant_clusters) {
-
-        post_diff <- post_draws |>
-            dplyr::select(
-                .data[[t1]], .data[[t2]], .data$predictor, .data$participant,
-                .data$.epred, .data$.draw
-                ) |>
-            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
-
-        prob_y_above <- post_diff |>
-            dplyr::group_by(.data[[t1]], .data[[t2]], .data$participant) |>
-            dplyr::summarise(prob_above = mean(.data$epred_diff > null_value), .groups = "drop") |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above)) |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
-
-        post_prob_slope <- post_diff |>
-            dplyr::group_by(.data[[t1]], .data[[t2]], .data$participant) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5, na.rm = TRUE),
-                lower = stats::quantile(x = .data$epred_diff, probs = lower_q, na.rm = TRUE),
-                upper = stats::quantile(x = .data$epred_diff, probs = upper_q, na.rm = TRUE),
-                .groups = "drop"
-                )
-
-        results <- dplyr::left_join(
-            prob_y_above, post_prob_slope,
-            by = c(t1, t2, "participant")
-            )
-
-    } else {
-
-        post_diff <- post_draws |>
-            dplyr::select(.data[[t1]], .data[[t2]], .data$predictor, .data$.epred, .data$.draw) |>
-            tidyr::pivot_wider(names_from = .data$predictor, values_from = .data$.epred) |>
-            dplyr::mutate(epred_diff = .data[[cond2]] - .data[[cond1]])
-
-        prob_y_above <- post_diff |>
-            dplyr::group_by(.data[[t1]], .data[[t2]]) |>
-            dplyr::summarise(prob_above = mean(.data$epred_diff > null_value), .groups = "drop") |>
-            dplyr::mutate(prob_ratio = .data$prob_above / (1 - .data$prob_above)) |>
-            dplyr::mutate(
-                prob_ratio = pmin(.data$prob_ratio, n_post_samples),
-                prob_ratio = pmax(.data$prob_ratio, 1 / n_post_samples)
-                ) |>
-            data.frame()
-
-        post_prob_slope <- post_diff |>
-            dplyr::group_by(.data[[t1]], .data[[t2]]) |>
-            dplyr::summarise(
-                post_prob = stats::quantile(x = .data$epred_diff, probs = 0.5, na.rm = TRUE),
-                lower     = stats::quantile(x = .data$epred_diff, probs = lower_q, na.rm = TRUE),
-                upper     = stats::quantile(x = .data$epred_diff, probs = upper_q, na.rm = TRUE),
-                .groups = "drop"
-                )
-
-        results <- dplyr::left_join(prob_y_above, post_prob_slope, by = c(t1, t2) )
-
+        groups <- c(groups, "participant")
     }
-
-    return (results)
-
+    paired <- pair_posterior_contrasts(post_draws, groups, predictor_type)
+    # Existing 2D contrast implementation uses one-sided posterior odds,
+    # unlike the 1D directional contrast implementation.
+    out <- summarise_posterior_long(
+        data = paired,
+        groups = groups,
+        value = "epred_diff",
+        null_value = null_value,
+        credible_interval = credible_interval,
+        odds_mode = odds_mode,
+        odds_cap = n_post_samples
+    )
+    out$post_prob <- out$estimate
+    out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
 }
 
 # null-coalescing (avoid importing rlang just for %||%)
@@ -1522,43 +1181,27 @@ make_prediction_grid_from_summary <- function (
 
 # compute directional odds
 #' @keywords internal
-compute_directional_odds <- function (
+compute_directional_odds <- function(
     post_diff,
     null_value = 0,
     n_post_samples,
-    groups = "time"
-    ) {
-
-    stopifnot(
-        length(null_value) == 1,
-        is.finite(null_value),
-        null_value >= 0
-        )
-
-    post_diff |>
-        dplyr::group_by(
-            dplyr::across(dplyr::all_of(groups) )
-            ) |>
-        dplyr::summarise(
-            prob_above = mean(.data$epred_diff > null_value),
-            prob_below = mean(.data$epred_diff < -null_value),
-            prob_inside = mean(abs(.data$epred_diff) <= null_value),
-            .groups = "drop"
-            ) |>
-        dplyr::mutate(
-            odds_above = pmin(
-                .data$prob_above / (1 - .data$prob_above),
-                n_post_samples
-                ),
-            odds_below = pmin(
-                .data$prob_below / (1 - .data$prob_below),
-                n_post_samples
-                ),
-            prob_ratio = dplyr::case_when(
-                .data$prob_above > 0.5 ~ odds_above,
-                .data$prob_below > 0.5 ~ 1 / pmax(odds_below, 1 / n_post_samples),
-                TRUE ~ 1
-                )
-            )
-
+    groups = "time",
+    odds_mode = "legacy_one_sided"
+) {
+    if (!is.numeric(null_value) || length(null_value) != 1L ||
+        !is.finite(null_value) || null_value < 0) {
+        stop("`null_value` must be a nonnegative ROPE half-width.",
+             call. = FALSE)
+    }
+    out <- summarise_posterior_long(
+        data = post_diff,
+        groups = groups,
+        value = "epred_diff",
+        null_value = 0,
+        rope = null_value,
+        odds_mode = odds_mode,
+        odds_cap = n_post_samples
+    )
+    out[c(groups, "prob_above", "prob_below", "prob_inside",
+          "odds_above", "odds_below", "prob_ratio")]
 }
