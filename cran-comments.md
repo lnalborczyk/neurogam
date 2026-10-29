@@ -18,8 +18,6 @@ The incoming feasibility NOTE identifies this as a new submission.
 
 On Windows R-devel, the incoming spelling check also highlighted scientific terms (including 'magnetoencephalography', 'electromyography', 'pupillometry', and 'spatiotemporal') and author surnames; these are intentional terms or names.
 
-The Windows and macOS incoming checks reported an HTTP 429 response from a bioRxiv reference in a precompiled vignette. This is rate limiting by the external website, not a network request made by package code.
-
 ## Source package and documentation size
 
 The compressed source archive is approximately 13.5 MB, above the recommended 10 MB. The installed documentation occupies approximately 6.1 MB, above the general 5 MB guideline; the example data occupy approximately 3.9 MB when installed.

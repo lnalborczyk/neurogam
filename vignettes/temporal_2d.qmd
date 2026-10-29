@@ -18,7 +18,7 @@ Cross-temporal generalisation analysis investigates how neural representations e
 
 Decoding performance along the diagonal reflects classification at matching training and testing times, whereas off-diagonal generalisation provides information about how decoding patterns transfer across time. Broad generalisation patterns may suggest temporally persistent or overlapping discriminative information, while more restricted patterns may indicate time-specific changes.
 
-In this vignette, we demonstrate how to analyse cross-temporal decoding matrices using Bayesian generalised additive multilevel models (BGAMMs), as introduced in Nalborczyk and Bürkner ([2025, Appendix A](https://www.biorxiv.org/content/10.1101/2025.08.29.672336v1)). We illustrate how to model decoding performance as a smooth function of training and testing times, account for repeated observations across participants, and identify regions showing posterior evidence for above-chance decoding.
+In this vignette, we demonstrate how to analyse cross-temporal decoding matrices using Bayesian generalised additive multilevel models (BGAMMs), as introduced in Nalborczyk & Bürkner (2025, Appendix A; DOI: 10.1101/2025.08.29.672336). We illustrate how to model decoding performance as a smooth function of training and testing times, account for repeated observations across participants, and identify regions showing posterior evidence for above-chance decoding.
 
 ## Importing and visualising the data
 
