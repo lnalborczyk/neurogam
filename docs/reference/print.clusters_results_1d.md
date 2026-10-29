@@ -1,55 +1,28 @@
-# Print method for 1D `clusters_results` objects
+# Print a temporal neurogam analysis
 
-This method provides a concise console representation of the output from
-[`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md),
-including the number of detected clusters and a compact table
-summarising each cluster's onset, offset, and duration. Values are
-rounded for readability.
+Print a temporal neurogam analysis
 
 ## Usage
 
 ``` r
 # S3 method for class 'clusters_results_1d'
-print(x, digits = 3, ...)
+print(x, digits = 3L, ...)
 ```
 
 ## Arguments
 
 - x:
 
-  An object of class `"clusters_results"` as returned by
-  [`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
+  A result of class \`clusters_results_1d\`.
 
 - digits:
 
-  Integer; number of decimal places used when printing numeric values
-  (default: `3`).
+  Number of decimal places to print.
 
 - ...:
 
-  Additional arguments (currently ignored).
+  Reserved for future use.
 
 ## Value
 
-The input object `x`, returned invisibly.
-
-## Details
-
-The printed cluster table includes:
-
-- `cluster_id`: numeric identifier of the cluster;
-
-- `cluster_onset`: estimated temporal onset of the cluster;
-
-- `cluster_offset`: estimated temporal offset of the cluster;
-
-- `duration`: duration of the cluster, computed as
-  `cluster_offset - cluster_onset`.
-
-If no clusters exceed the posterior odds threshold, an informative
-message is displayed and no table is printed.
-
-## See also
-
-[`summary.clusters_results_1d`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results_1d.md),
-[`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+The input object, invisibly.

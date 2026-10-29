@@ -5,7 +5,8 @@
 - **Ladislas Nalborczyk**. Author, maintainer.
   [](https://orcid.org/0000-0002-7419-9855)
 
-- **Paul Bürkner**. Contributor.
+- **Paul Bürkner**. Author, contributor.
+  [](https://orcid.org/0000-0001-5765-8995)
 
 ## Citation
 

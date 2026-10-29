@@ -7,6 +7,7 @@ data discussed in Nalborczyk & Bürkner ([2025, Appendix
 A](https://www.biorxiv.org/content/10.1101/2025.08.29.672336v1)).
 
 ``` r
+
 library(neurogam)
 library(ggplot2)
 library(scico)
@@ -53,6 +54,7 @@ diagnose potential issues rapidly. For more details on such models, see
 for instance [Pedersen et al. (2019)](https://peerj.com/articles/6876/).
 
 ``` r
+
 library(brms)
 
 # fitting a BGAMM with two temporal dimensions
@@ -76,6 +78,7 @@ The previous model is equivalent to the following
 call. This model takes around 15 hours on 8 parallel apple M4 cores.
 
 ``` r
+
 # we compute the smallest effect size of interest (SESOI) as the baseline
 # (i.e., before stimulus onset) upper 95% quantile of AUC values
 baseline_upper_quantile <- timegen_data %>%
@@ -130,6 +133,7 @@ The results can be summarised and visualised using the dedicated
 [`plot()`](https://rdrr.io/r/graphics/plot.default.html) methods.
 
 ``` r
+
 # print a summary table ("value" represents the posterior odds)
 print(results)
 #> 

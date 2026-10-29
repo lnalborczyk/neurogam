@@ -23,7 +23,10 @@ make_bgam_formula(
   include_ar_term = FALSE,
   varying_smooth = TRUE,
   include_by_smooth = TRUE,
-  use_se = TRUE
+  include_by_varying_smooth = FALSE,
+  use_se = TRUE,
+  space_id = NULL,
+  tensor_d = c(2L, 1L)
 )
 ```
 
@@ -100,10 +103,25 @@ make_bgam_formula(
   Logical; if `TRUE` (default) and `predictor_type = "categorical"`, the
   time smooth is specified with `by = predictor`.
 
+- include_by_varying_smooth:
+
+  Logical; if `TRUE` (non default) and `predictor_type = "categorical"`,
+  the time varying smooth is specified with `by = predictor`.
+
 - use_se:
 
   Logical; whether to include known or internally computed measurement
-  error via `y | se(outcome_sd)` in the model formula.
+  error via `y | se(outcome_sem)` in the model formula.
+
+- space_id:
+
+  Optional vector of two spatial coordinate names. If given, build a 3D
+  spatial-temporal \`t2()\` smooth instead of the 1D/2D smooth.
+
+- tensor_d:
+
+  Tensor marginal dimensions (currently \`c(2, 1)\` for two spatial
+  coordinates jointly and one temporal coordinate).
 
 ## Value
 
@@ -116,12 +134,8 @@ object.
 The function assumes that the data passed to `brm()` has already been
 reshaped to use the internal column names expected by
 `testing_through_time`: `time`, `participant`, `predictor` (optional),
-and one of `outcome_mean` / `outcome_sd` (Gaussian) or `success` /
+and one of `outcome_mean` / `outcome_sem` (Gaussian) or `success` /
 `trials` (Binomial).
-
-## Author
-
-Ladislas Nalborczyk <ladislas.nalborczyk@cnrs.fr>.
 
 ## Examples
 

@@ -19,8 +19,26 @@ test_that("posterior summaries recover one-sided odds and ROPE behavior", {
     expect_equal(actual$prob_inside, c(0, 0, 0, 1))
 
     # Default: finite-sample-capped one-sided odds.
+    # expect_equal(
+    #     actual$prob_ratio,
+    #     c(40, 1 / 40, 1, 1 / 40)
+    # )
+
+    # New default: continuous directional posterior odds.
+    expect_equal(actual$odds_above, c(Inf, 0, 1, 0))
+    expect_equal(actual$odds_below, c(0, Inf, 1, 0))
+    expect_equal(actual$prob_ratio, c(Inf, 0, 1, 0))
+
+    # The historical method remains available explicitly.
+    legacy <- summarise_spatiotemporal_draws(
+        draws,
+        null_value = 0,
+        rope = 0.5,
+        odds_mode = "legacy_one_sided"
+    )
+
     expect_equal(
-        actual$prob_ratio,
+        legacy$prob_ratio,
         c(40, 1 / 40, 1, 1 / 40)
     )
 

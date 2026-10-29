@@ -24,7 +24,7 @@
 #'
 #' @return A list containing `model`, `n_post_samples`, and `reused`.
 #' @keywords internal
-fit_or_reuse_bgam <- function(
+fit_or_reuse_bgam <- function (
     formula,
     data,
     family,
@@ -44,50 +44,72 @@ fit_or_reuse_bgam <- function(
     reuse_message = "Using `previous_model`: skipping model fitting.",
     fit_fun = brms::brm,
     ndraws_fun = brms::ndraws
-) {
-    if (!is.list(extra_args)) {
-        stop("`extra_args` must be a list.", call. = FALSE)
+    ) {
+
+    if (!is.list(extra_args) ) {
+
+        stop ("`extra_args` must be a list.", call. = FALSE)
+
     }
 
-    backend <- match.arg(backend, c("rstan", "cmdstanr"))
+    backend <- match.arg(backend, c("rstan", "cmdstanr") )
 
     reserved <- c(
         "formula", "data", "family", "warmup", "iter", "chains",
         "cores", "threads", "backend", "control", "file",
         "stan_model_args"
-    )
+        )
+
+
     duplicates <- intersect(names(extra_args), reserved)
+
     if (length(duplicates) > 0L) {
-        stop(
+
+        stop (
             "The following arguments cannot be passed through `...`: ",
             paste(duplicates, collapse = ", "),
             call. = FALSE
-        )
+            )
+
     }
 
     reused <- !is.null(previous_model)
 
     if (reused) {
-        if (!inherits(previous_model, "brmsfit")) {
-            stop("`previous_model` must be a valid `brmsfit` object.",
-                 call. = FALSE)
+
+        if (!inherits(previous_model, "brmsfit") ) {
+
+            stop (
+                "`previous_model` must be a valid `brmsfit` object.",
+                call. = FALSE
+                )
+
         }
+
         model <- previous_model
-        message(reuse_message)
+
+        message (reuse_message)
+
     } else {
         if (!is.numeric(warmup) || length(warmup) != 1L ||
             !is.numeric(iter) || length(iter) != 1L ||
             !is.finite(warmup) || !is.finite(iter) || warmup >= iter) {
-            stop("`iter` must be strictly larger than `warmup`.",
-                 call. = FALSE)
+
+            stop ("`iter` must be strictly larger than `warmup`.", call. = FALSE)
         }
 
-        if (is.null(stan_model_args)) {
-            stan_model_args <- if (identical(backend, "cmdstanr")) {
-                list(stanc_options = list("O1"))
+        if (is.null(stan_model_args) ) {
+
+            stan_model_args <- if (identical(backend, "cmdstanr") ) {
+
+                list(stanc_options = list("O1") )
+
             } else {
+
                 list()
+
             }
+
         }
 
         brm_args <- c(
@@ -104,19 +126,26 @@ fit_or_reuse_bgam <- function(
                 control = stan_control,
                 file = file,
                 stan_model_args = stan_model_args
-            ),
+                ),
             extra_args
-        )
+            )
+
         model <- do.call(fit_fun, brm_args)
+
     }
 
-    if (isTRUE(resolve_draws) && is.null(n_post_samples)) {
+    if (isTRUE(resolve_draws) && is.null(n_post_samples) ) {
+
         n_post_samples <- ndraws_fun(model)
+
     }
 
-    list(
-        model = model,
-        n_post_samples = n_post_samples,
-        reused = reused
-    )
+    return (
+        list(
+            model = model,
+            n_post_samples = n_post_samples,
+            reused = reused
+            )
+        )
+
 }

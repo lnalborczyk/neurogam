@@ -9,7 +9,8 @@ summarise_posterior_matrix(
   null_value = 0,
   rope = 0,
   credible_interval = 0.95,
-  odds_mode = c("legacy_one_sided", "legacy_directional", "spatiotemporal"),
+  odds_mode = c("directional_rope", "legacy_one_sided", "legacy_directional",
+    "spatiotemporal"),
   odds_cap = NULL
 )
 }

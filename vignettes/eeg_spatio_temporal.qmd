@@ -1,12 +1,7 @@
 ---
 title: "Application to spatiotemporal EEG data"
 author: "Ladislas Nalborczyk"
-date: "`r Sys.Date()`"
-format:
-  html:
-    toc: true
-    toc-depth: 3
-    code-fold: false
+date: last-modified
 vignette: >
   %\VignetteIndexEntry{Application to spatiotemporal EEG data}
   %\VignetteEncoding{UTF-8}
@@ -15,19 +10,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-    cache = FALSE,
-    collapse = TRUE,
-    warning = FALSE,
-    message = FALSE,
-    comment = "#>",
-    fig.align = "center",
-    out.width = "100%",
-    dev = "png",
-    dpi = 200
-    )
-```
+
 
 ## Overview
 
@@ -45,7 +28,8 @@ The workflow provides:
 
 We use example EEG recordings from the [`eegkitdata` package](https://cran.r-project.org/package=eegkitdata) and sensor coordinates supplied with [`eegkit`](https://cran.r-project.org/package=eegkit). The dataset contains multiple trials recorded at 256 Hz for 20 participants, with group, channel, and time identifiers. The example below selects five participants per group and keeps every second time sample to make the preprocessing and figures reasonably fast.
 
-```{r data-import}
+
+``` r
 library(neurogam)
 library(ggplot2)
 library(dplyr)
@@ -57,8 +41,8 @@ data("eegdata", package = "eegkitdata")
 data("eegcoord", package = "eegkit")
 
 # Inspect the variables and the montage
-dplyr::glimpse(eegdata)
-head(eegcoord[, c("xproj", "yproj")] )
+# dplyr::glimpse(eegdata)
+# head(eegcoord[, c("xproj", "yproj")] )
 
 # Choose five participants from each group for this worked example
 subjects_keep <- eegdata |>
@@ -70,7 +54,7 @@ subjects_keep <- eegdata |>
 
 # Keep every second time sample, the raw time variable indexes samples
 eeg_subset <- eegdata |>
-    filter(
+    dplyr::filter(
         subject %in% subjects_keep,
         time %% 2L == 0L
         )
@@ -96,7 +80,7 @@ eeg_data <- eeg_subset |>
         .by = c(subject, group, channel, time)
         ) |>
     left_join(eeg_coords, by = "channel") |>
-    filter(!is.na(xproj), !is.na(yproj), is.finite(voltage) ) |>
+    dplyr::filter(!is.na(xproj), !is.na(yproj), is.finite(voltage) ) |>
     mutate(
         subject = factor(subject),
         group = droplevels(factor(group) ),
@@ -114,15 +98,23 @@ sensors <- eeg_data |>
 
 # Display a few rows
 head(eeg_data)
+#>       subject group channel       time      voltage      xproj    yproj
+#> 1 co2a0000364     a     FP1 0.00390625 -0.009262861 -0.5157747 1.580363
+#> 2 co2a0000364     a     FP1 0.01171875  0.163076204 -0.5157747 1.580363
+#> 3 co2a0000364     a     FP1 0.01953125  0.761465353 -0.5157747 1.580363
+#> 4 co2a0000364     a     FP1 0.02734375  0.842567312 -0.5157747 1.580363
+#> 5 co2a0000364     a     FP1 0.03515625  0.426776990 -0.5157747 1.580363
+#> 6 co2a0000364     a     FP1 0.04296875  0.305092899 -0.5157747 1.580363
 ```
 
 The response is divided by a single constant (`voltage_scale`) and is therefore expressed in scaled voltage units. The same scaling applies to model predictions and observed waveforms; to recover the original microvolt scale, multiply by `voltage_scale`. We do **not** independently standardise the two spatial axes, because anisotropic scaling would distort electrode distances and the automatically estimated adjacency graph.
 
 The original recordings provide only post-stimulus time points. No pre-stimulus baseline is available here; therefore, testing voltage against zero is not the same as testing a baseline-corrected ERP against zero.
 
-### Visualize the sensors and observed activity
+### Visualise the sensors and observed activity
 
-```{r plot-sensors, fig.width=9, fig.height=7}
+
+``` r
 plot_sensors(
     sensors,
     show_points = TRUE,
@@ -136,9 +128,12 @@ plot_sensors(
     )
 ```
 
+<img src="figures/eeg_spatio_temporal-plot-sensors-1.png" alt="" width="100%" style="display: block; margin: auto;" />
+
 A quick quality-control plot shows grand-average sensor waveforms. For clarity, we display a small set of channels.
 
-```{r observed-waveforms, fig.width=10, fig.height=5}
+
+``` r
 channels_to_show <- intersect(
     c("FZ", "CZ", "PZ", "OZ", "FP1", "FP2"),
     unique(eeg_data$channel)
@@ -163,9 +158,12 @@ eeg_data |>
     labs(x = "Time (s)", y = "Scaled voltage", colour = "Group")
 ```
 
+<img src="figures/eeg_spatio_temporal-observed-waveforms-1.png" alt="" width="100%" style="display: block; margin: auto;" />
+
 We can also display observed scalp maps at selected times using `plot_eeg()`. Spatial interpolation is used only for visualisation; our subsequent inference evaluates model predictions at the actual sensor locations.
 
-```{r observed-topographies, fig.width=12, fig.height=5}
+
+``` r
 all_times <- sort(unique(eeg_data$time) )
 
 selected_times <- all_times[
@@ -191,11 +189,14 @@ plot_eeg(
     )
 ```
 
+<img src="figures/eeg_spatio_temporal-observed-topographies-1.png" alt="" width="100%" style="display: block; margin: auto;" />
+
 ## Estimating and inspecting EEG sensor adjacency
 
 Spatio-temporal clusters require a definition of *which sensors are neighbours*. `make_sensor_adjacency()` estimates a symmetric adjacency matrix from projected coordinates by selecting spatial nearest neighbours and optionally rejecting excessively long edges. The default `k = 4` and `distance_factor = 1.8` are **heuristics**, not guaranteed to represent the physical electrode montage perfectly.
 
-```{r adjacency-build}
+
+``` r
 sensor_adjacency <- make_sensor_adjacency(
     data = sensors,
     sensor_id = "channel",
@@ -205,7 +206,8 @@ sensor_adjacency <- make_sensor_adjacency(
     )
 ```
 
-```{r adjacency-plot, fig.width=10, fig.height=8}
+
+``` r
 plot_sensor_adjacency(
     data = sensors,
     adjacency = sensor_adjacency,
@@ -214,6 +216,8 @@ plot_sensor_adjacency(
     show_labels = TRUE
     )
 ```
+
+<img src="figures/eeg_spatio_temporal-adjacency-plot-1.png" alt="" width="100%" style="display: block; margin: auto;" />
 
 Inspect the graph for unexpected connections across distant scalp regions, isolated sensors, and gaps near the head boundary. You can adjust `k` and `distance_factor` or use an externally defined sensor adjacency matrix. The same matrix should be retained for reproducible inference. The built-in plotting function draws edges in the **2D projection**, not on a physical three-dimensional head surface.
 
@@ -232,7 +236,8 @@ $$
 
 where $f(x,y,t)$ is a smooth function of two electrode coordinates and time, and $b_i$ is a participant-specific random intercept. We use a tensor-product smooth with a **two-dimensional spatial marginal** and a **one-dimensional temporal marginal**:
 
-```{r, eval = FALSE, echo = TRUE}
+
+``` r
 # Conceptual brms formula, using participant-level mean observations:
 outcome_mean ~
     t2(
@@ -244,11 +249,12 @@ outcome_mean ~
     (1 | participant)
 ```
 
-The `d = c(2, 1)` argument defines two tensor-product marginals: one comprising $(x,y)$ and another comprising time. Accordingly, `k = c(15, 10)` specifies the basis dimensions for **two marginals**, rather than a separate basis dimension for each of the three coordinates. The `k` values control basis flexibility, not the exact number of observed electrodes or time samples. See the [mgcv tensor-product documentation](https://stat.ethz.ch/R-manual/R-patched/library/mgcv/help/te.html) and [Pedersen et al. (2019)](https://peerj.com/articles/6876/).
+The `d = c(2, 1)` argument defines two tensor-product marginals: one comprising $(x,y)$ and another comprising time. Accordingly, `k = c(15, 10)` specifies the basis dimensions for **two marginals**, rather than a separate basis dimension for each of the three coordinates. The `k` values control basis flexibility, not the exact number of observed electrodes or time samples. See the [mgcv tensor-product documentation](https://stat.ethz.ch/R-manual/R-patched/library/mgcv/help/te.html) and [Pedersen et al. (2019)](https://pmc.ncbi.nlm.nih.gov/articles/PMC6542350/).
 
 `neurogam` constructs the formula automatically. We can inspect it without fitting anything:
 
-```{r formula-only}
+
+``` r
 formula_st <- make_bgam_formula(
     family = gaussian(),
     multilevel = "summary",
@@ -263,6 +269,7 @@ formula_st <- make_bgam_formula(
     )
 
 formula_st
+#> outcome_mean ~ 1 + t2(xproj, yproj, time, bs = c("ps", "ps"), k = c(15, 10), d = c(2, 1), full = FALSE) + (1 | participant)
 ```
 
 The high-level workflow works with **participant-level means**, not necessarily the original trial-level observations. Because we have already averaged trials within each participant × sensor × time cell and have not supplied a standard error, we use `use_se = FALSE`. When supplying trial-level observations with two or more repetitions per cell, or a precomputed standard error column, `use_se = TRUE` allows measurement-error modelling via `se(outcome_sem, sigma = TRUE)`. These two approaches do not imply identical likelihoods or uncertainty estimates.
@@ -271,7 +278,8 @@ The high-level workflow works with **participant-level means**, not necessarily 
 
 The following block fits the model and immediately evaluates posterior expected voltage at each observed sensor × time point. The fitted `brmsfit` object and clustering results are returned together by `testing_through_time()`.
 
-```{r model-fit, eval = FALSE}
+
+``` r
 results_st <- testing_through_time(
     data = eeg_data,
     participant_id = "subject",
@@ -314,7 +322,8 @@ Predictions use `re_formula = NA`, targeting the fitted population-level mean ra
 
 If you already fitted a model directly with `brms::brm()` (for example, `voltage ~ t2(xproj, yproj, time, ...) + (1 | subject)`), the fitted object's data and variable names may not match the standardised `testing_through_time()` interface. Instead, use the lower-level `analyse_bgam_spatiotemporal()` function, which does not refit the model:
 
-```{r external-brms, eval=TRUE}
+
+``` r
 # `st_gam` is an existing brmsfit object using subject, channel, xproj,
 # yproj, time, and voltage as in the original direct-brms example.
 prediction_grid <- merge(
@@ -326,7 +335,7 @@ prediction_grid <- merge(
 
 prediction_grid$subject <- eeg_data$subject[1L]
 
-model_path <- "../cache/eeg_st_model.rds"
+model_path <- "cache/eeg_st_model.rds"
 model_st <- readRDS(model_path)
 
 results_external <- analyse_bgam_spatiotemporal(
@@ -353,15 +362,61 @@ Ensure that the prediction grid uses the **same coordinate and outcome scaling a
 
 The returned object has dedicated `summary()` and `plot()` methods, so in most cases there is no need to access its internal components directly.
 
-```{r results-summary}
+
+``` r
 summary(results_external)
+#> 
+#> ==== Time-resolved GAM results ================================
+#>   Analysis: Spatiotemporal EEG (sensor x time)
+#>   Model coordinates: xproj, yproj, time
+#>   Cluster coordinates: channel, time
+#>   Contrast: one_sample
+#>   Posterior odds mode: directional_rope
+#>   Odds threshold: 10
+#>   Clusters found: 11
+#> 
+#> Model and inference:
+#>   Backend: brmsfit
+#>   Posterior draws: 4000
+#>   Threshold direction: both
+#>   Null value: 0
+#>   ROPE half-width: 0
+#>   Credible interval: 0.95
+#>   Sensor adjacency: provided
+#>   Prediction locations: 7808
+#>   Cluster member points: 2606
+#> 
+#> Cluster statistics:
+#>   By sign: negative = 5; positive = 6
+#>   Total cluster points: 2606
+#>   Median cluster size: 26
+#>   Mean duration: 0.182
+#>   Median duration: 0.172
+#>   Maximum sensors in one cluster: 51
+#> 
+#> Cluster table:
+#> 
+#>      sign id onset offset duration n_points time_min time_max n_sensors
+#>  positive  1 0.176  0.426    0.250       93    0.176    0.426         3
+#>  positive  2 0.199  0.371    0.172       23    0.199    0.371         1
+#>  positive  3 0.301  0.387    0.086       12    0.301    0.387         1
+#>  positive  4 0.707  0.996    0.289      149    0.707    0.996         6
+#>  positive  5 0.730  0.973    0.242       49    0.730    0.973         2
+#>  positive  6 0.762  0.957    0.195       26    0.762    0.957         1
+#>  negative  7 0.129  0.230    0.102       26    0.129    0.230         2
+#>  negative  8 0.137  0.223    0.086       12    0.137    0.223         1
+#>  negative  9 0.145  0.207    0.062       10    0.145    0.207         2
+#>  negative 10 0.176  0.184    0.008        2    0.176    0.184         1
+#>  negative 11 0.488  0.996    0.508     2204    0.488    0.996        51
+#> =================================================================
 ```
 
 ### Inspect the adjacency actually used
 
 The output stores both the matrix and its provenance, which is important if the adjacency was estimated automatically.
 
-```{r result-adjacency, fig.width=10, fig.height=8}
+
+``` r
 plot_sensor_adjacency(
     data = results_external$sensor_positions,
     adjacency = results_external$sensor_adjacency,
@@ -371,13 +426,16 @@ plot_sensor_adjacency(
     )
 ```
 
+<img src="figures/eeg_spatio_temporal-result-adjacency-1.png" alt="" width="100%" style="display: block; margin: auto;" />
+
 ## Visualising model predictions and clusters
 
 ### Scalp topographies through time
 
 `plot_spatiotemporal_topography()` combines **observed grand means**, **posterior expected activity**, and **residual mean activity** (`observed - predicted`) at selected times. The function returns a `ggplot` object and can show one or several of these panels.
 
-```{r plot-comparison-topographies, fig.width=15, fig.height=8}
+
+``` r
 plot_spatiotemporal_topography(
     results = results_external,
     observed_data = eeg_data,
@@ -393,6 +451,11 @@ plot_spatiotemporal_topography(
     show_sensors = TRUE,
     head_outline = TRUE
     )
+```
+
+<img src="figures/eeg_spatio_temporal-plot-comparison-topographies-1.png" alt="" width="100%" style="display: block; margin: auto;" />
+
+``` r
 
 # OR plot(x = results_external, type = "topography", observed_data = eeg_data)
 ```
@@ -409,7 +472,8 @@ Two styles of cluster highlighting are available.
 
 **1. Translucent rectangles**, marking periods during which a sensor belongs to a detected cluster:
 
-```{r plot-scalp-rectangles, fig.width=13, fig.height=11}
+
+``` r
 plot_sensor_trajectories(
     results = results_external,
     observed_data = eeg_data,
@@ -421,13 +485,19 @@ plot_sensor_trajectories(
     cluster_alpha = 0.2,
     show_ci = TRUE
     )
+```
+
+<img src="figures/eeg_spatio_temporal-plot-scalp-rectangles-1.png" alt="" width="100%" style="display: block; margin: auto;" />
+
+``` r
 
 # OR plot(x = results_external, type = "trajectories", observed_data = eeg_data)
 ```
 
 **2. Highlighted prediction-line segments**, emphasizing the portion of each predicted waveform that belongs to a cluster:
 
-```{r plot-scalp-segments, fig.width=13, fig.height=11}
+
+``` r
 plot_sensor_trajectories(
     results = results_external,
     observed_data = eeg_data,
@@ -441,13 +511,16 @@ plot_sensor_trajectories(
     )
 ```
 
+<img src="figures/eeg_spatio_temporal-plot-scalp-segments-1.png" alt="" width="100%" style="display: block; margin: auto;" />
+
 Cluster intervals are constructed independently for each sensor and do **not** bridge disconnected portions of the time grid. Positive and negative regions use distinct colors. The highlighted segments refer to predictions; observed activity is shown for model-fit comparison.
 
 ### Sensor-level time courses: faceted layout
 
 The scalp layout is useful for viewing spatial organisation. The faceted alternative provides more room to inspect individual waveforms and uncertainties.
 
-```{r plot-sensor-facets, fig.width=14, fig.height=12}
+
+``` r
 plot_sensor_trajectories(
     results = results_external,
     observed_data = eeg_data,
@@ -461,6 +534,8 @@ plot_sensor_trajectories(
     show_ci = TRUE
     )
 ```
+
+<img src="figures/eeg_spatio_temporal-plot-sensor-facets-1.png" alt="" width="100%" style="display: block; margin: auto;" />
 
 You can select a smaller sensor subset with `sensors = c("FZ", "CZ", "PZ")`, switch to `cluster_style = "segments"`, or turn off highlighting using `cluster_style = "none"`. Keeping `free_y = FALSE` facilitates across-sensor amplitude comparisons; setting it to `TRUE` can reveal low-amplitude responses but changes the displayed scale across panels.
 

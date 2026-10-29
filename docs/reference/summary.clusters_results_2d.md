@@ -1,33 +1,28 @@
-# Summary method for 2D `clusters_results` objects
+# Summarize a temporal-generalization neurogam analysis
 
-Produces a detailed textual summary of a time-resolved Bayesian GAMM
-analysis, including model metadata, the number of clusters detected, and
-descriptive statistics of cluster durations. A rounded cluster table is
-also printed.
+Summarize a temporal-generalization neurogam analysis
 
 ## Usage
 
 ``` r
 # S3 method for class 'clusters_results_2d'
-summary(object, digits = 3, ...)
+summary(object, digits = 3L, ...)
 ```
 
 ## Arguments
 
 - object:
 
-  An object of class `"clusters_results"` created by
-  [`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
+  A result of class \`clusters_results_2d\`.
 
 - digits:
 
-  Integer; number of decimal places used when printing numeric values
-  (default: `3`).
+  Number of decimal places to print.
 
 - ...:
 
-  Additional arguments (currently ignored).
+  Reserved for future use.
 
 ## Value
 
-The object `object`, returned invisibly.
+The input object, invisibly.

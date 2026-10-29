@@ -35,6 +35,8 @@ testing_through_time(
   n_post_samples = NULL,
   threshold = 10,
   threshold_type = c("both", "above", "below"),
+  odds_mode = c("directional_rope", "legacy_one_sided", "legacy_directional",
+    "spatiotemporal"),
   chance_level = NULL,
   credible_interval = 0.95,
   baseline_window = c(0, 0.1),
@@ -43,8 +45,8 @@ testing_through_time(
   tensor_d = c(2L, 1L),
   sensor_adjacency = NULL,
   adjacency_k = 4L,
-  adjacency_distance_factor = 1.8,
-  rope = 0,
+  adjacency_distance_factor = 2,
+  rope = NULL,
   contrast_levels = NULL,
   chunk_size = 256L,
   re_formula = NA,
@@ -182,6 +184,14 @@ detected. Must be one of \code{"above"}, \code{"below"}, or \code{"both"}
 \code{value <= 1/threshold}. When \code{"both"}, both types are detected
 and the returned data include a \code{sign} column.}
 
+\item{odds_mode}{Posterior-odds inference strategy. The default,
+`"directional_rope"`, computes independent continuous posterior odds
+for effects above and below the ROPE. These odds are thresholded
+separately to identify positive and negative clusters.
+`"legacy_one_sided"` reproduces the historical capped one-sided odds.
+`"legacy_directional"` and `"spatiotemporal"` are retained for
+backward compatibility.}
+
 \item{chance_level}{Numeric; null value for the outcome (e.g., 0.5 for
 decoding accuracy).}
 
@@ -203,7 +213,13 @@ selects the spatiotemporal Gaussian multilevel workflow.}
 \item{adjacency_k, adjacency_distance_factor}{Parameters for automatic
 sensor adjacency construction when no graph is supplied.}
 
-\item{rope}{Fixed symmetric ROPE half-width for spatiotemporal inference.}
+\item{rope}{Optional nonnegative symmetric ROPE half-width.
+The default (`NULL`) estimates the ROPE from the maximum
+absolute posterior-median deviation within `baseline_window`
+for 1D temporal analyses. An explicit value, including zero,
+overrides baseline estimation.
+For 2D and spatiotemporal analyses, `NULL` currently
+corresponds to a point-null ROPE of zero.}
 
 \item{contrast_levels}{Two condition labels specifying the A - B contrast.}
 
@@ -274,14 +290,11 @@ summary(results)
 # plot the model predictions and identified clusters
 plot(results)
 
-# posterior predictive check
+# posterior predictive checks
 ppc(results)
 }
 
 }
 \seealso{
 \code{\link[brms]{brm}}
-}
-\author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }

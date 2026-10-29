@@ -1,5 +1,52 @@
 # Changelog
 
+## neurogam 0.1.0
+
+- Preparing for initial CRAN submission (updating and reorganising the
+  vignettes, cleaning the documentation, etc).
+
+## neurogam 0.0.5
+
+### New features
+
+- Implementing spatio-temporal BGAMMs for modelling EEG data in both
+  space and time.
+  ([\#8](https://github.com/lnalborczyk/neurogam/issues/8))
+- Unified API for processing results.
+- Re-structuring the
+  [`find_clusters()`](https://lnalborczyk.github.io/neurogam/reference/find_clusters.md)
+  approach (now work with any number of dimensions and accepts input
+  adjacency matrices).
+- Adding a `baseline_window` argument to
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+  used to compute the ROPE (i.e., maximum absolute value of the
+  `credible_interval`% credible interval during this baseline period).
+- This baseline approach leads to the new ROPE default (i.e.,
+  `odds_mode = "directional_rope"`).
+
+### Other changes
+
+- Allowing to pass more arguments to
+  [`brm()`](https://paulbuerkner.com/brms/reference/brm.html) in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+  via the `...` argument, thanks to Maël Delem.
+  ([\#10](https://github.com/lnalborczyk/neurogam/issues/10))
+- When including varying smooths in
+  [`make_bgam_formula()`](https://lnalborczyk.github.io/neurogam/reference/make_bgam_formula.md),
+  the default is now to exclude varying intercept and slope.
+- When including varying smooths in
+  [`make_bgam_formula()`](https://lnalborczyk.github.io/neurogam/reference/make_bgam_formula.md),
+  the default is now to use a k-value of `floor(kvalue/2)` for the
+  varying (by-participant) smooths.
+
+### Bug fixes
+
+- Fixing the `stan_model_args` issue when using the `rstan` backend,
+  thanks to Maël Delem.
+  ([\#10](https://github.com/lnalborczyk/neurogam/issues/10))
+- Fixing the [`se()`](https://rdrr.io/pkg/plotfunctions/man/se.html)
+  value (should be SEM instead of SD).
+
 ## neurogam 0.0.4
 
 ### New features

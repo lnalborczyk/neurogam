@@ -1,0 +1,34 @@
+# RStudio and development files
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.positai$
+^\.claude$
+^\.lintr$
+
+# Repository and release files
+^\.github$
+^_pkgdown\.yml$
+^pkgdown$
+^docs$
+^cran-comments\.md$
+^LICENSE\.md$
+
+# README source and rendering cache
+^README\.Rmd$
+^README_cache$
+
+# Raw data and reproducible analysis sources
+^data-raw$
+^vignettes-raw$
+^scripts$
+
+# Generated R package documentation
+^doc$
+^Meta$
+
+# Quarto and knitr caches
+^vignettes/\.quarto$
+^vignettes/_freeze$
+^vignettes/cache$
+^vignettes/.*_cache$
+^vignettes/.*_files$

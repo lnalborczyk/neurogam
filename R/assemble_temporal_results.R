@@ -19,7 +19,8 @@ assemble_temporal_clusters <- function (
     is_2d_time,
     participant_clusters,
     threshold,
-    threshold_type
+    threshold_type,
+    odds_mode = "directional_rope"
     ) {
 
     coordinates <- if (is_2d_time) c("time1", "time2") else "time"
@@ -35,11 +36,39 @@ assemble_temporal_clusters <- function (
 
     }
 
+    # cluster_data <- as.data.frame(
+    #     predictions[, c(cluster_columns, "prob_ratio"), drop = FALSE]
+    #     )
+    #
+    # names(cluster_data)[names(cluster_data) == "prob_ratio"] <- "value"
+    #
+    # if (identical(odds_mode, "directional_rope")) {
+    #
+    #     cluster_data$value <- directional_rope_cluster_score(
+    #         odds_above = predictions$odds_above,
+    #         odds_below = predictions$odds_below,
+    #         threshold = threshold
+    #     )
+    #
+    # }
+
     cluster_data <- as.data.frame(
-        predictions[, c(cluster_columns, "prob_ratio"), drop = FALSE]
+        predictions[, cluster_columns, drop = FALSE]
+    )
+
+    if (identical(odds_mode, "directional_rope")) {
+
+        cluster_data$value <- directional_rope_cluster_score(
+            odds_above = predictions$odds_above,
+            odds_below = predictions$odds_below,
+            threshold = threshold
         )
 
-    names(cluster_data)[names(cluster_data) == "prob_ratio"] <- "value"
+    } else {
+
+        cluster_data$value <- predictions$prob_ratio
+
+    }
 
     cluster_data <- cluster_data[
         stats::complete.cases(cluster_data),

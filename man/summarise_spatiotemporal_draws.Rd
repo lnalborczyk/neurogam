@@ -9,7 +9,7 @@ summarise_spatiotemporal_draws(
   null_value = 0,
   rope = 0,
   credible_interval = 0.95,
-  odds_mode = "legacy_one_sided"
+  odds_mode = "directional_rope"
 )
 }
 \arguments{
@@ -20,6 +20,14 @@ summarise_spatiotemporal_draws(
 \item{rope}{Non-negative half-width of a ROPE around `null_value`.}
 
 \item{credible_interval}{Width of equal-tailed credible intervals.}
+
+\item{odds_mode}{Posterior-odds inference strategy. The default,
+`"directional_rope"`, computes independent continuous posterior odds
+for effects above and below the ROPE. These odds are thresholded
+separately to identify positive and negative clusters.
+`"legacy_one_sided"` reproduces the historical capped one-sided odds.
+`"legacy_directional"` and `"spatiotemporal"` are retained for
+backward compatibility.}
 }
 \value{
 Data frame with posterior estimates, probabilities, and odds.
@@ -28,8 +36,5 @@ Data frame with posterior estimates, probabilities, and odds.
 Summarises a matrix of paired posterior contrasts or one-sample
 expectations (draws in rows, observation locations in columns).
 Posterior odds are directional and can use a symmetric ROPE.
-}
-\author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
 }
 \keyword{internal}

@@ -36,6 +36,8 @@ testing_through_time_spatiotemporal(
   n_post_samples = NULL,
   threshold = 10,
   threshold_type = "both",
+  odds_mode = c("directional_rope", "legacy_one_sided", "legacy_directional",
+    "spatiotemporal"),
   chance_level = 0,
   credible_interval = 0.95,
   rope = 0,
@@ -76,6 +78,14 @@ testing_through_time_spatiotemporal(
 \item{n_post_samples}{Number of posterior draws, or `NULL` for all.}
 
 \item{threshold, threshold_type, credible_interval}{Clustering parameters.}
+
+\item{odds_mode}{Posterior-odds inference strategy. The default,
+`"directional_rope"`, computes independent continuous posterior odds
+for effects above and below the ROPE. These odds are thresholded
+separately to identify positive and negative clusters.
+`"legacy_one_sided"` reproduces the historical capped one-sided odds.
+`"legacy_directional"` and `"spatiotemporal"` are retained for
+backward compatibility.}
 
 \item{chance_level}{Null value for one-sample inference.}
 

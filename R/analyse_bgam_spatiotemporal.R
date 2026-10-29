@@ -8,26 +8,33 @@
 #' @param null_value Null value against which draws are assessed.
 #' @param rope Non-negative half-width of a ROPE around `null_value`.
 #' @param credible_interval Width of equal-tailed credible intervals.
+#' @param odds_mode Posterior-odds inference strategy. The default,
+#'   `"directional_rope"`, computes independent continuous posterior odds
+#'   for effects above and below the ROPE. These odds are thresholded
+#'   separately to identify positive and negative clusters.
+#'   `"legacy_one_sided"` reproduces the historical capped one-sided odds.
+#'   `"legacy_directional"` and `"spatiotemporal"` are retained for
+#'   backward compatibility.
 #'
 #' @return Data frame with posterior estimates, probabilities, and odds.
 #'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
-#'
 #' @keywords internal
-summarise_spatiotemporal_draws <- function(
+summarise_spatiotemporal_draws <- function (
     draws,
     null_value = 0,
     rope = 0,
     credible_interval = 0.95,
-    odds_mode = "legacy_one_sided"
-) {
+    odds_mode = "directional_rope"
+    ) {
+
     summarise_posterior_matrix(
         draws = draws,
         null_value = null_value,
         rope = rope,
         credible_interval = credible_interval,
         odds_mode = odds_mode
-    )
+        )
+
 }
 
 #' Identify posterior-odds clusters in sensor-by-time BGAMM predictions
@@ -64,15 +71,20 @@ summarise_spatiotemporal_draws <- function(
 #' @param adjacency_distance_factor Maximum auto-generated edge length
 #'   relative to the median nearest-neighbor distance. Set to `NULL` to
 #'   disable distance pruning.
+#' @param odds_mode Posterior-odds inference strategy. The default,
+#'   `"directional_rope"`, computes independent continuous posterior odds
+#'   for effects above and below the ROPE. These odds are thresholded
+#'   separately to identify positive and negative clusters.
+#'   `"legacy_one_sided"` reproduces the historical capped one-sided odds.
+#'   `"legacy_directional"` and `"spatiotemporal"` are retained for
+#'   backward compatibility.
 #'
 #' @return List with `predictions`, `cluster_summary`, `cluster_membership`,
 #'   `model`, `sensor_adjacency`, `adjacency_source`, and metadata.
 #' @seealso [make_sensor_adjacency()], [plot_sensor_adjacency()]
 #'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
-#'
 #' @export
-analyse_bgam_spatiotemporal <- function(
+analyse_bgam_spatiotemporal <- function (
     model,
     newdata,
     sensor_adjacency = NULL,
@@ -90,10 +102,21 @@ analyse_bgam_spatiotemporal <- function(
     re_formula = NA,
     max_gap = NULL,
     adjacency_k = 4L,
-    adjacency_distance_factor = 1.8
+    adjacency_distance_factor = 1.8,
+    odds_mode = "directional_rope"
     ) {
 
     threshold_type <- match.arg(threshold_type)
+
+    odds_mode <- match.arg(
+        odds_mode,
+        c(
+            "directional_rope",
+            "legacy_one_sided",
+            "legacy_directional",
+            "spatiotemporal"
+            )
+        )
 
     if (!inherits(model, "brmsfit") ) {
 
@@ -216,60 +239,6 @@ analyse_bgam_spatiotemporal <- function(
 
     }
 
-    # # Use identical draw_ids and observation ordering for A and B.
-    # # Processing locations in chunks avoids allocating all posterior draws
-    # # across the entire sensor-time grid simultaneously.
-    # n <- nrow(newdata)
-    # chunks <- split(seq_len(n), ceiling(seq_len(n) / chunk_size) )
-    # summaries <- vector("list", length(chunks) )
-    #
-    # for (i in seq_along(chunks) ) {
-    #
-    #     rows <- chunks[[i]]
-    #     draws_a <- brms::posterior_epred(
-    #         model,
-    #         newdata = newdata[rows, , drop = FALSE],
-    #         re_formula = re_formula,
-    #         draw_ids = draw_ids
-    #         )
-    #
-    #     if (!is.matrix(draws_a) || ncol(draws_a) != length(rows) ) {
-    #
-    #         stop ("Expected univariate posterior predictions as draws x locations.")
-    #
-    #     }
-    #
-    #     if (!is.null(newdata_b) ) {
-    #
-    #         draws_b <- brms::posterior_epred(
-    #             model,
-    #             newdata = newdata_b[rows, , drop = FALSE],
-    #             re_formula = re_formula,
-    #             draw_ids = draw_ids
-    #             )
-    #
-    #         if (!identical(dim(draws_a), dim(draws_b) ) ) {
-    #
-    #             stop ("The two conditions produced incompatible posterior dimensions.")
-    #
-    #         }
-    #
-    #         draws_a <- draws_a - draws_b
-    #         rm(draws_b)
-    #
-    #     }
-    #
-    #     summaries[[i]] <- summarise_spatiotemporal_draws(
-    #         draws_a,
-    #         null_value = null_value,
-    #         rope = rope,
-    #         credible_interval = credible_interval
-    #         )
-    #
-    #     rm(draws_a)
-    #
-    # }
-
     summaries <- chunked_epred(
         model = model,
         newdata = newdata,
@@ -282,9 +251,11 @@ analyse_bgam_spatiotemporal <- function(
                 draws,
                 null_value = null_value,
                 rope = rope,
-                credible_interval = credible_interval
-            )
+                credible_interval = credible_interval,
+                odds_mode = odds_mode
+                )
         }
+
     )
 
     predictions <- cbind(
@@ -293,10 +264,23 @@ analyse_bgam_spatiotemporal <- function(
         )
 
     rownames(predictions) <- NULL
+    cluster_data <- predictions[c(sensor_id, time_id)]
 
-    # Clustering uses either the supplied or automatically inferred topology.
-    cluster_data <- predictions[c(sensor_id, time_id, "prob_ratio")]
-    names(cluster_data)[3L] <- "value"
+    cluster_data$value <- if (
+        identical(odds_mode, "directional_rope")
+        ) {
+
+        directional_rope_cluster_score(
+            odds_above = predictions$odds_above,
+            odds_below = predictions$odds_below,
+            threshold = threshold
+            )
+
+    } else {
+
+        predictions$prob_ratio
+
+    }
 
     components <- find_clusters_nd(
         data = cluster_data,
@@ -338,13 +322,13 @@ analyse_bgam_spatiotemporal <- function(
             null_value = null_value,
             rope = rope,
             credible_interval = credible_interval,
-            odds_mode = "legacy_one_sided",
+            odds_mode = odds_mode,
             contrast = if (is.null(newdata_b)) "one_sample" else "A_minus_B",
             adjacency_source = adjacency_source,
             n_post_samples = if (is.null(draw_ids)) NULL else length(draw_ids)
+            )
         )
-    )
 
-    return(result)
+    return (result)
 
 }

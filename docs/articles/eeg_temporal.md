@@ -3,13 +3,17 @@
 ## Importing and visualising EEG data
 
 Below we import and reshape EEG data from the [`eegkit`
-package](https://cran.r-project.org/web/packages/eegkit/index.html).
+package](https://CRAN.R-project.org/package=eegkit).
 
 ``` r
+
 library(neurogam)
 library(ggplot2)
 library(eegkit)
 library(dplyr)
+
+# Use the ggplot2 neurogam theme
+theme_set(theme_neurogam() )
 
 # retrieving some EEG data
 data(eegdata)
@@ -27,17 +31,17 @@ eegdata |>
     summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
     ggplot(aes(x = time, y = voltage, colour = group) ) +
     geom_line() +
-    facet_wrap(~channel) +
-    theme_bw()
+    facet_wrap(~channel)
 ```
 
-![](eeg_temporal_files/figure-html/data-import-1.png)
+![](figures/eeg_temporal-data-import-1.png)
 
 ``` r
+
 # reshape the data
 eeg_data <- eegdata |>
     # keeping only one channel
-    dplyr::filter(channel == "PZ") |>
+    dplyr::filter(channel == "P6") |>
     # converting timesteps to seconds
     mutate(time = (time + 1) / 256) |>
     # rounding numeric variables
@@ -48,20 +52,21 @@ eeg_data <- eegdata |>
 # show a few rows
 head(eeg_data)
 #>       subject group condition trial channel   time voltage
-#> 1 co2a0000364     a        S1     0      PZ 0.0039  -2.797
-#> 2 co2a0000364     a        S1     0      PZ 0.0078  -4.262
-#> 3 co2a0000364     a        S1     0      PZ 0.0117  -4.262
-#> 4 co2a0000364     a        S1     0      PZ 0.0156  -2.797
-#> 5 co2a0000364     a        S1     0      PZ 0.0195  -0.844
-#> 6 co2a0000364     a        S1     0      PZ 0.0234   0.132
+#> 1 co2a0000364     a        S1     0      P6 0.0039  -2.909
+#> 2 co2a0000364     a        S1     0      P6 0.0078  -4.862
+#> 3 co2a0000364     a        S1     0      P6 0.0117  -5.351
+#> 4 co2a0000364     a        S1     0      P6 0.0156  -4.374
+#> 5 co2a0000364     a        S1     0      P6 0.0195  -1.933
+#> 6 co2a0000364     a        S1     0      P6 0.0234   0.997
 ```
 
 ## Fitting the model
 
-We fit the model (a BGAMM) on one channel (PZ) to test for group
-difference at every timestep.
+We fit the model (a BGAMM) on one channel to test for group difference
+at every timestep.
 
 ``` r
+
 # fitting the BGAMM to identify clusters (around 30 min on 4 parallel apple M4 cores)
 results <- testing_through_time(
     # EEG data
@@ -73,40 +78,52 @@ results <- testing_through_time(
     # name of predictor in data
     predictor_id = "group",
     # basis dimension
-    kvalue = 40,
+    kvalue = 20,
+    # baseline period
+    baseline_window = c(0, 20),
     # we recommend fitting the GAMM on summary statistics (mean and SD)
     multilevel = "summary",
     # threshold on posterior odds
     threshold = 10,
+    # participant-specific smooth?
+    varying_smooth = TRUE,
     # number of MCMCs
     chains = 4,
     # number of parallel cores
-    cores = 4
+    cores = 4,
+    # save the model
+    backend = "cmdstanr",
+    file = "cache/temporal_model"
     )
 ```
 
 ### Visualising the results
 
 ``` r
+
 # displaying the identified clusters
 print(results)
 #> 
-#> ==== Time-resolved GAMM results ===============================
+#> ==== Time-resolved GAM results ================================
+#>   Analysis: Temporal (1D)
+#>   Model coordinates: time
+#>   Cluster coordinates: time
+#>   Contrast: condition_difference
+#>   Posterior odds mode: directional_rope
+#>   Odds threshold: 10
+#>   Clusters found: 0
 #> 
-#> Clusters found: 
-#> 
-#>      sign id onset offset duration
-#>  positive  1 0.266  0.438    0.172
-#> 
+#> No clusters exceeded the threshold.
 #> =================================================================
 ```
 
 ``` r
+
 # plotting the data, model's predictions, and clusters
 plot(results)
 ```
 
-![](eeg_temporal_files/figure-html/clusters-plot-1.png)
+![](figures/eeg_temporal-clusters-plot-1.png)
 
 ### Computing clusters at the participant-level
 
@@ -116,6 +133,7 @@ EEG amplitude (`voltage`) differs from 0 and return clusters at the
 participant level.
 
 ``` r
+
 # fitting the BGAMM to identify clusters (around 30 min on 4 parallel apple M4 cores)
 results <- testing_through_time(
     # EEG data
@@ -124,10 +142,12 @@ results <- testing_through_time(
     participant_id = "subject",
     # EEG column
     outcome_id = "voltage",
+    # baseline period
+    baseline_window = c(0, 10),
     # here we use no predictor (because group varies across participants)
     predictor_id = NA,
-    # basis dimension (for both the group and participant levels)
-    kvalue = 40,
+    # group basis dimension
+    kvalue = 30,
     # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
     # return clusters at both the group and participant levels
@@ -139,94 +159,37 @@ results <- testing_through_time(
     # number of parallel cores
     cores = 4
     )
+#> Error in `make_bgam_formula()`:
+#> ! unused argument (by_ppt = TRUE)
 ```
 
 ### Visualising the results
 
 ``` r
+
 # displaying the identified clusters
 print(results)
 #> 
-#> ==== Time-resolved GAMM results ===============================
+#> ==== Time-resolved GAM results ================================
+#>   Analysis: Temporal (1D)
+#>   Model coordinates: time
+#>   Cluster coordinates: time
+#>   Contrast: condition_difference
+#>   Posterior odds mode: directional_rope
+#>   Odds threshold: 10
+#>   Clusters found: 0
 #> 
-#> Clusters found: 
-#> 
-#>  participant     sign id onset offset duration
-#>  co2a0000364 positive  1 0.336  0.398    0.062
-#>  co2a0000364 negative  1 0.004  0.312    0.308
-#>  co2a0000364 negative  2 0.441  0.449    0.008
-#>  co2a0000364 negative  3 0.531  1.000    0.469
-#>  co2a0000365 negative  1 0.148  0.219    0.071
-#>  co2a0000365 negative  2 0.328  1.000    0.672
-#>  co2a0000368 negative  1 0.004  0.090    0.086
-#>  co2a0000368 negative  2 0.137  1.000    0.863
-#>  co2a0000369 positive  1 0.191  0.394    0.203
-#>  co2a0000369 negative  1 0.027  0.102    0.075
-#>  co2a0000369 negative  2 0.551  1.000    0.449
-#>  co2a0000370 positive  1 0.055  0.148    0.093
-#>  co2a0000370 positive  2 0.215  0.473    0.258
-#>  co2a0000370 positive  3 0.574  0.660    0.086
-#>  co2a0000370 positive  4 0.781  0.887    0.106
-#>  co2a0000371 negative  1 0.090  1.000    0.910
-#>  co2a0000372 positive  1 0.004  0.020    0.016
-#>  co2a0000372 positive  2 0.066  0.148    0.082
-#>  co2a0000372 positive  3 0.297  1.000    0.703
-#>  co2a0000372 negative  1 0.180  0.223    0.043
-#>  co2a0000375 positive  1 0.004  0.449    0.445
-#>  co2a0000375 positive  2 0.859  0.965    0.106
-#>  co2a0000377 positive  1 0.004  0.027    0.023
-#>  co2a0000377 positive  2 0.113  0.144    0.031
-#>  co2a0000377 positive  3 0.219  0.258    0.039
-#>  co2a0000377 positive  4 0.348  0.473    0.125
-#>  co2a0000377 negative  1 0.766  1.000    0.234
-#>  co2a0000378 positive  1 0.219  0.516    0.297
-#>  co2a0000378 negative  1 0.004  0.203    0.199
-#>  co2a0000378 negative  2 0.586  0.629    0.043
-#>  co2a0000378 negative  3 0.789  0.789    0.000
-#>  co2a0000378 negative  4 0.859  1.000    0.141
-#>  co2c0000337 positive  1 0.086  0.113    0.027
-#>  co2c0000337 positive  2 0.305  0.500    0.195
-#>  co2c0000337 negative  1 0.781  0.840    0.059
-#>  co2c0000337 negative  2 0.852  0.859    0.007
-#>  co2c0000338 negative  1 0.125  0.219    0.094
-#>  co2c0000338 negative  2 0.641  1.000    0.359
-#>  co2c0000339 negative  1 0.004  0.207    0.203
-#>  co2c0000339 negative  2 0.426  1.000    0.574
-#>  co2c0000340 positive  1 0.043  0.051    0.008
-#>  co2c0000340 negative  1 0.098  1.000    0.902
-#>  co2c0000341 positive  1 0.227  0.676    0.449
-#>  co2c0000341 negative  1 0.004  0.094    0.090
-#>  co2c0000341 negative  2 0.152  0.184    0.032
-#>  co2c0000341 negative  3 0.820  0.906    0.086
-#>  co2c0000342 positive  1 0.004  0.156    0.152
-#>  co2c0000342 positive  2 0.180  1.000    0.820
-#>  co2c0000344 positive  1 0.246  0.246    0.000
-#>  co2c0000344 positive  2 0.309  0.352    0.043
-#>  co2c0000344 negative  1 0.144  0.215    0.071
-#>  co2c0000344 negative  2 0.445  0.606    0.161
-#>  co2c0000344 negative  3 0.656  1.000    0.344
-#>  co2c0000345 positive  1 0.004  0.027    0.023
-#>  co2c0000345 positive  2 0.043  0.086    0.043
-#>  co2c0000345 positive  3 0.281  0.406    0.125
-#>  co2c0000345 positive  4 0.633  0.676    0.043
-#>  co2c0000345 negative  1 0.156  0.199    0.043
-#>  co2c0000345 negative  2 0.492  0.527    0.035
-#>  co2c0000345 negative  3 0.773  0.797    0.024
-#>  co2c0000346 positive  1 0.004  0.152    0.148
-#>  co2c0000346 positive  2 0.188  0.465    0.277
-#>  co2c0000346 negative  1 0.551  0.602    0.051
-#>  co2c0000347 positive  1 0.004  0.137    0.133
-#>  co2c0000347 positive  2 0.215  0.449    0.234
-#> 
+#> No clusters exceeded the threshold.
 #> =================================================================
 ```
 
 ``` r
+
 # plotting the data, model's predictions, and clusters
 plot(results)
 ```
 
-![](eeg_temporal_files/figure-html/clusters-ppt-plot-1.png)
+![](figures/eeg_temporal-clusters-ppt-plot-1.png)
 
 ### Posterior predictive checks
 
@@ -238,15 +201,17 @@ method, but you can conduct various PPCs with
 <https://mc-stan.org/bayesplot/reference/PPC-overview.html>).
 
 ``` r
+
 # posterior predictive checks (PPCs) at the group level
 ppc(object = results, ppc_type = "group")
 ```
 
-![](eeg_temporal_files/figure-html/ppc1-plot-1.png)
+![](figures/eeg_temporal-ppc1-plot-1.png)
 
 ``` r
+
 # posterior predictive checks (PPCs) at the participant level
 ppc(object = results, ppc_type = "participant")
 ```
 
-![](eeg_temporal_files/figure-html/ppc2-plot-1.png)
+![](figures/eeg_temporal-ppc2-plot-1.png)

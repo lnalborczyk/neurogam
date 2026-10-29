@@ -9,7 +9,8 @@ assemble_temporal_clusters(
   is_2d_time,
   participant_clusters,
   threshold,
-  threshold_type
+  threshold_type,
+  odds_mode = "directional_rope"
 )
 }
 \arguments{

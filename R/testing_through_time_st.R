@@ -17,6 +17,13 @@
 #' @param warmup,iter,chains,cores,threads,backend,stan_control,file Fit options.
 #' @param n_post_samples Number of posterior draws, or `NULL` for all.
 #' @param threshold,threshold_type,credible_interval Clustering parameters.
+#' @param odds_mode Posterior-odds inference strategy. The default,
+#'   `"directional_rope"`, computes independent continuous posterior odds
+#'   for effects above and below the ROPE. These odds are thresholded
+#'   separately to identify positive and negative clusters.
+#'   `"legacy_one_sided"` reproduces the historical capped one-sided odds.
+#'   `"legacy_directional"` and `"spatiotemporal"` are retained for
+#'   backward compatibility.
 #' @param chance_level Null value for one-sample inference.
 #' @param rope Symmetric fixed ROPE half-width.
 #' @param contrast_levels Optional A - B ordering for two conditions.
@@ -62,6 +69,12 @@ testing_through_time_spatiotemporal <- function (
     n_post_samples = NULL,
     threshold = 10,
     threshold_type = "both",
+    odds_mode = c(
+        "directional_rope",
+        "legacy_one_sided",
+        "legacy_directional",
+        "spatiotemporal"
+        ),
     chance_level = 0,
     credible_interval = 0.95,
     rope = 0,
@@ -264,11 +277,12 @@ testing_through_time_spatiotemporal <- function (
         rope = rope,
         threshold = threshold,
         threshold_type = threshold_type,
+        odds_mode = odds_mode,
         credible_interval = credible_interval,
         draw_ids = draw_ids,
         chunk_size = chunk_size,
         re_formula = re_formula
-    )
+        )
     # Restore the external sensor and spatial names expected by the plotting
     # functions. Other standard output columns are unchanged.
     rename_output <- function(tab) {
@@ -319,15 +333,16 @@ testing_through_time_spatiotemporal <- function (
             null_value = if (is.null(grids$b)) chance_level else 0,
             rope = rope,
             credible_interval = credible_interval,
-            odds_mode = "legacy_one_sided",
+            #odds_mode = "legacy_one_sided",
+            odds_mode = odds_mode,
             contrast = analysed$contrast,
             contrast_levels = analysed$contrast_levels,
             adjacency_source = analysed$adjacency_source,
             participant_clusters = FALSE,
             n_post_samples = if (is.null(draw_ids)) NULL else length(draw_ids)
+            )
         )
-    )
 
-    return(analysed)
+    return (analysed)
 
 }
