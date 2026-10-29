@@ -1,58 +1,28 @@
-# Summary method for 1D `clusters_results` objects
+# Summarize a temporal neurogam analysis
 
-Produces a detailed textual summary of a time-resolved Bayesian GAMM
-analysis, including model metadata, the number of clusters detected, and
-descriptive statistics of cluster durations. A rounded cluster table is
-also printed.
+Summarize a temporal neurogam analysis
 
 ## Usage
 
 ``` r
 # S3 method for class 'clusters_results_1d'
-summary(object, digits = 3, ...)
+summary(object, digits = 3L, ...)
 ```
 
 ## Arguments
 
 - object:
 
-  An object of class `"clusters_results"` created by
-  [`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
+  A result of class \`clusters_results_1d\`.
 
 - digits:
 
-  Integer; number of decimal places used when printing numeric values
-  (default: `3`).
+  Number of decimal places to print.
 
 - ...:
 
-  Additional arguments (currently ignored).
+  Reserved for future use.
 
 ## Value
 
-The object `object`, returned invisibly.
-
-## Details
-
-The summary prints:
-
-- the model type used (`"full"`, `"summary"`, or `"group"`);
-
-- the class of the underlying brms model and the number of posterior
-  draws;
-
-- the number of clusters detected by the posterior odds threshold;
-
-- descriptive statistics for cluster durations (minimum, maximum, mean,
-  median, and total duration);
-
-- a neatly formatted table listing each cluster's onset, offset, and
-  duration.
-
-If no clusters were detected, the function prints a message and returns
-invisibly.
-
-## See also
-
-[`print.clusters_results_1d`](https://lnalborczyk.github.io/neurogam/reference/print.clusters_results_1d.md),
-[`testing_through_time`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+The input object, invisibly.

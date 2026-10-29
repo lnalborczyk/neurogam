@@ -13,7 +13,7 @@ ppc(
   ndraws = 500,
   group_var = NULL,
   xlab = "Time (s)",
-  theme = ggplot2::theme_bw(),
+  theme = theme_neurogam(),
   ...
 )
 ```

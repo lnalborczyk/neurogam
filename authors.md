@@ -5,12 +5,13 @@
 - **Ladislas Nalborczyk**. Author, maintainer.
   [](https://orcid.org/0000-0002-7419-9855)
 
-- **Paul Bürkner**. Contributor.
+- **Paul Bürkner**. Author, contributor.
+  [](https://orcid.org/0000-0001-5765-8995)
 
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/lnalborczyk/neurogam/blob/HEAD/inst/CITATION)
+[`inst/CITATION`](https://github.com/lnalborczyk/neurogam/blob/main/inst/CITATION)
 
 Nalborczyk L, Bürkner P (2025). “Precise temporal localisation of M/EEG
 effects with Bayesian generalised additive multilevel models.”
