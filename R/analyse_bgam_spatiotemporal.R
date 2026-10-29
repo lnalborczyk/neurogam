@@ -19,20 +19,22 @@
 #' @return Data frame with posterior estimates, probabilities, and odds.
 #'
 #' @keywords internal
-summarise_spatiotemporal_draws <- function(
+summarise_spatiotemporal_draws <- function (
     draws,
     null_value = 0,
     rope = 0,
     credible_interval = 0.95,
     odds_mode = "directional_rope"
     ) {
+
     summarise_posterior_matrix(
         draws = draws,
         null_value = null_value,
         rope = rope,
         credible_interval = credible_interval,
         odds_mode = odds_mode
-    )
+        )
+
 }
 
 #' Identify posterior-odds clusters in sensor-by-time BGAMM predictions
@@ -81,10 +83,8 @@ summarise_spatiotemporal_draws <- function(
 #'   `model`, `sensor_adjacency`, `adjacency_source`, and metadata.
 #' @seealso [make_sensor_adjacency()], [plot_sensor_adjacency()]
 #'
-#' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
-#'
 #' @export
-analyse_bgam_spatiotemporal <- function(
+analyse_bgam_spatiotemporal <- function (
     model,
     newdata,
     sensor_adjacency = NULL,
@@ -107,6 +107,16 @@ analyse_bgam_spatiotemporal <- function(
     ) {
 
     threshold_type <- match.arg(threshold_type)
+
+    odds_mode <- match.arg(
+        odds_mode,
+        c(
+            "directional_rope",
+            "legacy_one_sided",
+            "legacy_directional",
+            "spatiotemporal"
+            )
+        )
 
     if (!inherits(model, "brmsfit") ) {
 
@@ -243,8 +253,9 @@ analyse_bgam_spatiotemporal <- function(
                 rope = rope,
                 credible_interval = credible_interval,
                 odds_mode = odds_mode
-            )
+                )
         }
+
     )
 
     predictions <- cbind(
@@ -253,31 +264,17 @@ analyse_bgam_spatiotemporal <- function(
         )
 
     rownames(predictions) <- NULL
-
-    # # Clustering uses either the supplied or automatically inferred topology.
-    # cluster_data <- predictions[c(sensor_id, time_id, "prob_ratio")]
-    # names(cluster_data)[3L] <- "value"
-    #
-    # if (identical(odds_mode, "directional_rope")) {
-    #
-    #     cluster_data$value <- directional_rope_cluster_score(
-    #         odds_above = predictions$odds_above,
-    #         odds_below = predictions$odds_below,
-    #         threshold = threshold
-    #     )
-    #
-    # }
     cluster_data <- predictions[c(sensor_id, time_id)]
 
     cluster_data$value <- if (
         identical(odds_mode, "directional_rope")
-    ) {
+        ) {
 
         directional_rope_cluster_score(
             odds_above = predictions$odds_above,
             odds_below = predictions$odds_below,
             threshold = threshold
-        )
+            )
 
     } else {
 
@@ -325,7 +322,6 @@ analyse_bgam_spatiotemporal <- function(
             null_value = null_value,
             rope = rope,
             credible_interval = credible_interval,
-            #odds_mode = "legacy_one_sided",
             odds_mode = odds_mode,
             contrast = if (is.null(newdata_b)) "one_sample" else "A_minus_B",
             adjacency_source = adjacency_source,

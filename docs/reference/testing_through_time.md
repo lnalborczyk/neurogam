@@ -16,7 +16,7 @@ testing_through_time(
   previous_model = NULL,
   participant_id = "participant",
   outcome_id = "eeg",
-  outcome_sd = NULL,
+  outcome_sem = NULL,
   time_id = "time",
   predictor_id = "condition",
   trials_id = NULL,
@@ -29,19 +29,35 @@ testing_through_time(
   t2_full = FALSE,
   participant_clusters = FALSE,
   varying_smooth = TRUE,
+  include_by_smooth = TRUE,
+  include_by_varying_smooth = TRUE,
   warmup = 1000,
   iter = 2000,
   chains = 4,
   cores = 4,
   threads = NULL,
-  backend = c("cmdstanr", "rstan"),
+  backend = getOption("brms.backend", "rstan"),
   stan_control = NULL,
   file = NULL,
   n_post_samples = NULL,
   threshold = 10,
   threshold_type = c("both", "above", "below"),
+  odds_mode = c("directional_rope", "legacy_one_sided", "legacy_directional",
+    "spatiotemporal"),
   chance_level = NULL,
-  credible_interval = 0.95
+  credible_interval = 0.95,
+  baseline_window = c(0, 0.1),
+  space_id = NULL,
+  sensor_id = NULL,
+  tensor_d = c(2L, 1L),
+  sensor_adjacency = NULL,
+  adjacency_k = 4L,
+  adjacency_distance_factor = 2,
+  rope = NULL,
+  contrast_levels = NULL,
+  chunk_size = 256L,
+  re_formula = NA,
+  ...
 )
 ```
 
@@ -75,9 +91,9 @@ testing_through_time(
   Character; name of the column in `data` containing the outcome values
   (e.g., M/EEG amplitude, decoding accuracy).
 
-- outcome_sd:
+- outcome_sem:
 
-  Character; name of the column in `data` containing the outcome SD,
+  Character; name of the column in `data` containing the outcome SEM,
   when `outcome_id` has already been summarised (default value is NULL).
 
 - time_id:
@@ -144,7 +160,7 @@ testing_through_time(
 - use_se:
 
   Logical; whether to include known or internally computed measurement
-  error via `y | se(outcome_sd)` in the model formula.
+  error via `y | se(outcome_sem)` in the model formula.
 
 - t2_full:
 
@@ -162,6 +178,16 @@ testing_through_time(
 
   Logical; should we include a varying smooth. Default is `TRUE`. If
   `FALSE`, we only include a varying intercept and slope.
+
+- include_by_smooth:
+
+  Logical; if `TRUE` (default) and `predictor_type = "categorical"`, the
+  time smooth is specified with `by = predictor`.
+
+- include_by_varying_smooth:
+
+  Logical; if `TRUE` (non default) and `predictor_type = "categorical"`,
+  the time varying smooth is specified with `by = predictor`.
 
 - warmup:
 
@@ -223,6 +249,16 @@ testing_through_time(
   clusters are formed where `value <= 1/threshold`. When `"both"`, both
   types are detected and the returned data include a `sign` column.
 
+- odds_mode:
+
+  Posterior-odds inference strategy. The default,
+  \`"directional_rope"\`, computes independent continuous posterior odds
+  for effects above and below the ROPE. These odds are thresholded
+  separately to identify positive and negative clusters.
+  \`"legacy_one_sided"\` reproduces the historical capped one-sided
+  odds. \`"legacy_directional"\` and \`"spatiotemporal"\` are retained
+  for backward compatibility.
+
 - chance_level:
 
   Numeric; null value for the outcome (e.g., 0.5 for decoding accuracy).
@@ -230,6 +266,66 @@ testing_through_time(
 - credible_interval:
 
   Numeric; width of the credible (quantile) interval.
+
+- baseline_window:
+
+  Numeric; bounds of the baseline window (in the same units of
+  `time_id`), used to compute the baseline ROPE. Typically, this is a
+  100-200 ms window preceding stimulus onset.
+
+- space_id:
+
+  Optional length-two spatial coordinate names. Non-NULL selects the
+  spatiotemporal Gaussian multilevel workflow.
+
+- sensor_id:
+
+  Sensor column name, required when \`space_id\` is supplied.
+
+- tensor_d:
+
+  Tensor marginal dimensions; currently \`c(2, 1)\`.
+
+- sensor_adjacency:
+
+  Optional named sensor adjacency matrix or edge list.
+
+- adjacency_k, adjacency_distance_factor:
+
+  Parameters for automatic sensor adjacency construction when no graph
+  is supplied.
+
+- rope:
+
+  Optional nonnegative symmetric ROPE half-width. The default (\`NULL\`)
+  estimates the ROPE from the maximum absolute posterior-median
+  deviation within \`baseline_window\` for 1D temporal analyses. An
+  explicit value, including zero, overrides baseline estimation. For 2D
+  and spatiotemporal analyses, \`NULL\` currently corresponds to a
+  point-null ROPE of zero.
+
+- contrast_levels:
+
+  Two condition labels specifying the A - B contrast.
+
+- chunk_size:
+
+  Number of sensor/time rows per posterior prediction chunk.
+
+- re_formula:
+
+  Group-level effects in posterior predictions; by default \`NA\`
+  excludes subject-specific random effects.
+
+- ...:
+
+  Additional arguments passed to
+  [`brm`](https://paulbuerkner.com/brms/reference/brm.html), and from
+  there to the selected Stan backend. This can be used, for example, to
+  set `refresh`, `seed`, `init`, or other backend-specific sampling
+  arguments. Arguments controlling the model formula, data, family,
+  backend, MCMC settings, and Stan compilation are handled explicitly by
+  `testing_through_time()` and cannot be passed through `...`.
 
 ## Value
 
@@ -242,9 +338,9 @@ An object of class `"clusters_results"`, which is a list with elements:
   (posterior median, credible interval, posterior probabilities, and
   odds `prob_ratio`);
 
-- `summary_data`: data used to fit the brms model (possibly summarised);
-
 - `model`: the fitted brms model object;
+
+- `summary_data`: data used to fit the brms model (possibly summarised);
 
 - `multilevel`: the value of the `multilevel` argument.
 
@@ -276,10 +372,6 @@ Internally, the function:
 
 [`brm`](https://paulbuerkner.com/brms/reference/brm.html)
 
-## Author
-
-Ladislas Nalborczyk <ladislas.nalborczyk@cnrs.fr>.
-
 ## Examples
 
 ``` r
@@ -297,7 +389,7 @@ summary(results)
 # plot the model predictions and identified clusters
 plot(results)
 
-# posterior predictive check
+# posterior predictive checks
 ppc(results)
 } # }
 ```

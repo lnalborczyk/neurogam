@@ -93,6 +93,3 @@ sensor topology is preferable for confirmatory analyses.
 \seealso{
 [make_sensor_adjacency()], [plot_sensor_adjacency()]
 }
-\author{
-Ladislas Nalborczyk \email{ladislas.nalborczyk@cnrs.fr}.
-}

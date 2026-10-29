@@ -8,7 +8,7 @@ on:
     types: [published]
   workflow_dispatch:
 
-name: pkgdown.yaml
+name: Build pkgdown website
 
 permissions: read-all
 
@@ -48,6 +48,14 @@ jobs:
         # run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE, quiet = FALSE, override = list(articles = FALSE) )
         # run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE, quiet = FALSE)
         # shell: Rscript {0}
+
+      - name: Build pkgdown website
+        run: pkgdown::build_site_github_pages(
+          new_process = FALSE,
+          install = FALSE,
+          quiet = FALSE
+          )
+        shell: Rscript {0}
 
       - name: Deploy to GitHub pages 🚀
         if: github.event_name != 'pull_request'

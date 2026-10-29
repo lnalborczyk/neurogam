@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# R and RStudio
+.Rhistory
+.RData
+.Rproj.user/
+.positai
+
+# R package build and check artifacts
+.Rcheck/
+*.Rcheck/
+/doc/
+/Meta/
+/inst/doc/
+
+# README rendering caches
+/README_cache/
+
+# Quarto temporary files
+**/.quarto/
+**/_freeze/
+
+# knitr and Quarto execution caches
+**/*_cache/
+**/*_files/
+
+# Locally saved vignette models and computations
+/vignettes-raw/cache/
+
+# Other local model caches, if used
+/cache/
+
+# Locally built source packages
+/neurogam_*.tar.gz
+
+# Optional: generated pkgdown website
+# /docs/

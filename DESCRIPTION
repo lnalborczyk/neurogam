@@ -1,8 +1,7 @@
 Package: neurogam
 Type: Package
-Title: Modelling time-resolved electrophysiological data with Bayesian generalised additive multilevel models
-Version: 0.0.6
-Date: 2026-10-27
+Title: Bayesian Generalised Additive Models for Time-Resolved Data
+Version: 0.1.0
 Authors@R:
     c(
     person(
@@ -14,14 +13,24 @@ Authors@R:
     person(
     given = "Paul", family = "Bürkner",
     role = c("aut", "ctb"),
-    email = "paul.buerkner@gmail.com"
+    email = "paul.buerkner@gmail.com",
+    comment = c(ORCID = "0000-0001-5765-8995")
     ) )
-Description: Provides utility functions for fitting Bayesian generalised additive multilevel models (BGAMMs) to time-resolved data (e.g., M/EEG, EMG, pupillometry, etc) and identifying clusters.
+Description: Provides tools for fitting Bayesian generalised additive
+    multilevel models to time-resolved data using 'brms'. Supports
+    one-dimensional time courses, cross-temporal generalisation matrices,
+    and spatiotemporal measurements, including posterior summaries,
+    directional evidence assessment, cluster identification, and
+    visualisation of fitted effects. Designed for applications involving
+    electroencephalography, magnetoencephalography, electromyography,
+    pupillometry, and other time-resolved measurements. The temporal
+    inference framework is described in Nalborczyk & Bürkner (2025)
+    <doi:10.1101/2025.08.29.672336>.
 License: MIT + file LICENSE
 Encoding: UTF-8
+Language: en-GB
 LazyData: true
 Imports: 
-    akima,
     assertthat,
     bayesplot,
     brms,
@@ -31,6 +40,7 @@ Imports:
     ggrepel,
     glue,
     igraph,
+    interp,
     patchwork,
     rlang,
     scales,

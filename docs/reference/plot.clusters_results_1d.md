@@ -21,8 +21,9 @@ plot(
   clusters_y = -Inf,
   clusters_colour = "black",
   lineend = "butt",
-  theme = ggplot2::theme_bw(),
-  ...
+  theme = theme_neurogam(),
+  ...,
+  type = NULL
 )
 ```
 
@@ -58,11 +59,17 @@ plot(
 - theme:
 
   A ggplot2 theme object. Defaults to
-  [`theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  [`theme_neurogam()`](https://lnalborczyk.github.io/neurogam/reference/theme_neurogam.md).
 
 - ...:
 
   Currently unused. Included for S3 compatibility.
+
+- type:
+
+  Optional plot type. \`NULL\` (default) preserves the historical plot;
+  \`"predictions"\` and \`"clusters"\` use the standardized result
+  tables.
 
 ## Value
 

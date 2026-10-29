@@ -686,14 +686,25 @@ st_interp_to_grid <- function (
     xo <- sort(unique(grid_xy$xproj) )
     yo <- sort(unique(grid_xy$yproj) )
 
-    z <- akima::interp(
+    # z <- akima::interp(
+    #     x = df_t$xproj,
+    #     y = df_t$yproj,
+    #     z = df_t[[value]],
+    #     xo = xo,
+    #     yo = yo,
+    #     duplicate = "mean",
+    #     linear = TRUE,
+    #     extrap = extrap
+    #     )
+
+    z <- interp::interp(
         x = df_t$xproj,
         y = df_t$yproj,
         z = df_t[[value]],
         xo = xo,
         yo = yo,
         duplicate = "mean",
-        linear = TRUE,
+        method = "linear",
         extrap = extrap
         )
 
@@ -753,6 +764,92 @@ get_baseline_null <- function (post_diff, baseline_window, credible_interval) {
 }
 
 #' @keywords internal
+resolve_temporal_rope <- function (
+    post_draws,
+    rope = NULL,
+    baseline_window = NULL,
+    credible_interval = 0.95,
+    value_col = ".epred",
+    null_center = 0
+    ) {
+
+    # An explicit ROPE, including zero, overrides baseline estimation.
+    if (!is.null(rope)) {
+
+        if (!is.numeric(rope) || length(rope) != 1L ||
+            !is.finite(rope) || rope < 0) {
+
+            stop(
+                "`rope` must be NULL or a nonnegative finite number.",
+                call. = FALSE
+            )
+
+        }
+
+        return(list(rope = rope, source = "user"))
+
+    }
+
+    # No baseline and no explicit ROPE: point-null inference.
+    if (is.null(baseline_window)) {
+
+        return(list(rope = 0, source = "point_null"))
+
+    }
+
+    if (!is.numeric(baseline_window) ||
+        length(baseline_window) != 2L ||
+        any(!is.finite(baseline_window)) ||
+        baseline_window[1L] >= baseline_window[2L]) {
+
+        stop(
+            "`baseline_window` must contain two increasing finite numbers.",
+            call. = FALSE
+        )
+
+    }
+
+    if (!all(c("time", value_col) %in% names(post_draws))) {
+
+        stop(
+            "Baseline estimation requires time and posterior draws.",
+            call. = FALSE
+        )
+
+    }
+
+    baseline_draws <- data.frame(
+        time = post_draws$time,
+        epred_diff = post_draws[[value_col]] - null_center
+    )
+
+    effective_rope <- get_baseline_null(
+        post_diff = baseline_draws,
+        baseline_window = baseline_window,
+        credible_interval = credible_interval
+    )
+
+    if (length(effective_rope) != 1L ||
+        !is.finite(effective_rope) ||
+        effective_rope < 0) {
+
+        stop(
+            "Could not estimate the ROPE from the baseline window.",
+            call. = FALSE
+        )
+
+    }
+
+    return (
+        list(
+            rope = effective_rope,
+            source = "baseline"
+            )
+        )
+
+}
+
+#' @keywords internal
 compute_one_sample_prob <- function(
     post_draws,
     null_value,
@@ -760,14 +857,18 @@ compute_one_sample_prob <- function(
     n_post_samples,
     credible_interval,
     baseline_window = NULL,
-    odds_mode = "directional_rope"
-    ) {
-    if (!is.null(baseline_window)) {
-        if (!is.numeric(baseline_window) || length(baseline_window) != 2L ||
-            anyNA(baseline_window) || baseline_window[1L] >= baseline_window[2L]) {
-            stop("`baseline_window` must contain increasing numeric bounds.",
-                 call. = FALSE)
-        }
+    odds_mode = "directional_rope",
+    rope = NULL
+) {
+    groups <- if (participant_clusters) c("time", "participant") else "time"
+
+    # Preserve the historical one-sided baseline convention when explicitly
+    # selected and no user ROPE has been supplied.
+    legacy_baseline <- identical(odds_mode, "legacy_one_sided") &&
+        is.null(rope) && !is.null(baseline_window)
+    effective_null <- null_value
+
+    if (legacy_baseline) {
         baseline <- post_draws[
             post_draws$time >= baseline_window[1L] &
                 post_draws$time <= baseline_window[2L],
@@ -777,38 +878,46 @@ compute_one_sample_prob <- function(
             stop("No observations found within `baseline_window`.",
                  call. = FALSE)
         }
-        groups <- if (participant_clusters) c("time", "participant") else "time"
-        baseline_groups <- dplyr::group_by(
-            baseline,
-            dplyr::across(dplyr::all_of(groups))
-        )
         alpha <- (1 - credible_interval) / 2
-        limits <- dplyr::summarise(
-            baseline_groups,
-            lower = stats::quantile(.data$.epred, probs = alpha, na.rm = TRUE),
-            upper = stats::quantile(.data$.epred, probs = 1 - alpha, na.rm = TRUE),
-            .groups = "drop"
+        limits <- baseline |>
+            dplyr::group_by(dplyr::across(dplyr::all_of(groups))) |>
+            dplyr::summarise(
+                lower = stats::quantile(.data$.epred, probs = alpha),
+                upper = stats::quantile(.data$.epred, probs = 1 - alpha),
+                .groups = "drop"
+            )
+        effective_null <- max(abs(c(limits$lower, limits$upper)))
+        effective <- list(rope = 0, source = "legacy_baseline_null")
+    } else {
+        effective <- resolve_temporal_rope(
+            post_draws = post_draws,
+            rope = rope,
+            baseline_window = baseline_window,
+            credible_interval = credible_interval,
+            value_col = ".epred",
+            null_center = null_value
         )
-        null_value <- max(abs(c(limits$lower, limits$upper)), na.rm = TRUE)
     }
 
-    groups <- if (participant_clusters) c("time", "participant") else "time"
     out <- summarise_posterior_long(
         data = post_draws,
         groups = groups,
         value = ".epred",
-        null_value = null_value,
+        null_value = effective_null,
+        rope = effective$rope,
         credible_interval = credible_interval,
         odds_mode = odds_mode,
         odds_cap = n_post_samples
     )
     out$post_prob <- out$estimate
-    #out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
-    out[c(groups,
-        "prob_above", "prob_below", "prob_inside",
+    out <- out[c(
+        groups, "prob_above", "prob_below", "prob_inside",
         "odds_above", "odds_below", "prob_ratio",
         "post_prob", "lower", "upper"
     )]
+    attr(out, "effective_rope") <- effective$rope
+    attr(out, "rope_source") <- effective$source
+    out
 }
 
 #' @keywords internal
@@ -820,40 +929,46 @@ compute_two_sample_prob <- function(
     credible_interval,
     predictor_type,
     baseline_window = NULL,
-    odds_mode = "directional_rope"
-    ) {
-
+    odds_mode = "directional_rope",
+    rope = NULL
+) {
     groups <- if (participant_clusters) c("time", "participant") else "time"
     paired <- pair_posterior_contrasts(post_draws, groups, predictor_type)
-
-    if (!is.null(baseline_window)) {
-        # Preserve the existing 1D contrast definition: maximum absolute
-        # median difference across baseline time points, not CI endpoints.
-        null_value <- get_baseline_null(
-            post_diff = paired,
-            baseline_window = baseline_window,
-            credible_interval = credible_interval
-        )
+    # Preserve the old low-level interpretation of `null_value` as a
+    # contrast width if no baseline and no explicit `rope` were supplied.
+    selected_rope <- if (is.null(rope) && is.null(baseline_window)) {
+        null_value
+    } else {
+        rope
     }
-    if (!is.finite(null_value) || null_value < 0) {
-        stop("Contrast ROPE half-width must be finite and nonnegative.",
-             call. = FALSE)
-    }
+    effective <- resolve_temporal_rope(
+        post_draws = paired,
+        rope = selected_rope,
+        baseline_window = baseline_window,
+        credible_interval = credible_interval,
+        value_col = "epred_diff",
+        null_center = 0
+    )
 
     out <- summarise_posterior_long(
         data = paired,
         groups = groups,
         value = "epred_diff",
         null_value = 0,
-        rope = null_value,
+        rope = effective$rope,
         credible_interval = credible_interval,
         odds_mode = odds_mode,
         odds_cap = n_post_samples
     )
     out$post_prob <- out$estimate
-    out[c(groups, "prob_above", "prob_below", "prob_inside",
-          "odds_above", "odds_below", "prob_ratio",
-          "post_prob", "lower", "upper")]
+    out <- out[c(
+        groups, "prob_above", "prob_below", "prob_inside",
+        "odds_above", "odds_below", "prob_ratio",
+        "post_prob", "lower", "upper"
+    )]
+    attr(out, "effective_rope") <- effective$rope
+    attr(out, "rope_source") <- effective$source
+    out
 }
 
 #' @keywords internal
@@ -876,40 +991,68 @@ add_required_dummy <- function (df, is_binom) {
 }
 
 #' @keywords internal
-compute_one_sample_prob_2d <- function(
+compute_one_sample_prob_2d <- function (
     post_draws,
     null_value,
     participant_clusters,
     n_post_samples,
     credible_interval,
     baseline_window = NULL,
-    odds_mode = "directional_rope"
-) {
+    odds_mode = "directional_rope",
+    rope = 0
+    ) {
+
     groups <- c("time1", "time2")
+
     if (participant_clusters) {
+
         groups <- c(groups, "participant")
+
     }
+
     # Existing 2D one-sample implementation does not use baseline_window.
     out <- summarise_posterior_long(
         data = post_draws,
         groups = groups,
         value = ".epred",
         null_value = null_value,
+        rope = rope,
         credible_interval = credible_interval,
         odds_mode = odds_mode,
         odds_cap = n_post_samples
-    )
+        )
+
     out$post_prob <- out$estimate
-    #out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
-    out[c(groups,
+
+    # return (
+    #     out[c(
+    #         groups,
+    #         "prob_above", "prob_below", "prob_inside",
+    #         "odds_above", "odds_below", "prob_ratio",
+    #         "post_prob", "lower", "upper"
+    #         )]
+    #     )
+
+    out <- out[c(
+        groups,
         "prob_above", "prob_below", "prob_inside",
         "odds_above", "odds_below", "prob_ratio",
         "post_prob", "lower", "upper"
     )]
+
+    attr(out, "effective_rope") <- rope
+    attr(out, "rope_source") <- if (rope == 0) {
+        "point_null"
+    } else {
+        "user"
+    }
+
+    return (out)
+
 }
 
 #' @keywords internal
-compute_two_sample_prob_2d <- function(
+compute_two_sample_prob_2d <- function (
     post_draws,
     null_value,
     participant_clusters,
@@ -918,13 +1061,20 @@ compute_two_sample_prob_2d <- function(
     predictor_type,
     time_id = c("time1", "time2"),
     baseline_window = NULL,
-    odds_mode = "directional_rope"
-) {
+    odds_mode = "directional_rope",
+    rope = 0
+    ) {
+
     groups <- c("time1", "time2")
+
     if (participant_clusters) {
+
         groups <- c(groups, "participant")
+
     }
+
     paired <- pair_posterior_contrasts(post_draws, groups, predictor_type)
+
     # Existing 2D contrast implementation uses one-sided posterior odds,
     # unlike the 1D directional contrast implementation.
     out <- summarise_posterior_long(
@@ -932,17 +1082,39 @@ compute_two_sample_prob_2d <- function(
         groups = groups,
         value = "epred_diff",
         null_value = null_value,
+        rope = rope,
         credible_interval = credible_interval,
         odds_mode = odds_mode,
         odds_cap = n_post_samples
-    )
+        )
+
     out$post_prob <- out$estimate
-    #out[c(groups, "prob_above", "prob_ratio", "post_prob", "lower", "upper")]
-    out[c(groups,
+
+    # return (
+    #     out[c(
+    #         groups,
+    #         "prob_above", "prob_below", "prob_inside",
+    #         "odds_above", "odds_below", "prob_ratio",
+    #         "post_prob", "lower", "upper"
+    #         )]
+    #     )
+
+    out <- out[c(
+        groups,
         "prob_above", "prob_below", "prob_inside",
         "odds_above", "odds_below", "prob_ratio",
         "post_prob", "lower", "upper"
     )]
+
+    attr(out, "effective_rope") <- rope
+    attr(out, "rope_source") <- if (rope == 0) {
+        "point_null"
+    } else {
+        "user"
+    }
+
+    return (out)
+
 }
 
 # null-coalescing (avoid importing rlang just for %||%)
@@ -1199,18 +1371,24 @@ make_prediction_grid_from_summary <- function (
 
 # compute directional odds
 #' @keywords internal
-compute_directional_odds <- function(
+compute_directional_odds <- function (
     post_diff,
     null_value = 0,
     n_post_samples,
     groups = "time",
     odds_mode = "directional_rope"
-) {
+    ) {
+
     if (!is.numeric(null_value) || length(null_value) != 1L ||
         !is.finite(null_value) || null_value < 0) {
-        stop("`null_value` must be a nonnegative ROPE half-width.",
-             call. = FALSE)
+
+        stop (
+            "`null_value` must be a nonnegative ROPE half-width.",
+            call. = FALSE
+            )
+
     }
+
     out <- summarise_posterior_long(
         data = post_diff,
         groups = groups,
@@ -1219,7 +1397,13 @@ compute_directional_odds <- function(
         rope = null_value,
         odds_mode = odds_mode,
         odds_cap = n_post_samples
-    )
-    out[c(groups, "prob_above", "prob_below", "prob_inside",
-          "odds_above", "odds_below", "prob_ratio")]
+        )
+
+    return (
+        out[c(
+            groups, "prob_above", "prob_below", "prob_inside",
+            "odds_above", "odds_below", "prob_ratio"
+            )]
+        )
+
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis_dispatch.R
 \name{normalize_spatiotemporal_dispatch}
 \alias{normalize_spatiotemporal_dispatch}
-\title{Normalize the options supplied to the spatiotemporal dispatcher}
+\title{Normalise the options supplied to the spatiotemporal dispatcher}
 \usage{
 normalize_spatiotemporal_dispatch(
   sensor_id,
@@ -32,6 +32,6 @@ normalize_spatiotemporal_dispatch(
 A list containing normalized `kvalue` and `bs`.
 }
 \description{
-Normalize the options supplied to the spatiotemporal dispatcher
+Normalise the options supplied to the spatiotemporal dispatcher
 }
 \keyword{internal}

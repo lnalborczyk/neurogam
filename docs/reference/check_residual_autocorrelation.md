@@ -25,7 +25,7 @@ check_residual_autocorrelation(
   seed = 666,
   acf_ndraws = 1000,
   acf_ci = 0.95,
-  theme = ggplot2::theme_bw(),
+  theme = theme_neurogam(),
   verbose = TRUE
 )
 ```

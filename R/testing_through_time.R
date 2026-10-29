@@ -128,7 +128,13 @@
 #' @param sensor_adjacency Optional named sensor adjacency matrix or edge list.
 #' @param adjacency_k,adjacency_distance_factor Parameters for automatic
 #'   sensor adjacency construction when no graph is supplied.
-#' @param rope Fixed symmetric ROPE half-width for spatiotemporal inference.
+#' @param rope Optional nonnegative symmetric ROPE half-width.
+#'   The default (`NULL`) estimates the ROPE from the maximum
+#'   absolute posterior-median deviation within `baseline_window`
+#'   for 1D temporal analyses. An explicit value, including zero,
+#'   overrides baseline estimation.
+#'   For 2D and spatiotemporal analyses, `NULL` currently
+#'   corresponds to a point-null ROPE of zero.
 #' @param contrast_levels Two condition labels specifying the A - B contrast.
 #' @param chunk_size Number of sensor/time rows per posterior prediction chunk.
 #' @param re_formula Group-level effects in posterior predictions; by default
@@ -188,14 +194,14 @@
 #' # plot the model predictions and identified clusters
 #' plot(results)
 #'
-#' # posterior predictive check
+#' # posterior predictive checks
 #' ppc(results)
 #' }
 #'
 #' @seealso \code{\link[brms]{brm}}
 #'
 #' @export
-testing_through_time <- function(
+testing_through_time <- function (
         data,
         previous_model = NULL,
         participant_id = "participant", outcome_id = "eeg", outcome_sem = NULL,
@@ -224,13 +230,22 @@ testing_through_time <- function(
         baseline_window = c(0, 0.1),
         space_id = NULL, sensor_id = NULL, tensor_d = c(2L, 1L),
         sensor_adjacency = NULL, adjacency_k = 4L,
-        adjacency_distance_factor = 1.8, rope = 0,
+        adjacency_distance_factor = 2, rope = NULL,
         contrast_levels = NULL, chunk_size = 256L, re_formula = NA,
         ...
         ) {
 
-    # Spatiotemporal analyses use the validated Stage 2 engine
-    if (identical(classify_bgam_analysis(space_id), "spatiotemporal")) {
+    if (identical(classify_bgam_analysis(space_id), "spatiotemporal") ) {
+
+        odds_mode <- match.arg(
+            odds_mode,
+            c(
+                "directional_rope",
+                "legacy_one_sided",
+                "legacy_directional",
+                "spatiotemporal"
+                )
+            )
 
         st_options <- normalize_spatiotemporal_dispatch(
             sensor_id = sensor_id,
@@ -241,7 +256,8 @@ testing_through_time <- function(
             kvalue_missing = missing(kvalue),
             bs = bs,
             bs_missing = missing(bs)
-        )
+            )
+
         kvalue <- st_options$kvalue
         bs <- st_options$bs
 
@@ -279,9 +295,9 @@ testing_through_time <- function(
                 threshold = threshold,
                 threshold_type = match.arg(threshold_type),
                 odds_mode = odds_mode,
-                chance_level = if (is.null(chance_level)) 0 else chance_level,
+                chance_level = if (is.null(chance_level) ) 0 else chance_level,
                 credible_interval = credible_interval,
-                rope = rope,
+                rope = if (is.null(rope) ) 0 else rope,
                 contrast_levels = contrast_levels,
                 sensor_adjacency = sensor_adjacency,
                 adjacency_k = adjacency_k,
@@ -350,7 +366,7 @@ testing_through_time <- function(
 
     stan_model_args_backend <- if (backend == "cmdstanr") {
 
-        list(stanc_options = list("O1"))
+        list(stanc_options = list("O1") )
 
     } else {
 
@@ -645,7 +661,8 @@ testing_through_time <- function(
             file = file,
             stan_model_args = stan_model_args_backend,
             extra_args = brm_dots
-        )
+            )
+
         brms_gam <- fit_result$model
         n_post_samples <- fit_result$n_post_samples
 
@@ -754,7 +771,8 @@ testing_through_time <- function(
             file = file,
             stan_model_args = stan_model_args_backend,
             extra_args = brm_dots
-        )
+            )
+
         brms_gam <- fit_result$model
         n_post_samples <- fit_result$n_post_samples
 
@@ -870,7 +888,6 @@ testing_through_time <- function(
 
     }
 
-    # Compute posterior probabilities using the existing inference functions.
     if (!is_2d_time) {
 
         if (is.na(predictor_id) ) {
@@ -882,7 +899,8 @@ testing_through_time <- function(
                 n_post_samples = n_post_samples,
                 credible_interval = credible_interval,
                 baseline_window = baseline_window,
-                odds_mode = odds_mode
+                odds_mode = odds_mode,
+                rope = rope
                 )
 
         } else {
@@ -895,7 +913,8 @@ testing_through_time <- function(
                 credible_interval = credible_interval,
                 predictor_type = predictor_type,
                 baseline_window = baseline_window,
-                odds_mode = odds_mode
+                odds_mode = odds_mode,
+                rope = rope
                 )
 
         }
@@ -919,7 +938,9 @@ testing_through_time <- function(
                 null_value = chance_level,
                 n_post_samples = n_post_samples,
                 credible_interval = credible_interval,
-                baseline_window = baseline_window
+                baseline_window = baseline_window,
+                odds_mode = odds_mode,
+                rope = if (is.null(rope) ) 0 else rope
                 )
 
         } else {
@@ -931,7 +952,9 @@ testing_through_time <- function(
                 n_post_samples = n_post_samples,
                 credible_interval = credible_interval,
                 predictor_type = predictor_type,
-                baseline_window = baseline_window
+                baseline_window = baseline_window,
+                odds_mode = odds_mode,
+                rope = if (is.null(rope) ) 0 else rope
                 )
 
         }
@@ -959,25 +982,40 @@ testing_through_time <- function(
             time_id = if (is_2d_time) c("time1", "time2") else "time",
             participant_id = participant_id,
             outcome_id = outcome_id,
-            predictor_id = if (is.na(predictor_id)) NULL else predictor_id,
+            predictor_id = if (is.na(predictor_id) ) NULL else predictor_id,
             multilevel = multilevel,
             threshold = threshold,
             threshold_type = threshold_type,
-            null_value = if (is.na(predictor_id)) chance_level else 0,
+            null_value = if (is.na(predictor_id) ) chance_level else 0,
             baseline_window = if (is_2d_time) NULL else baseline_window,
             credible_interval = credible_interval,
-            odds_mode = "legacy_one_sided",
-            contrast = if (is.na(predictor_id)) {
+            rope = attr(prob_y_above, "effective_rope", exact = TRUE),
+            odds_mode = odds_mode,
+            contrast = if (is.na(predictor_id) ) {
                 "one_sample"
-            } else if (identical(predictor_type, "continuous")) {
+            } else if (identical(predictor_type, "continuous") ) {
                 "continuous_difference"
             } else {
                 "condition_difference"
             },
             participant_clusters = participant_clusters,
             n_post_samples = n_post_samples
+            )
         )
+
+    metadata <- attr(
+        clusters_results,
+        "neurogam_metadata",
+        exact = TRUE
         )
+
+    metadata$rope_source <- attr(
+        prob_y_above,
+        "rope_source",
+        exact = TRUE
+        )
+
+    attr(clusters_results, "neurogam_metadata") <- metadata
 
     return (clusters_results)
 

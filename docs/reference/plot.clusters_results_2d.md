@@ -13,12 +13,13 @@ Visualises 2D (time-by-time) posterior predictions from a
 # S3 method for class 'clusters_results_2d'
 plot(
   x,
-  theme = ggplot2::theme_bw(),
+  theme = theme_neurogam(),
   palette = "vik",
   midpoint = 0.5,
   axes_labels = c("Training time (s)", "Testing time (s)"),
   cluster_outline_colour = "black",
-  ...
+  ...,
+  type = NULL
 )
 ```
 
@@ -33,7 +34,7 @@ plot(
 - theme:
 
   A ggplot2 theme object added to each panel. Defaults to
-  [`theme_bw()`](https://ggplot2.tidyverse.org/reference/ggtheme.html).
+  [`theme_neurogam()`](https://lnalborczyk.github.io/neurogam/reference/theme_neurogam.md).
 
 - palette:
 
@@ -55,6 +56,12 @@ plot(
 - ...:
 
   Currently unused. Included for S3 compatibility.
+
+- type:
+
+  Optional plot type. \`NULL\` (default) preserves the historical plot;
+  \`"predictions"\` and \`"clusters"\` use the standardized result
+  tables.
 
 ## Value
 

@@ -26,7 +26,6 @@ summarise_posterior_matrix <- function (
     null_value = 0,
     rope = 0,
     credible_interval = 0.95,
-    # odds_mode = c("legacy_one_sided", "legacy_directional", "spatiotemporal"),
     odds_mode = c(
         "directional_rope",
         "legacy_one_sided",
@@ -39,14 +38,20 @@ summarise_posterior_matrix <- function (
     odds_mode <- match.arg(odds_mode)
 
     if (!is.matrix(draws) || !is.numeric(draws) ||
-        nrow(draws) < 1L || ncol(draws) < 1L || any(!is.finite(draws))) {
-        stop("`draws` must be a finite numeric matrix with positive dimensions.",
-             call. = FALSE)
+        nrow(draws) < 1L || ncol(draws) < 1L || any(!is.finite(draws) ) ) {
+
+        stop (
+            "`draws` must be a finite numeric matrix with positive dimensions.",
+            call. = FALSE
+            )
+
     }
 
-    scalar_number <- function(x) {
+    scalar_number <- function (x) {
+
         is.numeric(x) && length(x) == 1L &&
             !is.na(x) && is.finite(x)
+
     }
 
     if (!scalar_number(null_value)) {
@@ -86,9 +91,6 @@ summarise_posterior_matrix <- function (
     odds_above <- prob_above / (1 - prob_above)
     odds_below <- prob_below / (1 - prob_below)
 
-    # if (odds_mode == "legacy_one_sided") {
-    #     prob_ratio <- pmax(pmin(odds_above, odds_cap), 1 / odds_cap)
-
     if (odds_mode == "directional_rope") {
 
         # Compatibility field only. Actual directional inference uses
@@ -101,7 +103,7 @@ summarise_posterior_matrix <- function (
         prob_ratio <- pmax(
             pmin(odds_above, odds_cap),
             1 / odds_cap
-        )
+            )
 
     } else if (odds_mode == "legacy_directional") {
         odds_above <- pmin(odds_above, odds_cap)

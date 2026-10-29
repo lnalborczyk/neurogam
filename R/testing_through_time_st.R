@@ -333,15 +333,16 @@ testing_through_time_spatiotemporal <- function (
             null_value = if (is.null(grids$b)) chance_level else 0,
             rope = rope,
             credible_interval = credible_interval,
-            odds_mode = "legacy_one_sided",
+            #odds_mode = "legacy_one_sided",
+            odds_mode = odds_mode,
             contrast = analysed$contrast,
             contrast_levels = analysed$contrast_levels,
             adjacency_source = analysed$adjacency_source,
             participant_clusters = FALSE,
             n_post_samples = if (is.null(draw_ids)) NULL else length(draw_ids)
+            )
         )
-    )
 
-    return(analysed)
+    return (analysed)
 
 }

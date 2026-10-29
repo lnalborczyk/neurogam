@@ -1,5 +1,5 @@
 
-# neurogam: Bayesian modelling of time-resolved electrophysiological data <a href="https://lnalborczyk.github.io/neurogam/"><img src="man/figures/logo.png" align="right" height="139" alt="neurogam website" /></a>
+# Modelling time-resolved data with Bayesian generalised additive multilevel models <a href="https://lnalborczyk.github.io/neurogam/"><img src="man/figures/logo.png" align="right" height="139" alt="neurogam website" /></a>
 
 <!-- badges: start -->
 
@@ -21,9 +21,9 @@ The package supports three types of analysis:
 
 | Analysis | Typical applications | Coordinates used for clustering |
 |:---|:---|:---|
-| **Temporal (1D)** | M/EEG time courses, pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories | Time |
+| **Temporal (1D)** | M/EEG or EMG time courses, pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories | Time |
 | **Temporal generalisation (2D)** | Cross-temporal decoding or representational-generalisation matrices | Training time x testing time |
-| **Spatiotemporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency x time |
+| **Spatio-temporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency x time |
 
 ## Installation
 
@@ -67,6 +67,7 @@ trial-by-trial multilevel fit. An aggregate group-only model
 between-participant variability in the same way.
 
 ``` r
+# Fit the model and identify clusters
 results_1d <- testing_through_time(
     data = eeg_data,
     participant_id = "participant",
@@ -74,12 +75,11 @@ results_1d <- testing_through_time(
     time_id = "time",
     predictor_id = NA,
     multilevel = "summary",
-    threshold = 10,
-    iter = 5000
+    threshold = 10
     )
 
-# Optional: save the result so subsequent analyses need no refitting.
-saveRDS(results_1d, "neurogam_results_1d.rds")
+# Optional: save the result so subsequent analyses need no refitting
+saveRDS(object = results_1d, "neurogam_results_1d.rds")
 ```
 
 ### Inspect and visualise results
@@ -99,7 +99,7 @@ plot(results_1d, type = "clusters")
 
 Posterior predictive checks (PPCs) are important for evaluating model
 adequacy. `neurogam` provides a convenient `ppc()` method;
-`brms::pp_check()` provides additional options.
+`brms::pp_check(results$model)` provides additional options.
 
 ``` r
 ppc(object = results_1d, ppc_type = "participant")
@@ -154,7 +154,7 @@ results_2d <- testing_through_time(
     )
 
 summary(results_2d)
-plot(results_2d)                         # legacy composite plot
+
 plot(results_2d, type = "predictions")   # posterior heatmap
 plot(results_2d, type = "clusters")      # cluster membership map
 ```
@@ -199,7 +199,6 @@ summary(results_st)
 
 view_st <- as_neurogam_result_view(results_st)
 view_st$cluster_summary
-neurogam_result_metadata(results_st)$adjacency_source
 ```
 
 When no sensor adjacency is supplied, the package can construct an
@@ -207,15 +206,8 @@ approximate graph from projected positions. For confirmatory
 applications, supplying a well-justified montage-specific adjacency
 graph is preferable.
 
-### Spatiotemporal visualisation
-
-The unified plotting API delegates to specialized functions. Because
-scalp maps and sensor trajectories compare model predictions with
-observed data, **3D plots require the original observations** through
-`observed_data`.
-
 ``` r
-# Observed, predicted, and residual scalp maps.
+# Observed, predicted, and residual scalp maps
 plot(
     results_st,
     type = "topography",
@@ -223,10 +215,10 @@ plot(
     outcome_id = "voltage",
     sensor_id = "channel",
     participant_id = "subject",
-    n_times = 6L
+    n_times = 6
     )
 
-# Faceted sensor time courses with detected cluster segments.
+# Faceted sensor time courses with detected cluster segments
 plot(
     results_st,
     type = "trajectories",
@@ -238,15 +230,10 @@ plot(
     cluster_style = "segments"
     )
 
-# Convenient shorthands for prediction-only and cluster-highlighted traces.
+# Convenient shorthands for prediction-only and cluster-highlighted traces
 plot(results_st, type = "predictions", observed_data = eeg_st)
 plot(results_st, type = "clusters", observed_data = eeg_st)
 ```
-
-The specialised `plot_spatiotemporal_topography()` and
-`plot_sensor_trajectories()` functions remain available when more
-detailed control is needed. For condition contrasts, supply the
-corresponding second observed dataset when required by the plotter.
 
 ## Choosing the smooth basis dimension
 
@@ -256,7 +243,6 @@ values depend on the signal’s temporal dynamics, sampling density,
 preprocessing, and the amount of information available. Increase `k`
 where needed, check that it is not overly restrictive, and use posterior
 predictive checks and model comparison as complementary diagnostics.
-
 `recommend_k()` can fit and compare candidate models using LOO-based
 criteria, although this can be computationally expensive:
 
@@ -342,5 +328,5 @@ publications:
 
 For bug reports, questions, or feature requests, [open a GitHub
 issue](https://github.com/lnalborczyk/neurogam/issues), preferably with
-a minimal reproducible example, session information, and the version or
-Git branch of `neurogam` you are using.
+a minimal reproducible example, session information, and the version of
+`neurogam` you are using.

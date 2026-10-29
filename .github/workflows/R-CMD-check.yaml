@@ -15,7 +15,7 @@ jobs:
   check:
     name: Ubuntu / R release
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
