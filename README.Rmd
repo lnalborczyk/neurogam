@@ -22,7 +22,7 @@ ggplot2::theme_set(theme_neurogam() )
 # Modelling time-resolved data with Bayesian generalised additive multilevel models <a href="https://lnalborczyk.github.io/neurogam/"><img src="man/figures/logo.png" align="right" height="139" alt="neurogam website" /></a>
 
 <!-- badges: start -->
-[![Repo status](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![Repo status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Repo size](https://img.shields.io/github/repo-size/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
 [![Last commit](https://img.shields.io/github/last-commit/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
 <!-- badges: end -->
@@ -31,9 +31,9 @@ ggplot2::theme_set(theme_neurogam() )
 
 The package supports three types of analysis:
 
-| Analysis | Typical applications | Coordinates used for clustering |
+| Analysis | Typical applications | Coordinates |
 |:--|:--|:--|
-| **Temporal (1D)** | M/EEG or EMG time courses, pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories | Time |
+| **Temporal (1D)** | EMG or M/EEG time courses (e.g., ERPs), pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories, etc. | Time |
 | **Temporal generalisation (2D)** | Cross-temporal decoding or representational-generalisation matrices | Training time x testing time |
 | **Spatio-temporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency x time |
 

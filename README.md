@@ -4,7 +4,7 @@
 <!-- badges: start -->
 
 [![Repo
-status](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Repo
 size](https://img.shields.io/github/repo-size/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
 [![Last
@@ -19,9 +19,9 @@ visualisation of connected regions exceeding a posterior-odds threshold.
 
 The package supports three types of analysis:
 
-| Analysis | Typical applications | Coordinates used for clustering |
+| Analysis | Typical applications | Coordinates |
 |:---|:---|:---|
-| **Temporal (1D)** | M/EEG or EMG time courses, pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories | Time |
+| **Temporal (1D)** | EMG or M/EEG time courses (e.g., ERPs), pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories, etc. | Time |
 | **Temporal generalisation (2D)** | Cross-temporal decoding or representational-generalisation matrices | Training time x testing time |
 | **Spatio-temporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency x time |
 
