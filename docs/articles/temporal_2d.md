@@ -103,7 +103,7 @@ dimensions, model structure, and available hardware.
 
 For a broader introduction to generalised additive models and
 tensor-product smooths, see [Pedersen et
-al. (2019)](https://peerj.com/articles/6876/).
+al. (2019)](https://pmc.ncbi.nlm.nih.gov/articles/PMC6542350/).
 
 ``` r
 

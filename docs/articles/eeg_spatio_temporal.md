@@ -294,7 +294,8 @@ coordinates. The `k` values control basis flexibility, not the exact
 number of observed electrodes or time samples. See the [mgcv
 tensor-product
 documentation](https://stat.ethz.ch/R-manual/R-patched/library/mgcv/help/te.html)
-and [Pedersen et al. (2019)](https://peerj.com/articles/6876/).
+and [Pedersen et
+al. (2019)](https://pmc.ncbi.nlm.nih.gov/articles/PMC6542350/).
 
 `neurogam` constructs the formula automatically. We can inspect it
 without fitting anything:
