@@ -188,7 +188,7 @@
 #'     participant = sprintf("participant_%02d", seq_len(10) ),
 #'     condition = c("cond1", "cond2"),
 #'     trial = seq_len(length.out = 5),
-#'     time = seq(from = 0, to = 0.5, by = 0.01),
+#'     time = seq(from = -0.2, to = 0.6, by = 0.01),
 #'     KEEP.OUT.ATTRS = FALSE,
 #'     stringsAsFactors = FALSE
 #'     )
