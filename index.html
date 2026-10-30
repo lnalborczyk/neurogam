@@ -122,10 +122,10 @@
 <span></span>
 <span><span class="co"># Generate a small EEG-like example</span></span>
 <span><span class="va">eeg_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span></span>
-<span>    participant <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"participant_%02d"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">10</span><span class="op">)</span> <span class="op">)</span>,</span>
+<span>    participant <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"participant_%02d"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">9</span><span class="op">)</span> <span class="op">)</span>,</span>
 <span>    condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cond1"</span>, <span class="st">"cond2"</span><span class="op">)</span>,</span>
 <span>    trial <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span>length.out <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>,</span>
-<span>    time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span>from <span class="op">=</span> <span class="fl">0</span>, to <span class="op">=</span> <span class="fl">0.5</span>, by <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span>,</span>
+<span>    time <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span>from <span class="op">=</span> <span class="op">-</span><span class="fl">0.2</span>, to <span class="op">=</span> <span class="fl">0.6</span>, by <span class="op">=</span> <span class="fl">0.01</span><span class="op">)</span>,</span>
 <span>    KEEP.OUT.ATTRS <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>    <span class="op">)</span></span>
@@ -134,7 +134,13 @@
 <span>    <span class="fu">mutate</span><span class="op">(</span></span>
 <span>        eeg <span class="op">=</span> <span class="fl">0.8</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="op">(</span><span class="op">(</span><span class="va">time</span> <span class="op">-</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">/</span> <span class="fl">0.09</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">condition</span> <span class="op">==</span> <span class="st">"cond2"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>            <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">eeg_data</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
-<span>        <span class="op">)</span></span></code></pre></div>
+<span>        <span class="op">)</span></span>
+<span></span>
+<span><span class="va">eeg_data</span> <span class="op">|&gt;</span> </span>
+<span>    <span class="fu">summarise</span><span class="op">(</span>eeg <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">eeg</span><span class="op">)</span>, .by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">condition</span>, <span class="va">participant</span><span class="op">)</span> <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>    <span class="fu">ggplot</span><span class="op">(</span><span class="fu">aes</span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span>, y <span class="op">=</span> <span class="va">eeg</span>, group <span class="op">=</span> <span class="va">participant</span>, colour <span class="op">=</span> <span class="va">condition</span><span class="op">)</span> <span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">participant</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="fit-a-bayesian-gamm">Fit a Bayesian GAMM<a class="anchor" aria-label="anchor" href="#fit-a-bayesian-gamm"></a>
 </h3>
@@ -393,7 +399,6 @@
 <h2 data-toc-skip>Dev status</h2>
 <ul class="list-unstyled">
 <li><a href="https://www.repostatus.org/#active" class="external-link"><img src="https://www.repostatus.org/badges/latest/active.svg" alt="Repo status"></a></li>
-<li><a href="https://github.com/lnalborczyk/neurogam" class="external-link"><img src="https://img.shields.io/github/repo-size/lnalborczyk/neurogam" alt="Repo size"></a></li>
 <li><a href="https://github.com/lnalborczyk/neurogam" class="external-link"><img src="https://img.shields.io/github/last-commit/lnalborczyk/neurogam" alt="Last commit"></a></li>
 <li><a href="https://github.com/lnalborczyk/neurogam/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/lnalborczyk/neurogam/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
 <li><a href="https://app.codecov.io/gh/lnalborczyk/neurogam" class="external-link"><img src="https://codecov.io/gh/lnalborczyk/neurogam/branch/main/graph/badge.svg" alt="Codecov"></a></li>

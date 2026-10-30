@@ -32,10 +32,10 @@ library(tidyverse)
 
 # Generate a small EEG-like example
 eeg_data <- expand.grid(
-    participant = sprintf("participant_%02d", seq_len(10) ),
+    participant = sprintf("participant_%02d", seq_len(9) ),
     condition = c("cond1", "cond2"),
     trial = seq_len(length.out = 5),
-    time = seq(from = 0, to = 0.5, by = 0.01),
+    time = seq(from = -0.2, to = 0.6, by = 0.01),
     KEEP.OUT.ATTRS = FALSE,
     stringsAsFactors = FALSE
     )
@@ -45,6 +45,12 @@ eeg_data <- eeg_data |>
         eeg = 0.8 * exp(-((time - 0.3) / 0.09)^2) * (condition == "cond2") +
             rnorm(nrow(eeg_data), sd = 0.5)
         )
+
+eeg_data |> 
+    summarise(eeg = mean(eeg), .by = c(time, condition, participant) ) |>
+    ggplot(aes(x = time, y = eeg, group = participant, colour = condition) ) +
+    geom_line() +
+    facet_wrap(~participant)
 ```
 
 ### Fit a Bayesian GAMM
