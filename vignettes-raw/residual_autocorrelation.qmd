@@ -41,19 +41,19 @@ library(dplyr)
 # Use the ggplot2 neurogam theme
 theme_set(theme_neurogam() )
 
-# change default brms backend
+# Change default brms backend
 options(brms.backend = "cmdstanr")
 
-# use more parallel cores for LOO model comparison
+# Use more parallel cores for LOO model comparison
 options(loo.cores = 10)
 
-# retrieving some EEG data
-data(eegdata)
-head(eegdata)
+# Import eegdata
+data("eegdata", package = "eegkitdata")
 
-# plotting the average ERP per group and channel
+# Plotting the average ERP per group and channel
 eegdata |>
     summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
+    filter(channel %in% sample(x = unique(levels(eegdata$channel) ), size = 9) ) |> 
     ggplot(aes(x = time, y = voltage, colour = group) ) +
     geom_line() +
     facet_wrap(~channel)
@@ -77,7 +77,7 @@ head(eeg_data)
 
 ## Fitting a first model
 
-We fit the model (a BGAMM) on one channel (PZ) to test for a group difference at every timestep.
+We fit the model (a BGAMM) on one channel (P6) to test for a group difference at every timestep.
 
 ```{r clusters1, results = "hide", cache = TRUE, dependson = "data-reshape"}
 # fitting the BGAMM to identify clusters

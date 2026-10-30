@@ -3,7 +3,7 @@
 \docType{data}
 \name{timegen_data}
 \alias{timegen_data}
-\title{Time-generalisation decoding example dataset}
+\title{Cross-temporal decoding generalisation example dataset}
 \format{
 A data frame with the following columns:
 \describe{

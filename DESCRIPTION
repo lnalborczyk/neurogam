@@ -2,6 +2,7 @@ Package: neurogam
 Type: Package
 Title: Bayesian Generalised Additive Models for Time-Resolved Data
 Version: 0.1.0
+Date: 2026-10-30
 Authors@R:
     c(
     person(

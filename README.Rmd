@@ -25,6 +25,8 @@ ggplot2::theme_set(theme_neurogam() )
 [![Repo status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Repo size](https://img.shields.io/github/repo-size/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
 [![Last commit](https://img.shields.io/github/last-commit/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
+[![R-CMD-check](https://github.com/lnalborczyk/neurogam/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lnalborczyk/neurogam/actions/workflows/R-CMD-check.yaml)
+[![Codecov](https://codecov.io/gh/lnalborczyk/neurogam/branch/main/graph/badge.svg)](https://app.codecov.io/gh/lnalborczyk/neurogam)
 <!-- badges: end -->
 
 `neurogam` provides tools to analyse time-resolved effects with **Bayesian generalised additive multilevel models** (BGAMMs). Built on [`brms`](https://github.com/paul-buerkner/brms), it combines smooth estimation of temporal dynamics, posterior inference, and detection and visualisation of connected regions exceeding a posterior-odds threshold.
@@ -42,17 +44,30 @@ The package supports three types of analysis:
 Install the development version from GitHub:
 
 ```{r installation, eval = FALSE}
-install.packages("pak")
+if (!requireNamespace("pak") ) install.packages("pak")
 pak::pkg_install("lnalborczyk/neurogam")
 ```
 
 ## Quick start: temporal (1D) analysis
 
-The bundled `eeg_data` dataset illustrates the long-format input expected by `testing_through_time()`. Each row represents an observation at a particular time, with participant identifiers and relevant predictors.
-
 ```{r example-data}
-data(eeg_data, package = "neurogam")
-head(eeg_data)
+library(tidyverse)
+
+# Generate a small EEG-like example
+eeg_data <- expand.grid(
+    participant = sprintf("participant_%02d", seq_len(10) ),
+    condition = c("cond1", "cond2"),
+    trial = seq_len(length.out = 5),
+    time = seq(from = 0, to = 0.5, by = 0.01),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+    )
+
+eeg_data <- eeg_data |>
+    mutate(
+        eeg = 0.8 * exp(-((time - 0.3) / 0.09)^2) * (condition == "cond2") +
+            rnorm(nrow(eeg_data), sd = 0.5)
+        )
 ```
 
 ### Fit a Bayesian GAMM
@@ -62,6 +77,8 @@ The following one-sample analysis tests whether the time-resolved outcome differ
 We generally recommend starting with `multilevel = "summary"`, which retains participant-level information while avoiding the cost of a trial-by-trial multilevel fit. An aggregate group-only model (`multilevel = "group"`) is also available, but it does not represent between-participant variability in the same way.
 
 ```{r fit-1d, eval = FALSE}
+library(neurogam)
+
 # Fit the model and identify clusters
 results_1d <- testing_through_time(
     data = eeg_data,

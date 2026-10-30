@@ -20,29 +20,31 @@ Install the development version from GitHub:
 
 ``` r
 
-install.packages("pak")
+if (!requireNamespace("pak") ) install.packages("pak")
 pak::pkg_install("lnalborczyk/neurogam")
 ```
 
 ## Quick start: temporal (1D) analysis
 
-The bundled `eeg_data` dataset illustrates the long-format input
-expected by
-[`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
-Each row represents an observation at a particular time, with
-participant identifiers and relevant predictors.
-
 ``` r
 
-data(eeg_data, package = "neurogam")
-head(eeg_data)
-#>      participant condition trial  time       eeg
-#> 1 participant_01     cond1     1 0.000 0.8618045
-#> 2 participant_01     cond1     1 0.002 1.2729148
-#> 3 participant_01     cond1     1 0.004 1.6538158
-#> 4 participant_01     cond1     1 0.006 1.3910888
-#> 5 participant_01     cond1     1 0.008 0.6499553
-#> 6 participant_01     cond1     1 0.010 0.1548358
+library(tidyverse)
+
+# Generate a small EEG-like example
+eeg_data <- expand.grid(
+    participant = sprintf("participant_%02d", seq_len(10) ),
+    condition = c("cond1", "cond2"),
+    trial = seq_len(length.out = 5),
+    time = seq(from = 0, to = 0.5, by = 0.01),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+    )
+
+eeg_data <- eeg_data |>
+    mutate(
+        eeg = 0.8 * exp(-((time - 0.3) / 0.09)^2) * (condition == "cond2") +
+            rnorm(nrow(eeg_data), sd = 0.5)
+        )
 ```
 
 ### Fit a Bayesian GAMM
@@ -59,6 +61,8 @@ trial-by-trial multilevel fit. An aggregate group-only model
 between-participant variability in the same way.
 
 ``` r
+
+library(neurogam)
 
 # Fit the model and identify clusters
 results_1d <- testing_through_time(

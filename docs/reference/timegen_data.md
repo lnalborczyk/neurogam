@@ -1,4 +1,4 @@
-# Time-generalisation decoding example dataset
+# Cross-temporal decoding generalisation example dataset
 
 A tidy dataset containing time-generalisation decoding results (AUC
 values) for multiple participants, indexed by training time and testing

@@ -17,12 +17,11 @@ may indicate time-specific changes.
 
 In this vignette, we demonstrate how to analyse cross-temporal decoding
 matrices using Bayesian generalised additive multilevel models (BGAMMs),
-as introduced in Nalborczyk and Bürkner ([2025, Appendix
-A](https://www.biorxiv.org/content/10.1101/2025.08.29.672336v1)). We
-illustrate how to model decoding performance as a smooth function of
-training and testing times, account for repeated observations across
-participants, and identify regions showing posterior evidence for
-above-chance decoding.
+as introduced in Nalborczyk & Bürkner (2025, Appendix A; DOI:
+10.1101/2025.08.29.672336). We illustrate how to model decoding
+performance as a smooth function of training and testing times, account
+for repeated observations across participants, and identify regions
+showing posterior evidence for above-chance decoding.
 
 ### Importing and visualising the data
 

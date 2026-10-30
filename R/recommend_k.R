@@ -87,9 +87,23 @@
 #'
 #' @examples
 #' \dontrun{
-#' # import some simulated EEG data
-#' data(eeg_data)
-#' head(eeg_data)
+#' # Generate a small, reproducible EEG-like example
+#' set.seed(123)
+#'
+#' eeg_data <- expand.grid(
+#'     participant = sprintf("participant_%02d", seq_len(10) ),
+#'     condition = c("cond1", "cond2"),
+#'     trial = seq_len(length.out = 5),
+#'     time = seq(from = 0, to = 0.5, by = 0.01),
+#'     KEEP.OUT.ATTRS = FALSE,
+#'     stringsAsFactors = FALSE
+#'     )
+#'
+#' eeg_data <- eeg_data |>
+#'     mutate(
+#'         eeg = 0.8 * exp(-((time - 0.3) / 0.09)^2) * (condition == "cond2") +
+#'             rnorm(nrow(eeg_data), sd = 0.5)
+#'     )
 #'
 #' # fit a time-resolved GAMM
 #' res <- testing_through_time(

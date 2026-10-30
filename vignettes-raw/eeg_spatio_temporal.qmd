@@ -47,9 +47,10 @@ library(neurogam)
 library(ggplot2)
 library(dplyr)
 
-# use the ggplot2 neurogam theme
+# Use the ggplot2 neurogam theme
 theme_set(theme_neurogam() )
 
+# Import eegdata
 data("eegdata", package = "eegkitdata")
 data("eegcoord", package = "eegkit")
 
@@ -197,7 +198,7 @@ sensor_adjacency <- make_sensor_adjacency(
     data = sensors,
     sensor_id = "channel",
     spatial_id = c("xproj", "yproj"),
-    k = 4L,
+    k = 4,
     distance_factor = 1.8
     )
 ```
@@ -354,20 +355,6 @@ The returned object has dedicated `summary()` and `plot()` methods, so in most c
 summary(results_external)
 ```
 
-### Inspect the adjacency actually used
-
-The output stores both the matrix and its provenance, which is important if the adjacency was estimated automatically.
-
-```{r result-adjacency, fig.width = 10, fig.height = 8}
-plot_sensor_adjacency(
-    data = results_external$sensor_positions,
-    adjacency = results_external$sensor_adjacency,
-    sensor_id = "channel",
-    spatial_id = c("xproj", "yproj"),
-    show_labels = FALSE
-    )
-```
-
 ## Visualising model predictions and clusters
 
 ### Scalp topographies through time
@@ -383,14 +370,14 @@ plot_spatiotemporal_topography(
     time_id = "time",
     spatial_id = c("xproj", "yproj"),
     participant_id = "subject",
-    times = c(0.15, 0.20, 0.30, 0.45, 0.60, 0.80),
+    times = c(0.2, 0.4, 0.6, 0.8),
     what = c("observed", "predicted", "residual"),
     cluster_overlay = "predicted",
+    grid_n = 60,
     contour = TRUE,
     show_sensors = TRUE,
     head_outline = TRUE
     )
-
 # OR plot(x = results_external, type = "topography", observed_data = eeg_data)
 ```
 
@@ -453,7 +440,8 @@ plot_sensor_trajectories(
     participant_id = "subject",
     layout = "facets",
     cluster_style = "rectangles",
-    ncol = 8L,
+    sensors = sample(x = unique(levels(eeg_data$channel) ), size = 9),
+    ncol = 3,
     free_y = FALSE,
     show_ci = TRUE
     )

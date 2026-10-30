@@ -859,13 +859,15 @@ compute_one_sample_prob <- function(
     baseline_window = NULL,
     odds_mode = "directional_rope",
     rope = NULL
-) {
+    ) {
+
     groups <- if (participant_clusters) c("time", "participant") else "time"
 
     # Preserve the historical one-sided baseline convention when explicitly
     # selected and no user ROPE has been supplied.
     legacy_baseline <- identical(odds_mode, "legacy_one_sided") &&
         is.null(rope) && !is.null(baseline_window)
+
     effective_null <- null_value
 
     if (legacy_baseline) {

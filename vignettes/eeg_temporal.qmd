@@ -14,7 +14,7 @@ editor_options:
 
 ## Importing and visualising EEG data
 
-Below we import and reshape EEG data from the [`eegkit` package](https://CRAN.R-project.org/package=eegkit).
+In this vignette, we illustrate how to analyse one-dimensional EEG time series using Bayesian generalised additive multilevel models (BGAMMs). We use an example dataset from the [`eegkit` package](https://CRAN.R-project.org/package=eegkit), containing event-related potentials (ERPs) recorded from multiple participants, channels, and experimental groups. First, we import the data and visualise the average ERP waveforms across groups for a selection of channels.
 
 
 ``` r
@@ -23,29 +23,27 @@ library(ggplot2)
 library(eegkit)
 library(dplyr)
 
+# Change default brms backend
+options(brms.backend = "cmdstanr")
+
 # Use the ggplot2 neurogam theme
 theme_set(theme_neurogam() )
 
-# retrieving some EEG data
-data(eegdata)
-head(eegdata)
-#>       subject group condition trial channel time voltage
-#> 1 co2a0000364     a        S1     0     FP1    0  -8.921
-#> 2 co2a0000364     a        S1     0     FP1    1  -8.433
-#> 3 co2a0000364     a        S1     0     FP1    2  -2.574
-#> 4 co2a0000364     a        S1     0     FP1    3   5.239
-#> 5 co2a0000364     a        S1     0     FP1    4  11.587
-#> 6 co2a0000364     a        S1     0     FP1    5  14.028
+# Import eegdata
+data("eegdata", package = "eegkitdata")
 
-# plotting the average ERP per group and channel
+# plotting the average ERP per group and some channels
 eegdata |>
     summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
+    filter(channel %in% sample(x = unique(levels(eegdata$channel) ), size = 9) ) |> 
     ggplot(aes(x = time, y = voltage, colour = group) ) +
     geom_line() +
     facet_wrap(~channel)
 ```
 
 <img src="figures/eeg_temporal-data-import-1.png" alt="" width="100%" />
+
+For simplicity, we focus on a single channel (`P6`), convert time to seconds, round numerical values, and remove missing observations.
 
 
 ``` r
@@ -73,7 +71,7 @@ head(eeg_data)
 
 ## Fitting the model
 
-We fit the model (a BGAMM) on one channel to test for group difference at every timestep.
+We first fit a BGAMM to assess differences between experimental groups over time. The model estimates smooth temporal trajectories while accounting for participant-level variability. Statistical evidence is assessed using posterior odds, with a threshold of 10.
 
 
 ``` r
@@ -90,7 +88,7 @@ results <- testing_through_time(
     # basis dimension
     kvalue = 20,
     # baseline period
-    baseline_window = c(0, 20),
+    baseline_window = c(0, 0.1),
     # we recommend fitting the GAMM on summary statistics (mean and SD)
     multilevel = "summary",
     # threshold on posterior odds
@@ -102,7 +100,6 @@ results <- testing_through_time(
     # number of parallel cores
     cores = 4,
     # save the model
-    backend = "cmdstanr",
     file = "cache/temporal_model"
     )
 ```
@@ -110,6 +107,8 @@ results <- testing_through_time(
 
 
 ### Visualising the results
+
+The `print()` method summarises the identified temporal clusters, whereas `plot()` displays the observed data, posterior predictions, and clusters supported by the specified posterior odds threshold.
 
 
 ``` r
@@ -123,9 +122,12 @@ print(results)
 #>   Contrast: condition_difference
 #>   Posterior odds mode: directional_rope
 #>   Odds threshold: 10
-#>   Clusters found: 0
+#>   Clusters found: 1
 #> 
-#> No clusters exceeded the threshold.
+#> Cluster table:
+#> 
+#>      sign id onset offset duration n_points time_min time_max
+#>  positive  1 0.305  0.367    0.062       17    0.305    0.367
 #> =================================================================
 ```
 
@@ -139,12 +141,12 @@ plot(results)
 
 ### Computing clusters at the participant-level
 
-Below we fit a new model, specifying `predictor_id = NA` (because `group` varies across participants) and `by_ppt = TRUE` to test whether EEG amplitude (`voltage`) differs from 0 and return clusters at the participant level.
+We can also identify temporal clusters separately for each participant. Here, we omit the group predictor (`predictor_id = NA`) and set `participant_clusters = TRUE` to assess when EEG amplitude differs from zero, at both the group and participant levels. Because group membership is constant within participants, the group contrast is not included in this analysis.
 
 
 ``` r
-# fitting the BGAMM to identify clusters (around 30 min on 4 parallel apple M4 cores)
-results <- testing_through_time(
+# fitting the BGAMM to identify clusters
+results_ppt <- testing_through_time(
     # EEG data
     data = eeg_data,
     # participant column
@@ -152,15 +154,15 @@ results <- testing_through_time(
     # EEG column
     outcome_id = "voltage",
     # baseline period
-    baseline_window = c(0, 10),
+    baseline_window = c(0, 0.1),
     # here we use no predictor (because group varies across participants)
     predictor_id = NA,
     # group basis dimension
-    kvalue = 30,
+    kvalue = 20,
     # we recommend fitting the GAMM with summary statistics (mean and SD)
     multilevel = "summary",
     # return clusters at both the group and participant levels
-    by_ppt = TRUE,
+    participant_clusters = TRUE,
     # threshold on posterior odds
     threshold = 10,
     # number of MCMCs
@@ -168,41 +170,56 @@ results <- testing_through_time(
     # number of parallel cores
     cores = 4
     )
-#> Error in `make_bgam_formula()`:
-#> ! unused argument (by_ppt = TRUE)
 ```
 
-### Visualising the results
+### Visualising participant-level results
+
+As before, we can inspect the identified clusters using the dedicated `print()` and `plot()` methods.
 
 
 ``` r
 # displaying the identified clusters
-print(results)
+print(results_ppt)
 #> 
 #> ==== Time-resolved GAM results ================================
 #>   Analysis: Temporal (1D)
 #>   Model coordinates: time
 #>   Cluster coordinates: time
-#>   Contrast: condition_difference
+#>   Contrast: one_sample
 #>   Posterior odds mode: directional_rope
 #>   Odds threshold: 10
-#>   Clusters found: 0
+#>   Clusters found: 69
 #> 
-#> No clusters exceeded the threshold.
+#> Cluster table:
+#> 
+#>  participant     sign id onset offset duration n_points time_min time_max
+#>  co2a0000364 negative  1 0.094  0.320    0.226       59    0.094    0.320
+#>  co2a0000364 negative  2 0.473  0.992    0.519      134    0.473    0.992
+#>  co2a0000365 negative  1 0.148  0.219    0.070       19    0.148    0.219
+#>  co2a0000365 negative  2 0.281  0.981    0.699      180    0.281    0.981
+#>  co2a0000368 negative  1 0.004  0.066    0.062       17    0.004    0.066
+#>  co2a0000368 negative  2 0.137  1.000    0.863      222    0.137    1.000
+#>  co2a0000369 positive  1 0.207  0.418    0.211       55    0.207    0.418
+#>  co2a0000369 negative  2 0.719  0.812    0.094       25    0.719    0.812
+#>  co2a0000369 negative  3 0.922  0.996    0.074       20    0.922    0.996
+#>  co2a0000370 positive  1 0.066  0.137    0.070       19    0.066    0.137
+#>  co2a0000370 positive  2 0.227  0.383    0.156       41    0.227    0.383
+#>  co2a0000370 negative  3 0.453  0.586    0.133       35    0.453    0.586
+#>   ... 57 additional cluster(s) not shown.
 #> =================================================================
 ```
 
 
 ``` r
 # plotting the data, model's predictions, and clusters
-plot(results)
+plot(results_ppt)
 ```
 
 <img src="figures/eeg_temporal-clusters-ppt-plot-1.png" alt="" width="100%" />
 
 ### Posterior predictive checks
 
-We recommend visually assessing the predictions of the model against the observed data (for each participant). We provide a lightweight `ppc()` method, but you can conduct various PPCs with `brms::pp_check(results$model, ...)` (for all available PPCs, see <https://mc-stan.org/bayesplot/reference/PPC-overview.html>).
+Posterior predictive checks (PPCs) help assess how well the model reproduces key features of the observed data. We recommend inspecting model predictions at both the group and participant levels. The `neurogam::ppc()` function provides convenient visualisations, whereas `brms::pp_check()` offers additional diagnostics (see the [bayesplot PPC overview](https://mc-stan.org/bayesplot/reference/PPC-overview.html)).
 
 
 ``` r

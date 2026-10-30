@@ -71,7 +71,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Bayesian modelling of cross-temporal decoding generalisation (2D temporal)</h1>
 
       <p class="author">Ladislas Nalborczyk</p>
-      <p class="date">2026-10-29</p>
+      <p class="date">2026-10-30</p>
 
       <small class="dont-index">Source: <a href="https://github.com/lnalborczyk/neurogam/blob/HEAD/vignettes/temporal_2d.qmd" class="external-link"><code>vignettes/temporal_2d.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
@@ -86,7 +86,7 @@
 </h2>
 <p>Cross-temporal generalisation analysis investigates how neural representations evolve over time by training a classifier at one time point and evaluating its performance at other time points. This produces a two-dimensional matrix in which each cell represents decoding performance for a particular combination of training and testing times.</p>
 <p>Decoding performance along the diagonal reflects classification at matching training and testing times, whereas off-diagonal generalisation provides information about how decoding patterns transfer across time. Broad generalisation patterns may suggest temporally persistent or overlapping discriminative information, while more restricted patterns may indicate time-specific changes.</p>
-<p>In this vignette, we demonstrate how to analyse cross-temporal decoding matrices using Bayesian generalised additive multilevel models (BGAMMs), as introduced in Nalborczyk and Bürkner (<a href="https://www.biorxiv.org/content/10.1101/2025.08.29.672336v1" class="external-link">2025, Appendix A</a>). We illustrate how to model decoding performance as a smooth function of training and testing times, account for repeated observations across participants, and identify regions showing posterior evidence for above-chance decoding.</p>
+<p>In this vignette, we demonstrate how to analyse cross-temporal decoding matrices using Bayesian generalised additive multilevel models (BGAMMs), as introduced in Nalborczyk &amp; Bürkner (2025, Appendix A; DOI: 10.1101/2025.08.29.672336). We illustrate how to model decoding performance as a smooth function of training and testing times, account for repeated observations across participants, and identify regions showing posterior evidence for above-chance decoding.</p>
 <section class="level2"><h3 id="importing-and-visualising-the-data">Importing and visualising the data<a class="anchor" aria-label="anchor" href="#importing-and-visualising-the-data"></a>
 </h3>
 <p>We use the <code>timegen_data</code> dataset included in <code>neurogam</code>, which contains cross-temporal decoding performance measured using the area under the receiver operating characteristic curve (AUC). Each observation corresponds to decoding performance at a particular combination of training and testing times. For binary classification, an AUC of 0.5 corresponds to chance-level discrimination, whereas higher values indicate better-than-chance classification.</p>

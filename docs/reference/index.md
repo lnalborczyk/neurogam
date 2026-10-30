@@ -11,9 +11,6 @@
 - [`check_residual_autocorrelation()`](https://lnalborczyk.github.io/neurogam/reference/check_residual_autocorrelation.md)
   : Check residual autocorrelation for brms models
 
-- [`eeg_data`](https://lnalborczyk.github.io/neurogam/reference/eeg_data.md)
-  : Simulated EEG data
-
 - [`find_clusters()`](https://lnalborczyk.github.io/neurogam/reference/find_clusters.md)
   : Find contiguous clusters in a time series
 
@@ -96,7 +93,7 @@
   : neurogam ggplot2 theme
 
 - [`timegen_data`](https://lnalborczyk.github.io/neurogam/reference/timegen_data.md)
-  : Time-generalisation decoding example dataset
+  : Cross-temporal decoding generalisation example dataset
 
 - [`validate_neurogam_result()`](https://lnalborczyk.github.io/neurogam/reference/validate_neurogam_result.md)
   : Validate a neurogam analysis result
