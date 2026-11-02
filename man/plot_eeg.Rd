@@ -134,7 +134,7 @@ surface plot (\code{type = "surface"}) without a head outline.
 
 
 For \code{type = "topo"}, values are masked outside the head radius computed from
-sensor coordinates and a head outline (circle + nose + ears) is drawn.
+sensor coordinates and a head outline (circle + nose) is drawn.
 
 For raw data, values are interpolated to a regular grid per time point using
 \code{st_interp_to_grid()}, which relies on \pkg{akima} and can optionally fill

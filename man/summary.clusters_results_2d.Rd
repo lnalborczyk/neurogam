@@ -2,7 +2,7 @@
 % Please edit documentation in R/summary.R
 \name{summary.clusters_results_2d}
 \alias{summary.clusters_results_2d}
-\title{Summarize a temporal-generalization neurogam analysis}
+\title{Summarise a temporal-generalisation neurogam analysis}
 \usage{
 \method{summary}{clusters_results_2d}(object, digits = 3L, ...)
 }
@@ -17,5 +17,5 @@
 The input object, invisibly.
 }
 \description{
-Summarize a temporal-generalization neurogam analysis
+Summarise a temporal-generalisation neurogam analysis
 }

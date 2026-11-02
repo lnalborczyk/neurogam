@@ -75,7 +75,7 @@
 #'
 #' @details
 #' For \code{type = "topo"}, values are masked outside the head radius computed from
-#' sensor coordinates and a head outline (circle + nose + ears) is drawn.
+#' sensor coordinates and a head outline (circle + nose) is drawn.
 #'
 #' For raw data, values are interpolated to a regular grid per time point using
 #' \code{st_interp_to_grid()}, which relies on \pkg{akima} and can optionally fill
@@ -358,6 +358,7 @@ plot_eeg <- function (
 
         r_head <- st_head_radius(sensors, head_expand = head_expand)
         plot_df <- plot_df |> dplyr::filter(sqrt(.data$xproj^2 + .data$yproj^2) <= r_head)
+
         head_df <- st_head_outline(r_head)
 
     } else {

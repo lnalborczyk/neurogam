@@ -209,69 +209,96 @@ summarise_posterior_long <- function (data, groups, value = ".epred", ...) {
 #'   numeric continuous levels are sorted numerically after rounding.
 #'
 #' @keywords internal
-pair_posterior_contrasts <- function(
+pair_posterior_contrasts <- function (
     post_draws,
     coordinates,
     predictor_type = c("categorical", "continuous")
     ) {
+
     predictor_type <- match.arg(predictor_type)
     required <- c(coordinates, "predictor", ".epred", ".draw")
 
     if (!is.data.frame(post_draws) || !length(coordinates) ||
         anyDuplicated(coordinates) ||
-        !all(required %in% names(post_draws))) {
-        stop("Missing columns or invalid coordinates in posterior contrast data.",
-             call. = FALSE)
+        !all(required %in% names(post_draws) ) ) {
+
+        stop (
+            "Missing columns or invalid coordinates in posterior contrast data.",
+            call. = FALSE
+            )
+
     }
 
     # Always create this local object before working with `draws`.
     draws <- as.data.frame(post_draws[, required, drop = FALSE])
 
-    if (anyNA(draws[c(coordinates, "predictor", ".draw", ".epred")])) {
-        stop("Posterior contrast data must not contain missing values.",
-             call. = FALSE)
+    if (anyNA(draws[c(coordinates, "predictor", ".draw", ".epred")]) ) {
+
+        stop (
+            "Posterior contrast data must not contain missing values.",
+            call. = FALSE
+            )
+
     }
 
     if (predictor_type == "continuous") {
-        if (!is.numeric(draws$predictor)) {
-            stop("Continuous predictor must be numeric.", call. = FALSE)
+        if (!is.numeric(draws$predictor) ) {
+
+            stop ("Continuous predictor must be numeric.", call. = FALSE)
+
         }
 
         # Sort *numerically* before string conversion: 2 < 10.
         values <- round(draws$predictor, digits = 3L)
-        conditions <- as.character(sort(unique(values)))
+        conditions <- as.character(sort(unique(values) ) )
         draws$predictor <- as.character(values)
-    } else if (is.factor(draws$predictor)) {
+
+    } else if (is.factor(draws$predictor) ) {
+
         # An explicit factor-level order takes precedence over input row order.
-        conditions <- levels(droplevels(draws$predictor))
+        conditions <- levels(droplevels(draws$predictor) )
         draws$predictor <- as.character(draws$predictor)
+
     } else {
+
         # Character predictors have a stable, alphabetical direction.
         draws$predictor <- as.character(draws$predictor)
-        conditions <- sort(unique(draws$predictor))
+        conditions <- sort(unique(draws$predictor) )
+
     }
 
-    if (length(conditions) != 2L || anyNA(conditions)) {
-        stop("Exactly two predictor levels are required.", call. = FALSE)
+    if (length(conditions) != 2L || anyNA(conditions) ) {
+
+        stop ("Exactly two predictor levels are required.", call. = FALSE)
+
     }
 
     key_columns <- c(coordinates, ".draw", "predictor")
-    if (anyDuplicated(draws[key_columns])) {
-        stop("Duplicate posterior draws within a condition/location.",
-             call. = FALSE)
+
+        if (anyDuplicated(draws[key_columns]) ) {
+
+        stop (
+            "Duplicate posterior draws within a condition/location.",
+            call. = FALSE
+            )
+
     }
 
     paired <- tidyr::pivot_wider(
         draws,
-        id_cols = dplyr::all_of(c(coordinates, ".draw")),
+        id_cols = dplyr::all_of(c(coordinates, ".draw") ),
         names_from = "predictor",
         values_from = ".epred"
-    )
+        )
 
-    if (!all(conditions %in% names(paired)) ||
-        anyNA(paired[conditions])) {
-        stop("Posterior draws must be paired across the two conditions.",
-             call. = FALSE)
+    if (!all(conditions %in% names(paired) ) ||
+        anyNA(paired[conditions]) ) {
+
+        stop (
+            "Posterior draws must be paired across the two conditions.",
+            call. = FALSE
+            )
+
     }
 
     paired$epred_diff <- paired[[conditions[2L]]] - paired[[conditions[1L]]]

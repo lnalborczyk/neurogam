@@ -534,26 +534,27 @@ st_head_outline <- function (r, n = 600) {
         part = "nose"
         )
 
-    ear_arc <- function (theta_start, theta_end, side = c("left", "right") ) {
+    # ear_arc <- function (theta_start, theta_end, side = c("left", "right") ) {
+    #
+    #     side <- match.arg(side)
+    #     t <- seq(theta_start, theta_end, length.out = 120)
+    #     anchor_x <- r * cos(t)
+    #     anchor_y <- r * sin(t)
+    #     bump <- 0.10 * r
+    #
+    #     data.frame(
+    #         x = anchor_x + bump * cos(t),
+    #         y = anchor_y + bump * sin(t),
+    #         part = paste0("ear_", side)
+    #         )
+    #
+    # }
+    #
+    # left_ear  <- ear_arc(160*pi/180, 200*pi/180, "left")
+    # right_ear <- ear_arc(-20*pi/180,  20*pi/180, "right")
 
-        side <- match.arg(side)
-        t <- seq(theta_start, theta_end, length.out = 120)
-        anchor_x <- r * cos(t)
-        anchor_y <- r * sin(t)
-        bump <- 0.10 * r
-
-        data.frame(
-            x = anchor_x + bump * cos(t),
-            y = anchor_y + bump * sin(t),
-            part = paste0("ear_", side)
-            )
-
-    }
-
-    left_ear  <- ear_arc(160*pi/180, 200*pi/180, "left")
-    right_ear <- ear_arc(-20*pi/180,  20*pi/180, "right")
-
-    return (rbind(head, nose, left_ear, right_ear) )
+    # return (rbind(head, nose, left_ear, right_ear) )
+    return (rbind(head, nose) )
 
 }
 
@@ -685,17 +686,6 @@ st_interp_to_grid <- function (
 
     xo <- sort(unique(grid_xy$xproj) )
     yo <- sort(unique(grid_xy$yproj) )
-
-    # z <- akima::interp(
-    #     x = df_t$xproj,
-    #     y = df_t$yproj,
-    #     z = df_t[[value]],
-    #     xo = xo,
-    #     yo = yo,
-    #     duplicate = "mean",
-    #     linear = TRUE,
-    #     extrap = extrap
-    #     )
 
     z <- interp::interp(
         x = df_t$xproj,
@@ -1236,15 +1226,26 @@ make_prediction_grid_from_summary <- function (
             msg = "summary_data must contain a 'predictor' column for categorical predictors."
             )
 
-        pred_levels <- if (is.factor(summary_data$predictor) ) {
-            levels(summary_data$predictor)
-        } else {
-            sort(unique(summary_data$predictor) )
-        }
+        # pred_levels <- if (is.factor(summary_data$predictor) ) {
+        #     levels(summary_data$predictor)
+        # } else {
+        #     sort(unique(summary_data$predictor) )
+        # }
+        #
+        # newdata_grid <- tidyr::crossing(
+        #     base_grid,
+        #     predictor = pred_levels
+        #     )
+
+        # Preserve factor levels from the fitted model
+        pred_levels <- levels(brms_gam$data$predictor)
 
         newdata_grid <- tidyr::crossing(
             base_grid,
-            predictor = pred_levels
+            predictor = factor(
+                pred_levels,
+                levels = pred_levels
+                )
             )
 
     } else if (predictor_type == "continuous") {
@@ -1407,5 +1408,111 @@ compute_directional_odds <- function (
             "odds_above", "odds_below", "prob_ratio"
             )]
         )
+
+}
+
+# compute directional odds
+#' @keywords internal
+resolve_baseline_window <- function (
+        data,
+        time_id = "time",
+        baseline_window = NULL,
+        rope = NULL
+        ) {
+
+    # An explicit ROPE does not require baseline estimation
+    if (!is.null(rope) && is.null(baseline_window) ) {
+
+        return (NULL)
+
+    }
+
+    # Respect an explicitly supplied baseline window
+    if (!is.null(baseline_window) ) {
+
+        if (
+            !is.numeric(baseline_window) ||
+            length(baseline_window) != 2L ||
+            any(!is.finite(baseline_window)) ||
+            baseline_window[1] >= baseline_window[2]
+            ) {
+
+            stop (
+                "`baseline_window` must contain two increasing, finite numeric values.",
+                call. = FALSE
+                )
+
+        }
+
+        if (!any(
+            data[[time_id]] >= baseline_window[1] &
+            data[[time_id]] <= baseline_window[2],
+            na.rm = TRUE
+            ) ) {
+
+            stop (
+                "No observations fall within `baseline_window`.",
+                call. = FALSE
+                )
+
+        }
+
+        return (baseline_window)
+
+    }
+
+    # Identify available pre-stimulus observations
+    pre_time <- sort(unique(
+        data[[time_id]][
+            is.finite(data[[time_id]]) &
+            data[[time_id]] <= 0
+            ]
+        ) )
+
+    if (length(pre_time) < 2L) {
+
+        stop (
+            "Cannot infer a baseline window: insufficient prestimulus data. ",
+            "Please specify `baseline_window` explicitly, or provide `rope`.",
+            call. = FALSE
+            )
+
+    }
+
+    proposed <- range(pre_time)
+
+    message (
+        "No `baseline_window` was specified.\n",
+        "Proposed prestimulus baseline: [",
+        paste(proposed, collapse = ", "),
+        "] (same units as `", time_id, "`).\n",
+        "This window will be used to estimate the baseline ROPE."
+        )
+
+    # Never block scripts, tests, or CI jobs
+    if (!interactive() ) {
+
+        stop (
+            "Please specify `baseline_window` explicitly ",
+            "when running non-interactively.",
+            call. = FALSE
+            )
+
+    }
+
+    answer <- readline(
+        prompt = "Use this baseline window? [y/N]: "
+        )
+
+    if (!tolower(trimws(answer) ) %in% c("y", "yes") ) {
+
+        stop (
+            "Please specify your preferred `baseline_window` explicitly.",
+            call. = FALSE
+            )
+
+    }
+
+    return (proposed)
 
 }

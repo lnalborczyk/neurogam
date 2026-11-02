@@ -1,3 +1,13 @@
+# neurogam 0.1.1
+
+## New features
+
+* Implementing more sensible default values for `baseline_window()` in `testing_through_time()` (1D analyses).
+
+## Bug fixes
+
+* Fixing the ordering of contrasts levels. (#13)
+
 # neurogam 0.1.0
 
 * Preparing for initial CRAN submission (updating and reorganising the vignettes, cleaning the documentation, etc).
@@ -10,7 +20,7 @@
 * Unified API for processing results.
 * Re-structuring the `find_clusters()` approach (now work with any number of dimensions and accepts input adjacency matrices).
 * Adding a `baseline_window` argument to `testing_through_time()` used to compute the ROPE (i.e., maximum absolute value of the `credible_interval`% credible interval during this baseline period).
-* This baseline approach leads to the new ROPE default (i.e., `odds_mode = "directional_rope"`).
+* This baseline approach leads to the new ROPE default (i.e., `odds_mode = "directional_rope"`) for 1D temporal data.
 
 ## Other changes
 

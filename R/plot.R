@@ -789,7 +789,7 @@ ppc <- function (
 
     }
 
-    # returning the plot
+    # Return the plot
     print(ppc_plot)
     invisible(ppc_plot)
 

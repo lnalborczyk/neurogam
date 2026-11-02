@@ -118,9 +118,12 @@
 #' @param chance_level Numeric; null value for the outcome (e.g., 0.5 for
 #'   decoding accuracy).
 #' @param credible_interval Numeric; width of the credible (quantile) interval.
-#' @param baseline_window Numeric; bounds of the baseline window (in the same
-#'   units of \code{time_id}), used to compute the baseline ROPE. Typically, this
-#'   is a 100-200 ms window preceding stimulus onset.
+#' @param baseline_window Optional numeric vector of length two
+#'   specifying the baseline interval in the same units as `time_id`.
+#'   For 1D analyses, when `rope = NULL`, the baseline is used to
+#'   estimate the region of practical equivalence (ROPE).
+#'   If NULL (default), the available pre-stimulus interval is
+#'   proposed and requires confirmation in interactive sessions.
 #' @param space_id Optional length-two spatial coordinate names. Non-NULL
 #'   selects the spatiotemporal Gaussian multilevel workflow.
 #' @param sensor_id Sensor column name, required when `space_id` is supplied.
@@ -128,7 +131,7 @@
 #' @param sensor_adjacency Optional named sensor adjacency matrix or edge list.
 #' @param adjacency_k,adjacency_distance_factor Parameters for automatic
 #'   sensor adjacency construction when no graph is supplied.
-#' @param rope Optional nonnegative symmetric ROPE half-width.
+#' @param rope Optional non-negative symmetric ROPE half-width.
 #'   The default (`NULL`) estimates the ROPE from the maximum
 #'   absolute posterior-median deviation within `baseline_window`
 #'   for 1D temporal analyses. An explicit value, including zero,
@@ -241,7 +244,7 @@ testing_through_time <- function (
             ),
         chance_level = NULL,
         credible_interval = 0.95,
-        baseline_window = c(0, 0.1),
+        baseline_window = NULL,
         space_id = NULL, sensor_id = NULL, tensor_d = c(2L, 1L),
         sensor_adjacency = NULL, adjacency_k = 4L,
         adjacency_distance_factor = 2, rope = NULL,
@@ -576,6 +579,18 @@ testing_through_time <- function (
 
     }
 
+    # Resolve the baseline for 1D temporal inference
+    if (length(time_id) == 1L) {
+
+        baseline_window <- resolve_baseline_window(
+            data = data,
+            time_id = time_id,
+            baseline_window = baseline_window,
+            rope = rope
+            )
+
+    }
+
     # Retrieve temporal variable(s)
     is_2d_time <- length(time_id) == 2L
     time_vars <- time_id
@@ -833,7 +848,11 @@ testing_through_time <- function (
                 newdata_grid <- tidyr::crossing(
                     time1 = sort(unique(brms_gam$data$time1) ),
                     time2 = sort(unique(brms_gam$data$time2) ),
-                    predictor = levels(brms_gam$data$predictor)
+                    # predictor = levels(brms_gam$data$predictor)
+                    predictor = factor(
+                        x = levels(brms_gam$data$predictor),
+                        levels = levels(brms_gam$data$predictor)
+                        )
                     ) |>
                     # Add appropriate dummy to satisfy validate_data()
                     add_required_dummy(is_binom = is_binom) |>
@@ -845,7 +864,11 @@ testing_through_time <- function (
                 # Newdata grid over time and predictor
                 newdata_grid <- tidyr::crossing(
                     time = sort(unique(brms_gam$data$time) ),
-                    predictor = levels(brms_gam$data$predictor)
+                    # predictor = levels(brms_gam$data$predictor)
+                    predictor = factor(
+                        x = levels(brms_gam$data$predictor),
+                        levels = levels(brms_gam$data$predictor)
+                        )
                     )
 
             }
@@ -881,6 +904,7 @@ testing_through_time <- function (
                 # Newdata grid over time and predictor +/-1 SD
                 predictor_mean <- mean(brms_gam$data$predictor)
                 predictor_sd <- sd(brms_gam$data$predictor)
+
                 newdata_grid <- tidyr::crossing(
                     time = sort(unique(brms_gam$data$time) ),
                     predictor = c(predictor_mean - predictor_sd, predictor_mean + predictor_sd)

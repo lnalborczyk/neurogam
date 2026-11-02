@@ -2,7 +2,7 @@
 % Please edit documentation in R/summary.R
 \name{summary.clusters_results_st}
 \alias{summary.clusters_results_st}
-\title{Summarize a spatiotemporal neurogam analysis}
+\title{Summarise a spatiotemporal neurogam analysis}
 \usage{
 \method{summary}{clusters_results_st}(object, digits = 3L, ...)
 }
@@ -17,5 +17,5 @@
 The input object, invisibly.
 }
 \description{
-Summarize a spatiotemporal neurogam analysis
+Summarise a spatiotemporal neurogam analysis
 }

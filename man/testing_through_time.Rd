@@ -39,7 +39,7 @@ testing_through_time(
     "spatiotemporal"),
   chance_level = NULL,
   credible_interval = 0.95,
-  baseline_window = c(0, 0.1),
+  baseline_window = NULL,
   space_id = NULL,
   sensor_id = NULL,
   tensor_d = c(2L, 1L),
@@ -197,9 +197,12 @@ decoding accuracy).}
 
 \item{credible_interval}{Numeric; width of the credible (quantile) interval.}
 
-\item{baseline_window}{Numeric; bounds of the baseline window (in the same
-units of \code{time_id}), used to compute the baseline ROPE. Typically, this
-is a 100-200 ms window preceding stimulus onset.}
+\item{baseline_window}{Optional numeric vector of length two
+specifying the baseline interval in the same units as `time_id`.
+For 1D analyses, when `rope = NULL`, the baseline is used to
+estimate the region of practical equivalence (ROPE).
+If NULL (default), the available pre-stimulus interval is
+proposed and requires confirmation in interactive sessions.}
 
 \item{space_id}{Optional length-two spatial coordinate names. Non-NULL
 selects the spatiotemporal Gaussian multilevel workflow.}
@@ -213,7 +216,7 @@ selects the spatiotemporal Gaussian multilevel workflow.}
 \item{adjacency_k, adjacency_distance_factor}{Parameters for automatic
 sensor adjacency construction when no graph is supplied.}
 
-\item{rope}{Optional nonnegative symmetric ROPE half-width.
+\item{rope}{Optional non-negative symmetric ROPE half-width.
 The default (`NULL`) estimates the ROPE from the maximum
 absolute posterior-median deviation within `baseline_window`
 for 1D temporal analyses. An explicit value, including zero,
