@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,17 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.1" id="neurogam-011">neurogam 0.1.1<a class="anchor" aria-label="anchor" href="#neurogam-011"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-1-1">New features<a class="anchor" aria-label="anchor" href="#new-features-0-1-1"></a></h3>
+<ul><li>Implementing more sensible default values for <code>baseline_window()</code> in <code><a href="../reference/testing_through_time.html">testing_through_time()</a></code> (1D analyses).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-0-1-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-1"></a></h3>
+<ul><li>Fixing the ordering of contrasts levels. (<a href="https://github.com/lnalborczyk/neurogam/issues/13" class="external-link">#13</a>)</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.0" id="neurogam-010">neurogam 0.1.0<a class="anchor" aria-label="anchor" href="#neurogam-010"></a></h2>
 <ul><li>Preparing for initial CRAN submission (updating and reorganising the vignettes, cleaning the documentation, etc).</li>
 </ul></div>
@@ -56,7 +67,7 @@
 <li>Unified API for processing results.</li>
 <li>Re-structuring the <code><a href="../reference/find_clusters.html">find_clusters()</a></code> approach (now work with any number of dimensions and accepts input adjacency matrices).</li>
 <li>Adding a <code>baseline_window</code> argument to <code><a href="../reference/testing_through_time.html">testing_through_time()</a></code> used to compute the ROPE (i.e., maximum absolute value of the <code>credible_interval</code>% credible interval during this baseline period).</li>
-<li>This baseline approach leads to the new ROPE default (i.e., <code>odds_mode = "directional_rope"</code>).</li>
+<li>This baseline approach leads to the new ROPE default (i.e., <code>odds_mode = "directional_rope"</code>) for 1D temporal data.</li>
 </ul></div>
 <div class="section level3">
 <h3 id="other-changes-0-0-5">Other changes<a class="anchor" aria-label="anchor" href="#other-changes-0-0-5"></a></h3>

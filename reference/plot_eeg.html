@@ -17,7 +17,7 @@ ii) raw/summarised EEG data in long format (observed values)."><meta property="o
 
     <a class="navbar-brand me-2" href="../index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -243,7 +243,7 @@ with a head outline and optional sensor markers/labels, or a simple 2D
 surface plot (<code>type = "surface"</code>) without a head outline.</p>
 
 <p>For <code>type = "topo"</code>, values are masked outside the head radius computed from
-sensor coordinates and a head outline (circle + nose + ears) is drawn.</p>
+sensor coordinates and a head outline (circle + nose) is drawn.</p>
 <p>For raw data, values are interpolated to a regular grid per time point using
 <code>st_interp_to_grid()</code>, which relies on <span class="pkg">akima</span> and can optionally fill
 missing grid cells using nearest-neighbour (<span class="pkg">FNN</span>).</p>

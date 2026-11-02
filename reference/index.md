@@ -75,13 +75,13 @@
   : Select approximately equally spaced times
 
 - [`summary(`*`<clusters_results_1d>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results_1d.md)
-  : Summarize a temporal neurogam analysis
+  : Summarise a temporal neurogam analysis
 
 - [`summary(`*`<clusters_results_2d>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results_2d.md)
-  : Summarize a temporal-generalization neurogam analysis
+  : Summarise a temporal-generalisation neurogam analysis
 
 - [`summary(`*`<clusters_results_st>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.clusters_results_st.md)
-  : Summarize a spatiotemporal neurogam analysis
+  : Summarise a spatiotemporal neurogam analysis
 
 - [`summary(`*`<recommend_k_results>`*`)`](https://lnalborczyk.github.io/neurogam/reference/summary.recommend_k_results.md)
   : Summary method for recommend_k_results objects

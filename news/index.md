@@ -1,5 +1,18 @@
 # Changelog
 
+## neurogam 0.1.1
+
+### New features
+
+- Implementing more sensible default values for `baseline_window()` in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
+  (1D analyses).
+
+### Bug fixes
+
+- Fixing the ordering of contrasts levels.
+  ([\#13](https://github.com/lnalborczyk/neurogam/issues/13))
+
 ## neurogam 0.1.0
 
 - Preparing for initial CRAN submission (updating and reorganising the
@@ -22,7 +35,7 @@
   used to compute the ROPE (i.e., maximum absolute value of the
   `credible_interval`% credible interval during this baseline period).
 - This baseline approach leads to the new ROPE default (i.e.,
-  `odds_mode = "directional_rope"`).
+  `odds_mode = "directional_rope"`) for 1D temporal data.
 
 ### Other changes
 

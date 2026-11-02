@@ -196,8 +196,7 @@ a head outline and optional sensor markers/labels, or a simple 2D
 surface plot (`type = "surface"`) without a head outline.
 
 For `type = "topo"`, values are masked outside the head radius computed
-from sensor coordinates and a head outline (circle + nose + ears) is
-drawn.
+from sensor coordinates and a head outline (circle + nose) is drawn.
 
 For raw data, values are interpolated to a regular grid per time point
 using `st_interp_to_grid()`, which relies on akima and can optionally

@@ -1,6 +1,6 @@
-# Summarize a spatiotemporal neurogam analysis
+# Summarise a spatiotemporal neurogam analysis
 
-Summarize a spatiotemporal neurogam analysis
+Summarise a spatiotemporal neurogam analysis
 
 ## Usage
 
