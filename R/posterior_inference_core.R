@@ -54,38 +54,64 @@ summarise_posterior_matrix <- function (
 
     }
 
-    if (!scalar_number(null_value)) {
-        stop("`null_value` must be a finite numeric scalar.", call. = FALSE)
+    if (!scalar_number(null_value) ) {
+
+        stop ("`null_value` must be a finite numeric scalar.", call. = FALSE)
+
     }
+
     if (!scalar_number(rope) || rope < 0) {
-        stop("`rope` must be a nonnegative finite numeric scalar.", call. = FALSE)
+
+        stop ("`rope` must be a nonnegative finite numeric scalar.", call. = FALSE)
+
     }
+
     if (!scalar_number(credible_interval) ||
         credible_interval <= 0 || credible_interval >= 1) {
-        stop("`credible_interval` must be strictly between zero and one.",
-             call. = FALSE)
+
+        stop (
+            "`credible_interval` must be strictly between zero and one.",
+            call. = FALSE
+            )
+
     }
-    if (is.null(odds_cap)) {
+
+    if (is.null(odds_cap) ) {
+
         odds_cap <- nrow(draws)
+
     }
+
     if (odds_mode != "spatiotemporal" &&
-        (!scalar_number(odds_cap) || odds_cap < 1)) {
-        stop("`odds_cap` must be a positive numeric scalar (>= 1) in legacy modes.",
-             call. = FALSE)
+        (!scalar_number(odds_cap) || odds_cap < 1) ) {
+
+        stop (
+            "`odds_cap` must be a positive numeric scalar (>= 1) in legacy modes.",
+            call. = FALSE
+            )
+
     }
 
     if (odds_mode == "legacy_directional") {
         if (null_value != 0) {
-            stop("`legacy_directional` compares against zero; use `rope`.",
-                 call. = FALSE)
+
+            stop (
+                "`legacy_directional` compares against zero; use `rope`.",
+                call. = FALSE
+                )
+
         }
+
         prob_above <- colMeans(draws > rope)
         prob_below <- colMeans(draws < -rope)
         prob_inside <- colMeans(abs(draws) <= rope)
+
     } else {
-        prob_above <- colMeans(draws > (null_value + rope))
-        prob_below <- colMeans(draws < (null_value - rope))
+
+        prob_above <- colMeans(draws > (null_value + rope) )
+        prob_below <- colMeans(draws < (null_value - rope) )
         prob_inside <- 1 - prob_above - prob_below
+
     }
 
     odds_above <- prob_above / (1 - prob_above)
@@ -94,21 +120,22 @@ summarise_posterior_matrix <- function (
     if (odds_mode == "directional_rope") {
 
         # Compatibility field only. Actual directional inference uses
-        # odds_above and odds_below independently.
+        # odds_above and odds_below independently
         prob_ratio <- odds_above
 
     } else if (odds_mode == "legacy_one_sided") {
 
-        # Keep the existing legacy implementation unchanged.
+        # Keep the existing legacy implementation unchanged
         prob_ratio <- pmax(
             pmin(odds_above, odds_cap),
             1 / odds_cap
             )
 
     } else if (odds_mode == "legacy_directional") {
+
         odds_above <- pmin(odds_above, odds_cap)
         odds_below <- pmin(odds_below, odds_cap)
-        prob_ratio <- rep(1, ncol(draws))
+        prob_ratio <- rep(1, ncol(draws) )
         positive <- prob_above > 0.5
         negative <- !positive & prob_below > 0.5
         prob_ratio[positive] <- odds_above[positive]
@@ -117,26 +144,28 @@ summarise_posterior_matrix <- function (
             1 / odds_cap
         )
     } else {
+
         # No finite-sample odds cap in the existing spatiotemporal API.
-        prob_ratio <- rep(1, ncol(draws))
+        prob_ratio <- rep(1, ncol(draws) )
         positive <- prob_above > 0.5
         negative <- !positive & prob_below > 0.5
         prob_ratio[positive] <- odds_above[positive]
         prob_ratio[negative] <- 1 / odds_below[negative]
+
     }
 
     alpha <- (1 - credible_interval) / 2
     interval <- vapply(
-        seq_len(ncol(draws)),
+        seq_len(ncol(draws) ),
         function(j) {
             stats::quantile(
                 draws[, j],
                 probs = c(alpha, 1 - alpha),
                 names = FALSE
-            )
+                )
         },
         numeric(2L)
-    )
+        )
 
     return (
         data.frame(
@@ -165,30 +194,41 @@ summarise_posterior_matrix <- function (
 #'
 #' @keywords internal
 summarise_posterior_long <- function (data, groups, value = ".epred", ...) {
+
     if (!is.data.frame(data) || !length(groups) ||
         anyDuplicated(groups) ||
-        !all(c(groups, value) %in% names(data))) {
-        stop("`data` must contain the grouping columns and value column.",
-             call. = FALSE)
+        !all(c(groups, value) %in% names(data) ) ) {
+
+        stop (
+            "`data` must contain the grouping columns and value column.",
+            call. = FALSE
+            )
+
     }
-    if (!nrow(data) || anyNA(data[groups])) {
-        stop("`data` must contain nonmissing prediction locations.",
-             call. = FALSE)
+
+    if (!nrow(data) || anyNA(data[groups]) ) {
+
+        stop (
+            "`data` must contain nonmissing prediction locations.",
+            call. = FALSE
+            )
+
     }
 
     grouped <- dplyr::group_by(
         data,
-        dplyr::across(dplyr::all_of(groups))
-    )
+        dplyr::across(dplyr::all_of(groups) )
+        )
+
     group_keys <- dplyr::group_keys(grouped)
     pieces <- dplyr::group_split(grouped, .keep = TRUE)
 
-    summaries <- lapply(pieces, function(piece) {
+    summaries <- lapply(pieces, function (piece) {
         summarise_posterior_matrix(
             matrix(piece[[value]], ncol = 1L),
             ...
-        )
-    })
+            )
+        })
 
     result <- dplyr::bind_cols(
         group_keys,
@@ -229,7 +269,7 @@ pair_posterior_contrasts <- function (
 
     }
 
-    # Always create this local object before working with `draws`.
+    # Always create this local object before working with `draws`
     draws <- as.data.frame(post_draws[, required, drop = FALSE])
 
     if (anyNA(draws[c(coordinates, "predictor", ".draw", ".epred")]) ) {
@@ -242,26 +282,27 @@ pair_posterior_contrasts <- function (
     }
 
     if (predictor_type == "continuous") {
+
         if (!is.numeric(draws$predictor) ) {
 
             stop ("Continuous predictor must be numeric.", call. = FALSE)
 
         }
 
-        # Sort *numerically* before string conversion: 2 < 10.
+        # Sort numerically before string conversion: 2 < 10
         values <- round(draws$predictor, digits = 3L)
         conditions <- as.character(sort(unique(values) ) )
         draws$predictor <- as.character(values)
 
     } else if (is.factor(draws$predictor) ) {
 
-        # An explicit factor-level order takes precedence over input row order.
+        # An explicit factor-level order takes precedence over input row order
         conditions <- levels(droplevels(draws$predictor) )
         draws$predictor <- as.character(draws$predictor)
 
     } else {
 
-        # Character predictors have a stable, alphabetical direction.
+        # Character predictors have a stable, alphabetical direction
         draws$predictor <- as.character(draws$predictor)
         conditions <- sort(unique(draws$predictor) )
 

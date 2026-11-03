@@ -37,6 +37,7 @@ eegdata |>
     summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
     filter(channel %in% sample(x = unique(levels(eegdata$channel) ), size = 9) ) |> 
     ggplot(aes(x = time, y = voltage, colour = group) ) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
     geom_line() +
     facet_wrap(~channel)
 ```
@@ -188,24 +189,24 @@ print(results_ppt)
 #>   Contrast: one_sample
 #>   Posterior odds mode: directional_rope
 #>   Odds threshold: 10
-#>   Clusters found: 69
+#>   Clusters found: 40
 #> 
 #> Cluster table:
 #> 
 #>  participant     sign id onset offset duration n_points time_min time_max
-#>  co2a0000364 negative  1 0.094  0.320    0.226       59    0.094    0.320
-#>  co2a0000364 negative  2 0.473  0.992    0.519      134    0.473    0.992
-#>  co2a0000365 negative  1 0.148  0.219    0.070       19    0.148    0.219
-#>  co2a0000365 negative  2 0.281  0.981    0.699      180    0.281    0.981
-#>  co2a0000368 negative  1 0.004  0.066    0.062       17    0.004    0.066
-#>  co2a0000368 negative  2 0.137  1.000    0.863      222    0.137    1.000
-#>  co2a0000369 positive  1 0.207  0.418    0.211       55    0.207    0.418
-#>  co2a0000369 negative  2 0.719  0.812    0.094       25    0.719    0.812
-#>  co2a0000369 negative  3 0.922  0.996    0.074       20    0.922    0.996
-#>  co2a0000370 positive  1 0.066  0.137    0.070       19    0.066    0.137
-#>  co2a0000370 positive  2 0.227  0.383    0.156       41    0.227    0.383
-#>  co2a0000370 negative  3 0.453  0.586    0.133       35    0.453    0.586
-#>   ... 57 additional cluster(s) not shown.
+#>  co2a0000364 negative  1 0.106  0.312    0.207       54    0.106    0.312
+#>  co2a0000364 negative  2 0.484  0.668    0.184       48    0.484    0.668
+#>  co2a0000364 negative  3 0.727  0.984    0.258       67    0.727    0.984
+#>  co2a0000365 negative  1 0.144  0.223    0.078       21    0.144    0.223
+#>  co2a0000365 negative  2 0.273  0.984    0.711      183    0.273    0.984
+#>  co2a0000368 negative  1 0.148  1.000    0.852      219    0.148    1.000
+#>  co2a0000369 positive  1 0.207  0.410    0.203       53    0.207    0.410
+#>  co2a0000369 negative  2 0.727  0.785    0.059       16    0.727    0.785
+#>  co2a0000369 negative  3 0.930  0.992    0.062       17    0.930    0.992
+#>  co2a0000371 negative  1 0.141  0.320    0.180       47    0.141    0.320
+#>  co2a0000371 negative  2 0.496  0.664    0.168       44    0.496    0.664
+#>  co2a0000372 positive  1 0.973  1.000    0.027        8    0.973    1.000
+#>   ... 28 additional cluster(s) not shown.
 #> =================================================================
 ```
 

@@ -1,6 +1,6 @@
-# Summarize a temporal neurogam analysis
+# Summarise a temporal neurogam analysis
 
-Summarize a temporal neurogam analysis
+Summarise a temporal neurogam analysis
 
 ## Usage
 

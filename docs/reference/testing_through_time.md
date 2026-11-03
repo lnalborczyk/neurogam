@@ -46,7 +46,7 @@ testing_through_time(
     "spatiotemporal"),
   chance_level = NULL,
   credible_interval = 0.95,
-  baseline_window = c(0, 0.1),
+  baseline_window = NULL,
   space_id = NULL,
   sensor_id = NULL,
   tensor_d = c(2L, 1L),
@@ -269,9 +269,12 @@ testing_through_time(
 
 - baseline_window:
 
-  Numeric; bounds of the baseline window (in the same units of
-  `time_id`), used to compute the baseline ROPE. Typically, this is a
-  100-200 ms window preceding stimulus onset.
+  Optional numeric vector of length two specifying the baseline interval
+  in the same units as \`time_id\`. For 1D analyses, when \`rope =
+  NULL\`, the baseline is used to estimate the region of practical
+  equivalence (ROPE). If NULL (default), the available pre-stimulus
+  interval is proposed and requires confirmation in interactive
+  sessions.
 
 - space_id:
 
@@ -297,12 +300,12 @@ testing_through_time(
 
 - rope:
 
-  Optional nonnegative symmetric ROPE half-width. The default (\`NULL\`)
-  estimates the ROPE from the maximum absolute posterior-median
-  deviation within \`baseline_window\` for 1D temporal analyses. An
-  explicit value, including zero, overrides baseline estimation. For 2D
-  and spatiotemporal analyses, \`NULL\` currently corresponds to a
-  point-null ROPE of zero.
+  Optional non-negative symmetric ROPE half-width. The default
+  (\`NULL\`) estimates the ROPE from the maximum absolute
+  posterior-median deviation within \`baseline_window\` for 1D temporal
+  analyses. An explicit value, including zero, overrides baseline
+  estimation. For 2D and spatiotemporal analyses, \`NULL\` currently
+  corresponds to a point-null ROPE of zero.
 
 - contrast_levels:
 

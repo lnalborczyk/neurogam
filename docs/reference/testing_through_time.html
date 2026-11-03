@@ -25,7 +25,7 @@ between participants (e.g., age)."><meta property="og:image" content="https://ln
 
     <a class="navbar-brand me-2" href="../index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,7 +104,7 @@ between participants (e.g., age).</p>
 <span>    <span class="st">"spatiotemporal"</span><span class="op">)</span>,</span>
 <span>  chance_level <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  credible_interval <span class="op">=</span> <span class="fl">0.95</span>,</span>
-<span>  baseline_window <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.1</span><span class="op">)</span>,</span>
+<span>  baseline_window <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  space_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sensor_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tensor_d <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2L</span>, <span class="fl">1L</span><span class="op">)</span>,</span>
@@ -328,9 +328,12 @@ decoding accuracy).</p></dd>
 
 
 <dt id="arg-baseline-window">baseline_window<a class="anchor" aria-label="anchor" href="#arg-baseline-window"></a></dt>
-<dd><p>Numeric; bounds of the baseline window (in the same
-units of <code>time_id</code>), used to compute the baseline ROPE. Typically, this
-is a 100-200 ms window preceding stimulus onset.</p></dd>
+<dd><p>Optional numeric vector of length two
+specifying the baseline interval in the same units as `time_id`.
+For 1D analyses, when `rope = NULL`, the baseline is used to
+estimate the region of practical equivalence (ROPE).
+If NULL (default), the available pre-stimulus interval is
+proposed and requires confirmation in interactive sessions.</p></dd>
 
 
 <dt id="arg-space-id">space_id<a class="anchor" aria-label="anchor" href="#arg-space-id"></a></dt>
@@ -356,7 +359,7 @@ sensor adjacency construction when no graph is supplied.</p></dd>
 
 
 <dt id="arg-rope">rope<a class="anchor" aria-label="anchor" href="#arg-rope"></a></dt>
-<dd><p>Optional nonnegative symmetric ROPE half-width.
+<dd><p>Optional non-negative symmetric ROPE half-width.
 The default (`NULL`) estimates the ROPE from the maximum
 absolute posterior-median deviation within `baseline_window`
 for 1D temporal analyses. An explicit value, including zero,

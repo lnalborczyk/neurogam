@@ -55,6 +55,7 @@ eegdata |>
     summarise(voltage = mean(voltage), .by = c(group, channel, time) ) |>
     filter(channel %in% sample(x = unique(levels(eegdata$channel) ), size = 9) ) |> 
     ggplot(aes(x = time, y = voltage, colour = group) ) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
     geom_line() +
     facet_wrap(~channel)
 ```

@@ -34,7 +34,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">neurogam</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,7 +71,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Application to 1D temporal EEG data</h1>
 
       <p class="author">Ladislas Nalborczyk</p>
-      <p class="date">2026-10-30</p>
+      <p class="date">2026-11-03</p>
 
       <small class="dont-index">Source: <a href="https://github.com/lnalborczyk/neurogam/blob/HEAD/vignettes/eeg_temporal.qmd" class="external-link"><code>vignettes/eeg_temporal.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
@@ -105,6 +105,7 @@
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>voltage <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">voltage</span><span class="op">)</span>, .by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">group</span>, <span class="va">channel</span>, <span class="va">time</span><span class="op">)</span> <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">channel</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">eegdata</span><span class="op">$</span><span class="va">channel</span><span class="op">)</span> <span class="op">)</span>, size <span class="op">=</span> <span class="fl">9</span><span class="op">)</span> <span class="op">)</span> <span class="op">|&gt;</span> </span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span>, y <span class="op">=</span> <span class="va">voltage</span>, colour <span class="op">=</span> <span class="va">group</span><span class="op">)</span> <span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">channel</span><span class="op">)</span></span></code></pre></div>
 <p><img src="figures/eeg_temporal-data-import-1.png" alt="" width="100%"></p>
@@ -229,24 +230,24 @@
 <span><span class="co">#&gt;   Contrast: one_sample</span></span>
 <span><span class="co">#&gt;   Posterior odds mode: directional_rope</span></span>
 <span><span class="co">#&gt;   Odds threshold: 10</span></span>
-<span><span class="co">#&gt;   Clusters found: 69</span></span>
+<span><span class="co">#&gt;   Clusters found: 40</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Cluster table:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  participant     sign id onset offset duration n_points time_min time_max</span></span>
-<span><span class="co">#&gt;  co2a0000364 negative  1 0.094  0.320    0.226       59    0.094    0.320</span></span>
-<span><span class="co">#&gt;  co2a0000364 negative  2 0.473  0.992    0.519      134    0.473    0.992</span></span>
-<span><span class="co">#&gt;  co2a0000365 negative  1 0.148  0.219    0.070       19    0.148    0.219</span></span>
-<span><span class="co">#&gt;  co2a0000365 negative  2 0.281  0.981    0.699      180    0.281    0.981</span></span>
-<span><span class="co">#&gt;  co2a0000368 negative  1 0.004  0.066    0.062       17    0.004    0.066</span></span>
-<span><span class="co">#&gt;  co2a0000368 negative  2 0.137  1.000    0.863      222    0.137    1.000</span></span>
-<span><span class="co">#&gt;  co2a0000369 positive  1 0.207  0.418    0.211       55    0.207    0.418</span></span>
-<span><span class="co">#&gt;  co2a0000369 negative  2 0.719  0.812    0.094       25    0.719    0.812</span></span>
-<span><span class="co">#&gt;  co2a0000369 negative  3 0.922  0.996    0.074       20    0.922    0.996</span></span>
-<span><span class="co">#&gt;  co2a0000370 positive  1 0.066  0.137    0.070       19    0.066    0.137</span></span>
-<span><span class="co">#&gt;  co2a0000370 positive  2 0.227  0.383    0.156       41    0.227    0.383</span></span>
-<span><span class="co">#&gt;  co2a0000370 negative  3 0.453  0.586    0.133       35    0.453    0.586</span></span>
-<span><span class="co">#&gt;   ... 57 additional cluster(s) not shown.</span></span>
+<span><span class="co">#&gt;  co2a0000364 negative  1 0.106  0.312    0.207       54    0.106    0.312</span></span>
+<span><span class="co">#&gt;  co2a0000364 negative  2 0.484  0.668    0.184       48    0.484    0.668</span></span>
+<span><span class="co">#&gt;  co2a0000364 negative  3 0.727  0.984    0.258       67    0.727    0.984</span></span>
+<span><span class="co">#&gt;  co2a0000365 negative  1 0.144  0.223    0.078       21    0.144    0.223</span></span>
+<span><span class="co">#&gt;  co2a0000365 negative  2 0.273  0.984    0.711      183    0.273    0.984</span></span>
+<span><span class="co">#&gt;  co2a0000368 negative  1 0.148  1.000    0.852      219    0.148    1.000</span></span>
+<span><span class="co">#&gt;  co2a0000369 positive  1 0.207  0.410    0.203       53    0.207    0.410</span></span>
+<span><span class="co">#&gt;  co2a0000369 negative  2 0.727  0.785    0.059       16    0.727    0.785</span></span>
+<span><span class="co">#&gt;  co2a0000369 negative  3 0.930  0.992    0.062       17    0.930    0.992</span></span>
+<span><span class="co">#&gt;  co2a0000371 negative  1 0.141  0.320    0.180       47    0.141    0.320</span></span>
+<span><span class="co">#&gt;  co2a0000371 negative  2 0.496  0.664    0.168       44    0.496    0.664</span></span>
+<span><span class="co">#&gt;  co2a0000372 positive  1 0.973  1.000    0.027        8    0.973    1.000</span></span>
+<span><span class="co">#&gt;   ... 28 additional cluster(s) not shown.</span></span>
 <span><span class="co">#&gt; =================================================================</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># plotting the data, model's predictions, and clusters</span></span>

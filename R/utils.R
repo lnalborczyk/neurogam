@@ -747,7 +747,9 @@ get_baseline_null <- function (post_diff, baseline_window, credible_interval) {
             upper = stats::quantile(.data$epred_diff, upper_q),
             .groups = "drop"
             ) |>
+        # use the max abs 95 CrI
         # dplyr::summarise(null_value = max(abs(c(.data$lower, .data$upper) ) ) ) |>
+        # or use the max median slope
         dplyr::summarise(null_value = max(abs(.data$median) ) ) |>
         dplyr::pull(.data$null_value)
 
@@ -764,7 +766,7 @@ resolve_temporal_rope <- function (
     ) {
 
     # An explicit ROPE, including zero, overrides baseline estimation.
-    if (!is.null(rope)) {
+    if (!is.null(rope) ) {
 
         if (!is.numeric(rope) || length(rope) != 1L ||
             !is.finite(rope) || rope < 0) {
@@ -776,57 +778,57 @@ resolve_temporal_rope <- function (
 
         }
 
-        return(list(rope = rope, source = "user"))
+        return (list(rope = rope, source = "user") )
 
     }
 
     # No baseline and no explicit ROPE: point-null inference.
-    if (is.null(baseline_window)) {
+    if (is.null(baseline_window) ) {
 
-        return(list(rope = 0, source = "point_null"))
+        return (list(rope = 0, source = "point_null") )
 
     }
 
     if (!is.numeric(baseline_window) ||
         length(baseline_window) != 2L ||
-        any(!is.finite(baseline_window)) ||
+        any(!is.finite(baseline_window) ) ||
         baseline_window[1L] >= baseline_window[2L]) {
 
-        stop(
+        stop (
             "`baseline_window` must contain two increasing finite numbers.",
             call. = FALSE
-        )
+            )
 
     }
 
     if (!all(c("time", value_col) %in% names(post_draws))) {
 
-        stop(
+        stop (
             "Baseline estimation requires time and posterior draws.",
             call. = FALSE
-        )
+            )
 
     }
 
     baseline_draws <- data.frame(
         time = post_draws$time,
         epred_diff = post_draws[[value_col]] - null_center
-    )
+        )
 
     effective_rope <- get_baseline_null(
         post_diff = baseline_draws,
         baseline_window = baseline_window,
         credible_interval = credible_interval
-    )
+        )
 
     if (length(effective_rope) != 1L ||
         !is.finite(effective_rope) ||
         effective_rope < 0) {
 
-        stop(
+        stop (
             "Could not estimate the ROPE from the baseline window.",
             call. = FALSE
-        )
+            )
 
     }
 
@@ -839,8 +841,9 @@ resolve_temporal_rope <- function (
 
 }
 
+#' Compute one-sample posterior probabilities
 #' @keywords internal
-compute_one_sample_prob <- function(
+compute_one_sample_prob <- function (
     post_draws,
     null_value,
     participant_clusters,
@@ -851,36 +854,163 @@ compute_one_sample_prob <- function(
     rope = NULL
     ) {
 
-    groups <- if (participant_clusters) c("time", "participant") else "time"
+    # ========================================================
+    # PARTICIPANT-SPECIFIC BASELINE INFERENCE
+    # ========================================================
 
-    # Preserve the historical one-sided baseline convention when explicitly
-    # selected and no user ROPE has been supplied.
-    legacy_baseline <- identical(odds_mode, "legacy_one_sided") &&
-        is.null(rope) && !is.null(baseline_window)
+    participant_baseline <- participant_clusters &&
+        is.null(rope) &&
+        !is.null(baseline_window)
+
+    if (participant_baseline) {
+
+        if (!"participant" %in% names(post_draws) ||
+            anyNA(post_draws$participant) ) {
+
+            stop (
+                "Participant-level inference requires valid participant IDs.",
+                call. = FALSE
+                )
+
+        }
+
+        # Split predictions by participant
+        participant_draws <- split(
+            post_draws,
+            post_draws$participant,
+            drop = TRUE
+            )
+
+        # Apply existing inference independently to each participant
+        results <- lapply(participant_draws, function (draws_i) {
+
+            out_i <- compute_one_sample_prob(
+                post_draws = draws_i,
+                null_value = null_value,
+                participant_clusters = FALSE,
+                n_post_samples = n_post_samples,
+                credible_interval = credible_interval,
+                baseline_window = baseline_window,
+                odds_mode = odds_mode,
+                rope = NULL
+                )
+
+            # Retrieve the participant-specific thresholds
+            effective_null <- attr(
+                out_i, "effective_null", exact = TRUE
+                )
+
+            effective_rope <- attr(
+                out_i, "effective_rope", exact = TRUE
+                )
+
+            # Restore participant identity
+            out_i$participant <- draws_i$participant[1L]
+
+            # Store threshold used for inference
+            out_i$baseline_threshold <- if (
+                identical(odds_mode, "legacy_one_sided")
+                ) {
+
+                effective_null
+
+            } else {
+
+                effective_rope
+
+            }
+
+            out_i
+
+        })
+
+        out <- dplyr::bind_rows(results)
+
+        # There is no longer a single common baseline ROPE
+        attr(out, "effective_rope") <- NULL
+        attr(out, "effective_null") <- NULL
+        attr(out, "rope_source") <- "participant_baseline"
+
+        return (out)
+
+    }
+
+    # ========================================================
+    # STANDARD POPULATION-LEVEL INFERENCE
+    # OR EXPLICIT COMMON ROPE
+    # ========================================================
+
+    groups <- if (participant_clusters) {
+
+        c("time", "participant")
+
+    } else {
+
+        "time"
+
+    }
+
+    # Preserve historical one-sided baseline convention
+    legacy_baseline <- identical(
+        odds_mode, "legacy_one_sided"
+        ) &&
+        is.null(rope) &&
+        !is.null(baseline_window)
 
     effective_null <- null_value
 
     if (legacy_baseline) {
+
+        # Select baseline predictions
         baseline <- post_draws[
             post_draws$time >= baseline_window[1L] &
                 post_draws$time <= baseline_window[2L],
-            , drop = FALSE
-        ]
-        if (!nrow(baseline)) {
-            stop("No observations found within `baseline_window`.",
-                 call. = FALSE)
+            ,
+            drop = FALSE
+            ]
+
+        if (!nrow(baseline) ) {
+
+            stop (
+                "No observations found within `baseline_window`.",
+                call. = FALSE
+                )
+
         }
+
         alpha <- (1 - credible_interval) / 2
+
+        # Credible intervals at each baseline time point
         limits <- baseline |>
-            dplyr::group_by(dplyr::across(dplyr::all_of(groups))) |>
+            dplyr::group_by(
+                dplyr::across(dplyr::all_of(groups) )
+                ) |>
             dplyr::summarise(
-                lower = stats::quantile(.data$.epred, probs = alpha),
-                upper = stats::quantile(.data$.epred, probs = 1 - alpha),
+                lower = stats::quantile(
+                    .data$.epred,
+                    probs = alpha
+                    ),
+                upper = stats::quantile(
+                    .data$.epred,
+                    probs = 1 - alpha
+                    ),
                 .groups = "drop"
+                )
+
+        # Historical baseline threshold:
+        # maximum absolute credible interval endpoint
+        effective_null <- max(
+            abs(c(limits$lower, limits$upper) )
             )
-        effective_null <- max(abs(c(limits$lower, limits$upper)))
-        effective <- list(rope = 0, source = "legacy_baseline_null")
+
+        effective <- list(
+            rope = 0,
+            source = "legacy_baseline_null"
+            )
+
     } else {
+
+        # Existing directional ROPE calculation
         effective <- resolve_temporal_rope(
             post_draws = post_draws,
             rope = rope,
@@ -888,8 +1018,13 @@ compute_one_sample_prob <- function(
             credible_interval = credible_interval,
             value_col = ".epred",
             null_center = null_value
-        )
+            )
+
     }
+
+    # ========================================================
+    # SUMMARISE POSTERIOR INFERENCE
+    # ========================================================
 
     out <- summarise_posterior_long(
         data = post_draws,
@@ -900,20 +1035,37 @@ compute_one_sample_prob <- function(
         credible_interval = credible_interval,
         odds_mode = odds_mode,
         odds_cap = n_post_samples
-    )
+        )
+
     out$post_prob <- out$estimate
+
     out <- out[c(
-        groups, "prob_above", "prob_below", "prob_inside",
-        "odds_above", "odds_below", "prob_ratio",
-        "post_prob", "lower", "upper"
-    )]
+        groups,
+        "prob_above",
+        "prob_below",
+        "prob_inside",
+        "odds_above",
+        "odds_below",
+        "prob_ratio",
+        "post_prob",
+        "lower",
+        "upper"
+        )]
+
+    # Preserve existing metadata
     attr(out, "effective_rope") <- effective$rope
     attr(out, "rope_source") <- effective$source
-    out
+
+    # New: expose the effective null for recursive calls
+    attr(out, "effective_null") <- effective_null
+
+    return (out)
+
 }
 
+#' Compute two-sample posterior probabilities
 #' @keywords internal
-compute_two_sample_prob <- function(
+compute_two_sample_prob <- function (
     post_draws,
     null_value,
     participant_clusters,
@@ -923,16 +1075,119 @@ compute_two_sample_prob <- function(
     baseline_window = NULL,
     odds_mode = "directional_rope",
     rope = NULL
-) {
-    groups <- if (participant_clusters) c("time", "participant") else "time"
-    paired <- pair_posterior_contrasts(post_draws, groups, predictor_type)
-    # Preserve the old low-level interpretation of `null_value` as a
-    # contrast width if no baseline and no explicit `rope` were supplied.
-    selected_rope <- if (is.null(rope) && is.null(baseline_window)) {
-        null_value
-    } else {
-        rope
+    ) {
+
+    # ========================================================
+    # PARTICIPANT-SPECIFIC BASELINE INFERENCE
+    # ========================================================
+
+    participant_baseline <- participant_clusters &&
+        is.null(rope) &&
+        !is.null(baseline_window)
+
+    if (participant_baseline) {
+
+        if (!"participant" %in% names(post_draws) ||
+            anyNA(post_draws$participant) ) {
+
+            stop (
+                "Participant-level inference requires valid participant IDs.",
+                call. = FALSE
+                )
+
+        }
+
+        # Split predictions by participant
+        participant_draws <- split(
+            post_draws,
+            post_draws$participant,
+            drop = TRUE
+            )
+
+        # Apply existing inference independently
+        results <- lapply(participant_draws, function (draws_i) {
+
+            out_i <- compute_two_sample_prob(
+                post_draws = draws_i,
+                null_value = null_value,
+                participant_clusters = FALSE,
+                n_post_samples = n_post_samples,
+                credible_interval = credible_interval,
+                predictor_type = predictor_type,
+                baseline_window = baseline_window,
+                odds_mode = odds_mode,
+                rope = NULL
+                )
+
+            # Retrieve participant-specific ROPE
+            effective_rope <- attr(
+                out_i,
+                "effective_rope",
+                exact = TRUE
+            )
+
+            # Restore participant identity
+            out_i$participant <- draws_i$participant[1L]
+
+            # Store participant-specific baseline threshold
+            out_i$baseline_threshold <- effective_rope
+
+            out_i
+
+        })
+
+        out <- dplyr::bind_rows(results)
+
+        # No single common ROPE across participants
+        attr(out, "effective_rope") <- NULL
+        attr(out, "rope_source") <- "participant_baseline"
+
+        return (out)
+
     }
+
+    # ========================================================
+    # STANDARD POPULATION-LEVEL INFERENCE
+    # OR EXPLICIT COMMON ROPE
+    # ========================================================
+
+    groups <- if (participant_clusters) {
+
+        c("time", "participant")
+
+    } else {
+
+        "time"
+
+    }
+
+    # Pair condition predictions within each posterior draw
+    paired <- pair_posterior_contrasts(
+        post_draws,
+        groups,
+        predictor_type
+        )
+
+    # Preserve the previous interpretation of null_value:
+    # when no baseline or explicit ROPE is supplied,
+    # it represents the contrast half-width.
+    selected_rope <- if (
+        is.null(rope) &&
+        is.null(baseline_window)
+        ) {
+
+        null_value
+
+    } else {
+
+        rope
+
+    }
+
+    # ========================================================
+    # RESOLVE BASELINE-DERIVED OR EXPLICIT ROPE
+    # ========================================================
+
     effective <- resolve_temporal_rope(
         post_draws = paired,
         rope = selected_rope,
@@ -940,7 +1195,11 @@ compute_two_sample_prob <- function(
         credible_interval = credible_interval,
         value_col = "epred_diff",
         null_center = 0
-    )
+        )
+
+    # ========================================================
+    # SUMMARISE POSTERIOR INFERENCE
+    # ========================================================
 
     out <- summarise_posterior_long(
         data = paired,
@@ -951,16 +1210,29 @@ compute_two_sample_prob <- function(
         credible_interval = credible_interval,
         odds_mode = odds_mode,
         odds_cap = n_post_samples
-    )
+        )
+
     out$post_prob <- out$estimate
+
     out <- out[c(
-        groups, "prob_above", "prob_below", "prob_inside",
-        "odds_above", "odds_below", "prob_ratio",
-        "post_prob", "lower", "upper"
-    )]
+        groups,
+        "prob_above",
+        "prob_below",
+        "prob_inside",
+        "odds_above",
+        "odds_below",
+        "prob_ratio",
+        "post_prob",
+        "lower",
+        "upper"
+        )]
+
+    # Preserve existing metadata
     attr(out, "effective_rope") <- effective$rope
     attr(out, "rope_source") <- effective$source
-    out
+
+    return (out)
+
 }
 
 #' @keywords internal
@@ -1082,27 +1354,23 @@ compute_two_sample_prob_2d <- function (
 
     out$post_prob <- out$estimate
 
-    # return (
-    #     out[c(
-    #         groups,
-    #         "prob_above", "prob_below", "prob_inside",
-    #         "odds_above", "odds_below", "prob_ratio",
-    #         "post_prob", "lower", "upper"
-    #         )]
-    #     )
-
     out <- out[c(
         groups,
         "prob_above", "prob_below", "prob_inside",
         "odds_above", "odds_below", "prob_ratio",
         "post_prob", "lower", "upper"
-    )]
+        )]
 
     attr(out, "effective_rope") <- rope
+
     attr(out, "rope_source") <- if (rope == 0) {
+
         "point_null"
+
     } else {
+
         "user"
+
     }
 
     return (out)
