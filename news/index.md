@@ -12,6 +12,8 @@
 
 - Fixing the ordering of contrasts levels.
   ([\#13](https://github.com/lnalborczyk/neurogam/issues/13))
+- Ensure cluster detection at the participant level use the
+  participant-specific baseline-derived ROPE (cf. `utils.R`).
 
 ## neurogam 0.1.0
 
