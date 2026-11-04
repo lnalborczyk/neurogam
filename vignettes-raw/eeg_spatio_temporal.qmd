@@ -28,7 +28,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-This vignette illustrates how to model the spatial and temporal distribution of EEG activity using **Bayesian generalised additive multilevel models** (BGAMMs) in `neurogam`. The spatial dimension is represented by two projected electrode coordinates, and the temporal dimension by continuous time. The analysis combines a smooth spatial–temporal model, posterior inference at each electrode and time point, and graph-based clustering across neighbouring electrodes and consecutive time points.
+This vignette illustrates how to model the spatial and temporal distribution of EEG activity using **Bayesian generalised additive multilevel models** (BGAMMs) in `neurogam`. The spatial dimension is represented by two projected electrode coordinates, and the temporal dimension by continuous time. The analysis combines a smooth spatial-temporal model, posterior inference at each electrode and time point, and graph-based clustering across neighbouring electrodes and consecutive time points.
 
 The workflow provides:
 
@@ -58,20 +58,9 @@ data("eegcoord", package = "eegkit")
 # dplyr::glimpse(eegdata)
 # head(eegcoord[, c("xproj", "yproj")] )
 
-# Choose five participants from each group for this worked example
-subjects_keep <- eegdata |>
-    distinct(subject, group) |>
-    group_by(group) |>
-    slice_head(n = 5L) |>
-    ungroup() |>
-    pull(subject)
-
 # Keep every second time sample, the raw time variable indexes samples
 eeg_subset <- eegdata |>
-    dplyr::filter(
-        subject %in% subjects_keep,
-        time %% 2L == 0L
-        )
+    filter(time %% 2L == 0L)
 
 # Coordinates are identified by row names in eegcoord
 eeg_coords <- eegcoord |>
@@ -90,7 +79,7 @@ voltage_scale <- stats::sd(eeg_subset$voltage, na.rm = TRUE)
 # Preserve group so that a between-participant contrast remains possible
 eeg_data <- eeg_subset |>
     summarise(
-        voltage = mean(voltage, na.rm = TRUE),
+        voltage = mean(x = voltage, na.rm = TRUE),
         .by = c(subject, group, channel, time)
         ) |>
     left_join(eeg_coords, by = "channel") |>
@@ -154,8 +143,8 @@ eeg_data |>
         voltage = mean(voltage),
         .by = c(group, channel, time)
         ) |>
-    ggplot(aes(x = time, y = voltage, colour = group)) +
-    geom_hline(yintercept = 0, linewidth = 0.25, colour = "grey75") +
+    ggplot(aes(x = time, y = voltage, colour = group) ) +
+    geom_hline(yintercept = 0, linewidth = 0.5, linetype = "dashed") +
     geom_line(linewidth = 0.5) +
     facet_wrap(~channel, ncol = 3L) +
     labs(x = "Time (s)", y = "Scaled voltage", colour = "Group")
@@ -215,8 +204,6 @@ plot_sensor_adjacency(
 
 Inspect the graph for unexpected connections across distant scalp regions, isolated sensors, and gaps near the head boundary. You can adjust `k` and `distance_factor` or use an externally defined sensor adjacency matrix. The same matrix should be retained for reproducible inference. The built-in plotting function draws edges in the **2D projection**, not on a physical three-dimensional head surface.
 
-For convenience, `testing_through_time(sensor_adjacency = NULL, ...)` constructs adjacency automatically. We pass our inspected graph explicitly in the fitting example below so that the clustering neighbourhood is fixed and documented.
-
 ## Fitting a spatiotemporal BGAMM
 
 ### Model specification
@@ -254,7 +241,7 @@ formula_st <- make_bgam_formula(
     time_id = "time",
     space_id = c("xproj", "yproj"),
     kvalue = c(15, 10),
-    bs = c("ps", "ps"),
+    bs = c("ds", "cr"),
     tensor_d = c(2, 1),
     varying_smooth = FALSE,
     use_se = FALSE
@@ -267,14 +254,14 @@ The high-level workflow works with **participant-level means**, not necessarily 
 
 ### Fit the integrated model
 
-The following block fits the model and immediately evaluates posterior expected voltage at each observed sensor × time point. The fitted `brmsfit` object and clustering results are returned together by `testing_through_time()`.
+The following block fits the model and immediately evaluates posterior expected voltage at each observed sensor x time point. The fitted `brmsfit` object and clustering results are returned together by `testing_through_time()`.
 
 ```{r model-fit, eval = FALSE}
 results_st <- testing_through_time(
     data = eeg_data,
     participant_id = "subject",
     outcome_id = "voltage",
-    predictor_id = NA_character_,
+    predictor_id = NA,
     sensor_id = "channel",
     time_id = "time",
     space_id = c("xproj", "yproj"),
@@ -283,30 +270,26 @@ results_st <- testing_through_time(
     use_se = FALSE,
     varying_smooth = FALSE,
     kvalue = c(15, 10),
-    bs = c("ps", "ps"),
+    bs = c("ds", "cr"),
     tensor_d = c(2, 1),
     sensor_adjacency = sensor_adjacency,
     chance_level = 0,
     rope = 0,
     threshold = 10,
-    threshold_type = "both",
-    n_post_samples = 500,
     chunk_size = 256L,
     re_formula = NA,
     warmup = 1000,
-    iter = 3000,
+    iter = 2000,
     chains = 2,
     cores = 2,
     backend = "cmdstanr",
-    seed = 20261027,
-    threads = brms::threading(threads = 4),
-    file = "cache/eeg_st_results"
+    threads = brms::threading(threads = 4)
     )
 ```
 
 **Runtime and convergence.** Spatiotemporal models can take many hours. Begin with a small, balanced subset of participants and decimated time points when checking model specification, then increase data resolution and basis dimensions for the scientific analysis. `cores = 2` and `threads = brms::threading(threads = 4)` can use approximately eight CPU threads when two chains run concurrently; this is not equivalent to four total cores. Within-chain threading may not speed up every model. For final inference, inspect convergence diagnostics (including $\widehat R$, effective sample sizes, divergences, and posterior predictive checks) and consider additional chains if computational resources permit. See the [brms threading guide](https://paulbuerkner.com/brms/reference/threading.html).
 
-Predictions use `re_formula = NA`, targeting the fitted population-level mean rather than an individual participant's random intercept. This does not itself incorporate a distribution of unobserved participant-specific spatial–temporal deviations; such smooths are not currently fitted by this interface.
+Predictions use `re_formula = NA`, targeting the fitted population-level mean rather than an individual participant's random intercept. This does not itself incorporate a distribution of unobserved participant-specific spatial-temporal deviations; such smooths are not currently fitted by this interface.
 
 ### Reuse an independently fitted `brms` model
 
@@ -324,7 +307,8 @@ prediction_grid <- merge(
 
 prediction_grid$subject <- eeg_data$subject[1L]
 
-model_path <- "cache/eeg_st_model.rds"
+# model_path <- "cache/eeg_st_model.rds"
+model_path <- "cache/eeg_st_results_duchon.rds"
 model_st <- readRDS(model_path)
 
 results_external <- analyse_bgam_spatiotemporal(
@@ -362,6 +346,7 @@ summary(results_external)
 `plot_spatiotemporal_topography()` combines **observed grand means**, **posterior expected activity**, and **residual mean activity** (`observed - predicted`) at selected times. The function returns a `ggplot` object and can show one or several of these panels.
 
 ```{r plot-comparison-topographies, fig.width = 15, fig.height = 8}
+# OR plot(x = results_external, type = "topography", observed_data = eeg_data)
 plot_spatiotemporal_topography(
     results = results_external,
     observed_data = eeg_data,
@@ -378,7 +363,6 @@ plot_spatiotemporal_topography(
     show_sensors = TRUE,
     head_outline = TRUE
     )
-# OR plot(x = results_external, type = "topography", observed_data = eeg_data)
 ```
 
 Requested times are matched to the nearest predicted time point. The default diverging scale is shared across the panels, making observed/predicted amplitudes and residuals visually comparable. If preferred, set `limits = 2` for a fixed symmetric range in scaled voltage units or use a smaller `n_times` when not supplying explicit `times`.
@@ -394,6 +378,7 @@ Two styles of cluster highlighting are available.
 **1. Translucent rectangles**, marking periods during which a sensor belongs to a detected cluster:
 
 ```{r plot-scalp-rectangles, fig.width = 13, fig.height = 11}
+# OR plot(x = results_external, type = "trajectories", observed_data = eeg_data)
 plot_sensor_trajectories(
     results = results_external,
     observed_data = eeg_data,
@@ -405,11 +390,9 @@ plot_sensor_trajectories(
     cluster_alpha = 0.2,
     show_ci = TRUE
     )
-
-# OR plot(x = results_external, type = "trajectories", observed_data = eeg_data)
 ```
 
-**2. Highlighted prediction-line segments**, emphasizing the portion of each predicted waveform that belongs to a cluster:
+**2. Highlighted prediction-line segments**, emphasising the portion of each predicted waveform that belongs to a cluster:
 
 ```{r plot-scalp-segments, fig.width = 13, fig.height = 11}
 plot_sensor_trajectories(
@@ -440,7 +423,7 @@ plot_sensor_trajectories(
     participant_id = "subject",
     layout = "facets",
     cluster_style = "rectangles",
-    sensors = sample(x = unique(levels(eeg_data$channel) ), size = 9),
+    sensors = sample(x = unique(eeg_data$channel), size = 9),
     ncol = 3,
     free_y = FALSE,
     show_ci = TRUE
@@ -454,7 +437,5 @@ You can select a smaller sensor subset with `sensors = c("FZ", "CZ", "PZ")`, swi
 - **Sampling and model complexity.** Begin with a reduced time grid and conservative basis dimensions, then check sensitivity to `kvalue`, `bs`, and spatial projections. A larger basis permits more complex patterns but substantially increases computation.
 - **Multilevel structure.** Participant-specific random intercepts allow different mean voltages but do not capture individual spatiotemporal surface deviations. A random-intercept-only model may under-represent between-participant variation in spatial localization or onset.
 - **Observed versus fitted activity.** The displayed residual topographies show the difference between *grand-average observed activity* and *population-level expected predictions*. They are descriptive fit diagnostics, not trial-level residuals or a substitute for posterior predictive checks.
-- **Spatial geometry.** Projected 2D positions approximate sensor layout; smoothing and graph adjacency use different aspects of that representation. Report the coordinate projection, adjacency method, `k`, and distance filter used.
-- **Reproducibility.** Save fitted models or result objects, the adjacency graph, package versions, random seed, basis specification, posterior draw count, and inference thresholds. Consider retaining all posterior draws for final analyses even if a smaller subset is used for exploratory plots.
-
-The methods generalise naturally to other sensor-by-time signals. For scientific analyses, model selection, sensitivity checks, and participant-level uncertainty should be treated as part of the inferential workflow, not merely as plotting details.
+- **Spatial geometry.** Projected 2D positions approximate sensor layout; smoothing and graph adjacency use different aspects of that representation. Report the coordinate projection and adjacency layout or approximation method used.
+- **Reproducibility.** Save fitted models or result objects, the adjacency graph, package versions, basis specification, and inference thresholds.

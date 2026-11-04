@@ -4,13 +4,14 @@
 **Bayesian generalised additive multilevel models** (BGAMMs). Built on
 [`brms`](https://github.com/paul-buerkner/brms), it combines smooth
 estimation of temporal dynamics, posterior inference, and detection and
-visualisation of connected regions exceeding a posterior-odds threshold.
+visualisation of connected regions exceeding a posterior-odds threshold
+(a.k.a. “clusters”).
 
 The package supports three types of analysis:
 
 | Analysis | Typical applications | Coordinates |
 |:---|:---|:---|
-| **Temporal (1D)** | EMG or M/EEG time courses (e.g., ERPs), pupillometry, representational similarity analysis (RSA), decoding accuracy, movement trajectories, etc. | Time |
+| **Temporal (1D)** | EMG or M/EEG time courses (e.g., ERPs), pupillometry, time-resolved representational similarity analysis (RSA) or decoding accuracy, movement trajectories, etc. | Time |
 | **Temporal generalisation (2D)** | Cross-temporal decoding or representational-generalisation matrices | Training time x testing time |
 | **Spatio-temporal (3D)** | Sensor-level M/EEG smooths over projected sensor position and time | Sensor adjacency x time |
 

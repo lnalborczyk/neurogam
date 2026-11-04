@@ -5,62 +5,92 @@
 #' needed for plots built from saved prediction/cluster tables. P2.1 validation
 #' remains strict; any repair is applied to this function's local copy only.
 #' @keywords internal
-neurogam_plot_view <- function(x) {
-    if (!"model" %in% names(x)) {
+neurogam_plot_view <- function (x) {
+
+    if (!"model" %in% names(x) ) {
+
         x["model"] <- list(NULL)
+
     }
+
     as_neurogam_result_view(x)
+
 }
 
 #' Check a typed neurogam plotting request
 #' @keywords internal
-neurogam_plot_type <- function(type, choices) {
+neurogam_plot_type <- function (type, choices) {
+
     if (!is.character(type) || length(type) != 1L ||
-        is.na(type) || !nzchar(type)) {
-        stop("`type` must be a single nonempty string.", call. = FALSE)
+        is.na(type) || !nzchar(type) ) {
+
+        stop ("`type` must be a single nonempty string.", call. = FALSE)
+
     }
+
     if (!type %in% choices) {
-        stop(
+
+        stop (
             "Unsupported `type`: ", type, ". Available types: ",
             paste(choices, collapse = ", "), ".",
             call. = FALSE
-        )
+            )
+
     }
-    type
+
+    return (type)
+
 }
 
 #' Reject plotting arguments that cannot be forwarded to a typed plot
 #' @keywords internal
-neurogam_check_plot_dots <- function(...) {
+neurogam_check_plot_dots <- function (...) {
+
     dots <- list(...)
-    if (length(dots)) {
+
+    if (length(dots) ) {
+
         names_dots <- names(dots)
-        if (is.null(names_dots)) {
+
+        if (is.null(names_dots) ) {
+
             names_dots <- rep("", length(dots))
+
         }
+
         names_dots[!nzchar(names_dots)] <- "<unnamed>"
-        stop(
+
+        stop (
             "Unused plotting argument(s) for this `type`: ",
             paste(names_dots, collapse = ", "), ".",
             call. = FALSE
-        )
+            )
+
     }
+
     invisible(NULL)
+
 }
 
 #' Choose the ordinate stored in a neurogam prediction table
 #' @keywords internal
-neurogam_prediction_value <- function(predictions) {
+neurogam_prediction_value <- function (predictions) {
+
     options <- c("post_prob", "estimate")
-    available <- intersect(options, names(predictions))
-    if (!length(available)) {
-        stop(
+    available <- intersect(options, names(predictions) )
+
+    if (!length(available) ) {
+
+        stop (
             "`predictions` must include `post_prob` or `estimate` ",
             "for a predictions plot.",
             call. = FALSE
-        )
+            )
+
     }
-    available[1L]
+
+    return (available[1L])
+
 }
 
 #' Explicit plotting options for temporal results
@@ -69,90 +99,121 @@ neurogam_prediction_value <- function(predictions) {
 #' Called only when the user supplies `type` to `plot()` for a 1D result.
 #' The historical no-`type` plot remains in R/plot.R, unchanged.
 #' @keywords internal
-neurogam_plot_typed_1d <- function(
+neurogam_plot_typed_1d <- function (
     x,
     type,
     null_value = 0,
     clusters_colour = "black",
     theme = theme_neurogam(),
     ...
-) {
-    type <- neurogam_plot_type(type, c("predictions", "clusters"))
+    ) {
+
+    type <- neurogam_plot_type(type, c("predictions", "clusters") )
     neurogam_check_plot_dots(...)
-    # if (!ggplot2::is.theme(theme)) {
-    #     stop("`theme` must be a ggplot2 theme.", call. = FALSE)
-    # }
-    if (!ggplot2::is_theme(theme)) {
-        stop("`theme` must be a ggplot2 theme.", call. = FALSE)
-    }
-    view <- neurogam_plot_view(x)
-    time_id <- view$metadata$time_id
-    if (!is.character(time_id) || length(time_id) != 1L) {
-        stop("Expected one temporal coordinate in result metadata.", call. = FALSE)
+
+    if (!ggplot2::is_theme(theme) ) {
+
+        stop ("`theme` must be a ggplot2 theme.", call. = FALSE)
+
     }
 
-    if (identical(type, "predictions")) {
+    view <- neurogam_plot_view(x)
+    time_id <- view$metadata$time_id
+
+    if (!is.character(time_id) || length(time_id) != 1L) {
+
+        stop ("Expected one temporal coordinate in result metadata.", call. = FALSE)
+
+    }
+
+    if (identical(type, "predictions") ) {
+
         predictions <- view$predictions
         value_id <- neurogam_prediction_value(predictions)
-        if (!time_id %in% names(predictions)) {
-            stop("Missing temporal coordinate in `predictions`.", call. = FALSE)
+
+        if (!time_id %in% names(predictions) ) {
+
+            stop ("Missing temporal coordinate in `predictions`.", call. = FALSE)
+
         }
+
         p <- ggplot2::ggplot(
             predictions,
             ggplot2::aes(x = .data[[time_id]], y = .data[[value_id]])
-        ) + ggplot2::geom_hline(
-            yintercept = null_value, linetype = 2
-        )
-        if (all(c("lower", "upper") %in% names(predictions))) {
+            ) +
+            ggplot2::geom_hline(yintercept = null_value, linetype = 2)
+
+        if (all(c("lower", "upper") %in% names(predictions) ) ) {
+
             p <- p + ggplot2::geom_ribbon(
                 ggplot2::aes(
                     ymin = .data$lower, ymax = .data$upper, y = NULL
-                ),
-                fill = clusters_colour, alpha = 0.18
-            )
+                    ),
+                fill = clusters_colour, alpha = 0.2
+                )
+
         }
+
         p <- p + ggplot2::geom_line(colour = clusters_colour, linewidth = 0.8)
-        if ("participant" %in% names(predictions)) {
-            p <- p + ggplot2::facet_wrap(ggplot2::vars(.data$participant))
+
+        if ("participant" %in% names(predictions) ) {
+
+            p <- p + ggplot2::facet_wrap(ggplot2::vars(.data$participant) )
+
         }
-        return(p + theme + ggplot2::labs(
-            x = time_id, y = "Posterior estimate"
-        ))
+
+        return (p + theme + ggplot2::labs(x = time_id, y = "Posterior estimate") )
+
     }
 
     clusters <- view$cluster_summary
-    if (!all(c("onset", "offset") %in% names(clusters))) {
+
+    if (!all(c("onset", "offset") %in% names(clusters) ) ) {
+
         if (nrow(clusters) > 0L) {
-            stop(
+
+            stop (
                 "1D `cluster_summary` must have `onset` and `offset`.",
                 call. = FALSE
-            )
+                )
+
         }
+
         clusters$onset <- numeric(0)
         clusters$offset <- numeric(0)
+
     }
-    if (!"sign" %in% names(clusters)) {
-        clusters$sign <- character(nrow(clusters))
+
+    if (!"sign" %in% names(clusters) ) {
+
+        clusters$sign <- character(nrow(clusters) )
+
     }
+
     p <- ggplot2::ggplot(clusters) +
         ggplot2::geom_segment(
             ggplot2::aes(
                 x = .data$onset, xend = .data$offset,
                 y = .data$sign, yend = .data$sign,
                 colour = .data$sign
-            ),
+                ),
             linewidth = 3, lineend = "butt", show.legend = FALSE
-        ) +
+            ) +
         ggplot2::labs(x = time_id, y = "Cluster direction") + theme
-    if ("participant" %in% names(clusters)) {
-        p <- p + ggplot2::facet_wrap(ggplot2::vars(.data$participant))
+
+    if ("participant" %in% names(clusters) ) {
+
+        p <- p + ggplot2::facet_wrap(ggplot2::vars(.data$participant) )
+
     }
+
     p
+
 }
 
 #' Explicit plotting options for temporal-generalisation results
 #' @keywords internal
-neurogam_plot_typed_2d <- function(
+neurogam_plot_typed_2d <- function (
     x,
     type,
     theme = theme_neurogam(),
@@ -160,13 +221,12 @@ neurogam_plot_typed_2d <- function(
     midpoint = 0.5,
     axes_labels = c("Training time (s)", "Testing time (s)"),
     ...
-) {
-    type <- neurogam_plot_type(type, c("predictions", "clusters"))
+    ) {
+
+    type <- neurogam_plot_type(type, c("predictions", "clusters") )
     neurogam_check_plot_dots(...)
-    # if (!ggplot2::is.theme(theme)) {
-    #     stop("`theme` must be a ggplot2 theme.", call. = FALSE)
-    # }
-    if (!ggplot2::is_theme(theme)) {
+
+    if (!ggplot2::is_theme(theme) ) {
         stop("`theme` must be a ggplot2 theme.", call. = FALSE)
     }
     if (!palette %in% scico::scico_palette_names()) {

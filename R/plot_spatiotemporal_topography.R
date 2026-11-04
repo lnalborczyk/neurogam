@@ -243,7 +243,8 @@ plot_spatiotemporal_topography <- function(
             views <- if (cluster_overlay == "all") what else {
                 intersect("predicted", what)
             }
-            if (length(views)) {
+            if (length(views) ) {
+
                 marks <- merge(marks, data.frame(view = views), by = NULL)
                 marks$view <- factor(marks$view, levels = what)
                 marks$time_label <- label_for_time(marks$time)
@@ -271,7 +272,7 @@ plot_spatiotemporal_topography <- function(
             rows = ggplot2::vars(.data$view),
             cols = ggplot2::vars(.data$time_label),
             drop = FALSE
-        ) +
+            ) +
         ggplot2::coord_equal(expand = FALSE) +
         ggplot2::labs(x = NULL, y = NULL) +
         ggplot2::theme_void(base_size = 11) +
@@ -279,8 +280,9 @@ plot_spatiotemporal_topography <- function(
             strip.text = ggplot2::element_text(size = 9),
             strip.background = ggplot2::element_rect(
                 fill = "grey95", color = NA
-            ),
+                ),
             panel.spacing = grid::unit(0.35, "lines"),
             legend.position = "right"
-        )
+            )
+
 }

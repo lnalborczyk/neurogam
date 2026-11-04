@@ -52,20 +52,9 @@ data("eegcoord", package = "eegkit")
 # dplyr::glimpse(eegdata)
 # head(eegcoord[, c("xproj", "yproj")] )
 
-# Choose five participants from each group for this worked example
-subjects_keep <- eegdata |>
-    distinct(subject, group) |>
-    group_by(group) |>
-    slice_head(n = 5L) |>
-    ungroup() |>
-    pull(subject)
-
 # Keep every second time sample, the raw time variable indexes samples
 eeg_subset <- eegdata |>
-    dplyr::filter(
-        subject %in% subjects_keep,
-        time %% 2L == 0L
-        )
+    filter(time %% 2L == 0L)
 
 # Coordinates are identified by row names in eegcoord
 eeg_coords <- eegcoord |>
@@ -84,7 +73,7 @@ voltage_scale <- stats::sd(eeg_subset$voltage, na.rm = TRUE)
 # Preserve group so that a between-participant contrast remains possible
 eeg_data <- eeg_subset |>
     summarise(
-        voltage = mean(voltage, na.rm = TRUE),
+        voltage = mean(x = voltage, na.rm = TRUE),
         .by = c(subject, group, channel, time)
         ) |>
     left_join(eeg_coords, by = "channel") |>
@@ -107,12 +96,12 @@ sensors <- eeg_data |>
 # Display a few rows
 head(eeg_data)
 #>       subject group channel       time      voltage      xproj    yproj
-#> 1 co2a0000364     a     FP1 0.00390625 -0.009262861 -0.5157747 1.580363
-#> 2 co2a0000364     a     FP1 0.01171875  0.163076204 -0.5157747 1.580363
-#> 3 co2a0000364     a     FP1 0.01953125  0.761465353 -0.5157747 1.580363
-#> 4 co2a0000364     a     FP1 0.02734375  0.842567312 -0.5157747 1.580363
-#> 5 co2a0000364     a     FP1 0.03515625  0.426776990 -0.5157747 1.580363
-#> 6 co2a0000364     a     FP1 0.04296875  0.305092899 -0.5157747 1.580363
+#> 1 co2a0000364     a     FP1 0.00390625 -0.008956383 -0.5157747 1.580363
+#> 2 co2a0000364     a     FP1 0.01171875  0.157680540 -0.5157747 1.580363
+#> 3 co2a0000364     a     FP1 0.01953125  0.736270925 -0.5157747 1.580363
+#> 4 co2a0000364     a     FP1 0.02734375  0.814689482 -0.5157747 1.580363
+#> 5 co2a0000364     a     FP1 0.03515625  0.412656318 -0.5157747 1.580363
+#> 6 co2a0000364     a     FP1 0.04296875  0.294998361 -0.5157747 1.580363
 ```
 
 The response is divided by a single constant (`voltage_scale`) and is
@@ -169,8 +158,8 @@ eeg_data |>
         voltage = mean(voltage),
         .by = c(group, channel, time)
         ) |>
-    ggplot(aes(x = time, y = voltage, colour = group)) +
-    geom_hline(yintercept = 0, linewidth = 0.25, colour = "grey75") +
+    ggplot(aes(x = time, y = voltage, colour = group) ) +
+    geom_hline(yintercept = 0, linewidth = 0.5, linetype = "dashed") +
     geom_line(linewidth = 0.5) +
     facet_wrap(~channel, ncol = 3L) +
     labs(x = "Time (s)", y = "Scaled voltage", colour = "Group")
@@ -254,11 +243,6 @@ adjacency matrix. The same matrix should be retained for reproducible
 inference. The built-in plotting function draws edges in the **2D
 projection**, not on a physical three-dimensional head surface.
 
-For convenience, `testing_through_time(sensor_adjacency = NULL, ...)`
-constructs adjacency automatically. We pass our inspected graph
-explicitly in the fitting example below so that the clustering
-neighbourhood is fixed and documented.
-
 ## Fitting a spatiotemporal BGAMM
 
 ### Model specification
@@ -310,14 +294,14 @@ formula_st <- make_bgam_formula(
     time_id = "time",
     space_id = c("xproj", "yproj"),
     kvalue = c(15, 10),
-    bs = c("ps", "ps"),
+    bs = c("ds", "cr"),
     tensor_d = c(2, 1),
     varying_smooth = FALSE,
     use_se = FALSE
     )
 
 formula_st
-#> outcome_mean ~ 1 + t2(xproj, yproj, time, bs = c("ps", "ps"), k = c(15, 10), d = c(2, 1), full = FALSE) + (1 | participant)
+#> outcome_mean ~ 1 + t2(xproj, yproj, time, bs = c("ds", "cr"), k = c(15, 10), d = c(2, 1), full = FALSE) + (1 | participant)
 ```
 
 The high-level workflow works with **participant-level means**, not
@@ -333,7 +317,7 @@ estimates.
 ### Fit the integrated model
 
 The following block fits the model and immediately evaluates posterior
-expected voltage at each observed sensor × time point. The fitted
+expected voltage at each observed sensor x time point. The fitted
 `brmsfit` object and clustering results are returned together by
 [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
 
@@ -343,7 +327,7 @@ results_st <- testing_through_time(
     data = eeg_data,
     participant_id = "subject",
     outcome_id = "voltage",
-    predictor_id = NA_character_,
+    predictor_id = NA,
     sensor_id = "channel",
     time_id = "time",
     space_id = c("xproj", "yproj"),
@@ -352,24 +336,20 @@ results_st <- testing_through_time(
     use_se = FALSE,
     varying_smooth = FALSE,
     kvalue = c(15, 10),
-    bs = c("ps", "ps"),
+    bs = c("ds", "cr"),
     tensor_d = c(2, 1),
     sensor_adjacency = sensor_adjacency,
     chance_level = 0,
     rope = 0,
     threshold = 10,
-    threshold_type = "both",
-    n_post_samples = 500,
     chunk_size = 256L,
     re_formula = NA,
     warmup = 1000,
-    iter = 3000,
+    iter = 2000,
     chains = 2,
     cores = 2,
     backend = "cmdstanr",
-    seed = 20261027,
-    threads = brms::threading(threads = 4),
-    file = "cache/eeg_st_results"
+    threads = brms::threading(threads = 4)
     )
 ```
 
@@ -389,7 +369,7 @@ guide](https://paulbuerkner.com/brms/reference/threading.html).
 Predictions use `re_formula = NA`, targeting the fitted population-level
 mean rather than an individual participant’s random intercept. This does
 not itself incorporate a distribution of unobserved participant-specific
-spatial–temporal deviations; such smooths are not currently fitted by
+spatial-temporal deviations; such smooths are not currently fitted by
 this interface.
 
 ### Reuse an independently fitted `brms` model
@@ -416,7 +396,8 @@ prediction_grid <- merge(
 
 prediction_grid$subject <- eeg_data$subject[1L]
 
-model_path <- "cache/eeg_st_model.rds"
+# model_path <- "cache/eeg_st_model.rds"
+model_path <- "cache/eeg_st_results_duchon.rds"
 model_st <- readRDS(model_path)
 
 results_external <- analyse_bgam_spatiotemporal(
@@ -461,41 +442,40 @@ summary(results_external)
 #>   Contrast: one_sample
 #>   Posterior odds mode: directional_rope
 #>   Odds threshold: 10
-#>   Clusters found: 11
+#>   Clusters found: 10
 #> 
 #> Model and inference:
 #>   Backend: brmsfit
-#>   Posterior draws: 4000
+#>   Posterior draws: 2000
 #>   Threshold direction: both
 #>   Null value: 0
 #>   ROPE half-width: 0
 #>   Credible interval: 0.95
 #>   Sensor adjacency: provided
 #>   Prediction locations: 7808
-#>   Cluster member points: 2606
+#>   Cluster member points: 4438
 #> 
 #> Cluster statistics:
-#>   By sign: negative = 5; positive = 6
-#>   Total cluster points: 2606
-#>   Median cluster size: 26
-#>   Mean duration: 0.182
-#>   Median duration: 0.172
-#>   Maximum sensors in one cluster: 51
+#>   By sign: negative = 2; positive = 8
+#>   Total cluster points: 4438
+#>   Median cluster size: 47.5
+#>   Mean duration: 0.184
+#>   Median duration: 0.191
+#>   Maximum sensors in one cluster: 61
 #> 
 #> Cluster table:
 #> 
 #>      sign id onset offset duration n_points time_min time_max n_sensors
-#>  positive  1 0.176  0.426    0.250       93    0.176    0.426         3
-#>  positive  2 0.199  0.371    0.172       23    0.199    0.371         1
-#>  positive  3 0.301  0.387    0.086       12    0.301    0.387         1
-#>  positive  4 0.707  0.996    0.289      149    0.707    0.996         6
-#>  positive  5 0.730  0.973    0.242       49    0.730    0.973         2
-#>  positive  6 0.762  0.957    0.195       26    0.762    0.957         1
-#>  negative  7 0.129  0.230    0.102       26    0.129    0.230         2
-#>  negative  8 0.137  0.223    0.086       12    0.137    0.223         1
-#>  negative  9 0.145  0.207    0.062       10    0.145    0.207         2
-#>  negative 10 0.176  0.184    0.008        2    0.176    0.184         1
-#>  negative 11 0.488  0.996    0.508     2204    0.488    0.996        51
+#>  positive  1 0.004  0.004    0.000        1    0.004    0.004         1
+#>  positive  2 0.004  0.004    0.000        2    0.004    0.004         2
+#>  positive  3 0.230  0.426    0.195      406    0.230    0.426        31
+#>  positive  4 0.246  0.434    0.188       50    0.246    0.434         3
+#>  positive  5 0.340  0.387    0.047        7    0.340    0.387         1
+#>  positive  6 0.730  0.996    0.266      141    0.730    0.996         6
+#>  positive  7 0.754  0.980    0.227       45    0.754    0.980         2
+#>  positive  8 0.785  0.957    0.172       30    0.785    0.957         2
+#>  negative  9 0.082  0.277    0.195      375    0.082    0.277        27
+#>  negative 10 0.441  0.996    0.555     3381    0.441    0.996        61
 #> =================================================================
 ```
 
@@ -511,6 +491,7 @@ these panels.
 
 ``` r
 
+# OR plot(x = results_external, type = "topography", observed_data = eeg_data)
 plot_spatiotemporal_topography(
     results = results_external,
     observed_data = eeg_data,
@@ -530,11 +511,6 @@ plot_spatiotemporal_topography(
 ```
 
 ![](figures/eeg_spatio_temporal-plot-comparison-topographies-1.png)
-
-``` r
-
-# OR plot(x = results_external, type = "topography", observed_data = eeg_data)
-```
 
 Requested times are matched to the nearest predicted time point. The
 default diverging scale is shared across the panels, making
@@ -564,6 +540,7 @@ belongs to a detected cluster:
 
 ``` r
 
+# OR plot(x = results_external, type = "trajectories", observed_data = eeg_data)
 plot_sensor_trajectories(
     results = results_external,
     observed_data = eeg_data,
@@ -579,13 +556,7 @@ plot_sensor_trajectories(
 
 ![](figures/eeg_spatio_temporal-plot-scalp-rectangles-1.png)
 
-``` r
-
-
-# OR plot(x = results_external, type = "trajectories", observed_data = eeg_data)
-```
-
-**2. Highlighted prediction-line segments**, emphasizing the portion of
+**2. Highlighted prediction-line segments**, emphasising the portion of
 each predicted waveform that belongs to a cluster:
 
 ``` r
@@ -626,14 +597,14 @@ plot_sensor_trajectories(
     participant_id = "subject",
     layout = "facets",
     cluster_style = "rectangles",
-    sensors = sample(x = unique(levels(eeg_data$channel) ), size = 9),
+    sensors = sample(x = unique(eeg_data$channel), size = 9),
     ncol = 3,
     free_y = FALSE,
     show_ci = TRUE
     )
-#> Error in `sample.int()`:
-#> ! invalid first argument
 ```
+
+![](figures/eeg_spatio_temporal-plot-sensor-facets-1.png)
 
 You can select a smaller sensor subset with
 `sensors = c("FZ", "CZ", "PZ")`, switch to `cluster_style = "segments"`,
@@ -659,15 +630,8 @@ displayed scale across panels.
   for posterior predictive checks.
 - **Spatial geometry.** Projected 2D positions approximate sensor
   layout; smoothing and graph adjacency use different aspects of that
-  representation. Report the coordinate projection, adjacency method,
-  `k`, and distance filter used.
+  representation. Report the coordinate projection and adjacency layout
+  or approximation method used.
 - **Reproducibility.** Save fitted models or result objects, the
-  adjacency graph, package versions, random seed, basis specification,
-  posterior draw count, and inference thresholds. Consider retaining all
-  posterior draws for final analyses even if a smaller subset is used
-  for exploratory plots.
-
-The methods generalise naturally to other sensor-by-time signals. For
-scientific analyses, model selection, sensitivity checks, and
-participant-level uncertainty should be treated as part of the
-inferential workflow, not merely as plotting details.
+  adjacency graph, package versions, basis specification, and inference
+  thresholds.

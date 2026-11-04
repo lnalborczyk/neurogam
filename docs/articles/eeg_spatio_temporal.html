@@ -71,7 +71,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Application to spatiotemporal EEG data</h1>
 
       <p class="author">Ladislas Nalborczyk</p>
-      <p class="date">2026-10-30</p>
+      <p class="date">2026-11-04</p>
 
       <small class="dont-index">Source: <a href="https://github.com/lnalborczyk/neurogam/blob/HEAD/vignettes/eeg_spatio_temporal.qmd" class="external-link"><code>vignettes/eeg_spatio_temporal.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
@@ -111,20 +111,9 @@
 <span><span class="co"># dplyr::glimpse(eegdata)</span></span>
 <span><span class="co"># head(eegcoord[, c("xproj", "yproj")] )</span></span>
 <span></span>
-<span><span class="co"># Choose five participants from each group for this worked example</span></span>
-<span><span class="va">subjects_keep</span> <span class="op">&lt;-</span> <span class="va">eegdata</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="va">subject</span>, <span class="va">group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_head</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">ungroup</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">subject</span><span class="op">)</span></span>
-<span></span>
 <span><span class="co"># Keep every second time sample, the raw time variable indexes samples</span></span>
 <span><span class="va">eeg_subset</span> <span class="op">&lt;-</span> <span class="va">eegdata</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span></span>
-<span>        <span class="va">subject</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">subjects_keep</span>,</span>
-<span>        <span class="va">time</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html" class="external-link">%%</a></span> <span class="fl">2L</span> <span class="op">==</span> <span class="fl">0L</span></span>
-<span>        <span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">time</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html" class="external-link">%%</a></span> <span class="fl">2L</span> <span class="op">==</span> <span class="fl">0L</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Coordinates are identified by row names in eegcoord</span></span>
 <span><span class="va">eeg_coords</span> <span class="op">&lt;-</span> <span class="va">eegcoord</span> <span class="op">|&gt;</span></span>
@@ -143,7 +132,7 @@
 <span><span class="co"># Preserve group so that a between-participant contrast remains possible</span></span>
 <span><span class="va">eeg_data</span> <span class="op">&lt;-</span> <span class="va">eeg_subset</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span></span>
-<span>        voltage <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">voltage</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>        voltage <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">voltage</span>, na.rm <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>        .by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">subject</span>, <span class="va">group</span>, <span class="va">channel</span>, <span class="va">time</span><span class="op">)</span></span>
 <span>        <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span><span class="va">eeg_coords</span>, by <span class="op">=</span> <span class="st">"channel"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -166,12 +155,12 @@
 <span><span class="co"># Display a few rows</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">eeg_data</span><span class="op">)</span></span>
 <span><span class="co">#&gt;       subject group channel       time      voltage      xproj    yproj</span></span>
-<span><span class="co">#&gt; 1 co2a0000364     a     FP1 0.00390625 -0.009262861 -0.5157747 1.580363</span></span>
-<span><span class="co">#&gt; 2 co2a0000364     a     FP1 0.01171875  0.163076204 -0.5157747 1.580363</span></span>
-<span><span class="co">#&gt; 3 co2a0000364     a     FP1 0.01953125  0.761465353 -0.5157747 1.580363</span></span>
-<span><span class="co">#&gt; 4 co2a0000364     a     FP1 0.02734375  0.842567312 -0.5157747 1.580363</span></span>
-<span><span class="co">#&gt; 5 co2a0000364     a     FP1 0.03515625  0.426776990 -0.5157747 1.580363</span></span>
-<span><span class="co">#&gt; 6 co2a0000364     a     FP1 0.04296875  0.305092899 -0.5157747 1.580363</span></span></code></pre></div>
+<span><span class="co">#&gt; 1 co2a0000364     a     FP1 0.00390625 -0.008956383 -0.5157747 1.580363</span></span>
+<span><span class="co">#&gt; 2 co2a0000364     a     FP1 0.01171875  0.157680540 -0.5157747 1.580363</span></span>
+<span><span class="co">#&gt; 3 co2a0000364     a     FP1 0.01953125  0.736270925 -0.5157747 1.580363</span></span>
+<span><span class="co">#&gt; 4 co2a0000364     a     FP1 0.02734375  0.814689482 -0.5157747 1.580363</span></span>
+<span><span class="co">#&gt; 5 co2a0000364     a     FP1 0.03515625  0.412656318 -0.5157747 1.580363</span></span>
+<span><span class="co">#&gt; 6 co2a0000364     a     FP1 0.04296875  0.294998361 -0.5157747 1.580363</span></span></code></pre></div>
 <p>The response is divided by a single constant (<code>voltage_scale</code>) and is therefore expressed in scaled voltage units. The same scaling applies to model predictions and observed waveforms; to recover the original microvolt scale, multiply by <code>voltage_scale</code>. We do <strong>not</strong> independently standardise the two spatial axes, because anisotropic scaling would distort electrode distances and the automatically estimated adjacency graph.</p>
 <p>The original recordings provide only post-stimulus time points. No pre-stimulus baseline is available here; therefore, testing voltage against zero is not the same as testing a baseline-corrected ERP against zero.</p>
 <section class="level3"><h3 id="visualise-the-sensors-and-observed-activity">Visualise the sensors and observed activity<a class="anchor" aria-label="anchor" href="#visualise-the-sensors-and-observed-activity"></a>
@@ -208,8 +197,8 @@
 <span>        voltage <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">voltage</span><span class="op">)</span>,</span>
 <span>        .by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">group</span>, <span class="va">channel</span>, <span class="va">time</span><span class="op">)</span></span>
 <span>        <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span>, y <span class="op">=</span> <span class="va">voltage</span>, colour <span class="op">=</span> <span class="va">group</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linewidth <span class="op">=</span> <span class="fl">0.25</span>, colour <span class="op">=</span> <span class="st">"grey75"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span>, y <span class="op">=</span> <span class="va">voltage</span>, colour <span class="op">=</span> <span class="va">group</span><span class="op">)</span> <span class="op">)</span> <span class="op">+</span></span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline</a></span><span class="op">(</span>yintercept <span class="op">=</span> <span class="fl">0</span>, linewidth <span class="op">=</span> <span class="fl">0.5</span>, linetype <span class="op">=</span> <span class="st">"dashed"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span>linewidth <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">channel</span>, ncol <span class="op">=</span> <span class="fl">3L</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Time (s)"</span>, y <span class="op">=</span> <span class="st">"Scaled voltage"</span>, colour <span class="op">=</span> <span class="st">"Group"</span><span class="op">)</span></span></code></pre></div>
@@ -261,7 +250,6 @@
 <span>    <span class="op">)</span></span></code></pre></div>
 <p><img src="figures/eeg_spatio_temporal-adjacency-plot-1.png" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>Inspect the graph for unexpected connections across distant scalp regions, isolated sensors, and gaps near the head boundary. You can adjust <code>k</code> and <code>distance_factor</code> or use an externally defined sensor adjacency matrix. The same matrix should be retained for reproducible inference. The built-in plotting function draws edges in the <strong>2D projection</strong>, not on a physical three-dimensional head surface.</p>
-<p>For convenience, <code>testing_through_time(sensor_adjacency = NULL, ...)</code> constructs adjacency automatically. We pass our inspected graph explicitly in the fitting example below so that the clustering neighbourhood is fixed and documented.</p>
 </section><section class="level2"><h2 id="fitting-a-spatiotemporal-bgamm">Fitting a spatiotemporal BGAMM<a class="anchor" aria-label="anchor" href="#fitting-a-spatiotemporal-bgamm"></a>
 </h2>
 <section class="level3"><h3 id="model-specification">Model specification<a class="anchor" aria-label="anchor" href="#model-specification"></a>
@@ -292,24 +280,24 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <span>    time_id <span class="op">=</span> <span class="st">"time"</span>,</span>
 <span>    space_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xproj"</span>, <span class="st">"yproj"</span><span class="op">)</span>,</span>
 <span>    kvalue <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">10</span><span class="op">)</span>,</span>
-<span>    bs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ps"</span>, <span class="st">"ps"</span><span class="op">)</span>,</span>
+<span>    bs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ds"</span>, <span class="st">"cr"</span><span class="op">)</span>,</span>
 <span>    tensor_d <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>    varying_smooth <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    use_se <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span>    <span class="op">)</span></span>
 <span></span>
 <span><span class="va">formula_st</span></span>
-<span><span class="co">#&gt; outcome_mean ~ 1 + t2(xproj, yproj, time, bs = c("ps", "ps"), k = c(15, 10), d = c(2, 1), full = FALSE) + (1 | participant)</span></span></code></pre></div>
+<span><span class="co">#&gt; outcome_mean ~ 1 + t2(xproj, yproj, time, bs = c("ds", "cr"), k = c(15, 10), d = c(2, 1), full = FALSE) + (1 | participant)</span></span></code></pre></div>
 <p>The high-level workflow works with <strong>participant-level means</strong>, not necessarily the original trial-level observations. Because we have already averaged trials within each participant × sensor × time cell and have not supplied a standard error, we use <code>use_se = FALSE</code>. When supplying trial-level observations with two or more repetitions per cell, or a precomputed standard error column, <code>use_se = TRUE</code> allows measurement-error modelling via <code>se(outcome_sem, sigma = TRUE)</code>. These two approaches do not imply identical likelihoods or uncertainty estimates.</p>
 </section><section class="level3"><h3 id="fit-the-integrated-model">Fit the integrated model<a class="anchor" aria-label="anchor" href="#fit-the-integrated-model"></a>
 </h3>
-<p>The following block fits the model and immediately evaluates posterior expected voltage at each observed sensor × time point. The fitted <code>brmsfit</code> object and clustering results are returned together by <code><a href="../reference/testing_through_time.html">testing_through_time()</a></code>.</p>
+<p>The following block fits the model and immediately evaluates posterior expected voltage at each observed sensor x time point. The fitted <code>brmsfit</code> object and clustering results are returned together by <code><a href="../reference/testing_through_time.html">testing_through_time()</a></code>.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results_st</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/testing_through_time.html">testing_through_time</a></span><span class="op">(</span></span>
 <span>    data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
 <span>    participant_id <span class="op">=</span> <span class="st">"subject"</span>,</span>
 <span>    outcome_id <span class="op">=</span> <span class="st">"voltage"</span>,</span>
-<span>    predictor_id <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
+<span>    predictor_id <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>    sensor_id <span class="op">=</span> <span class="st">"channel"</span>,</span>
 <span>    time_id <span class="op">=</span> <span class="st">"time"</span>,</span>
 <span>    space_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"xproj"</span>, <span class="st">"yproj"</span><span class="op">)</span>,</span>
@@ -318,27 +306,23 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <span>    use_se <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    varying_smooth <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    kvalue <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">10</span><span class="op">)</span>,</span>
-<span>    bs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ps"</span>, <span class="st">"ps"</span><span class="op">)</span>,</span>
+<span>    bs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ds"</span>, <span class="st">"cr"</span><span class="op">)</span>,</span>
 <span>    tensor_d <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>    sensor_adjacency <span class="op">=</span> <span class="va">sensor_adjacency</span>,</span>
 <span>    chance_level <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>    rope <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>    threshold <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>    threshold_type <span class="op">=</span> <span class="st">"both"</span>,</span>
-<span>    n_post_samples <span class="op">=</span> <span class="fl">500</span>,</span>
 <span>    chunk_size <span class="op">=</span> <span class="fl">256L</span>,</span>
 <span>    re_formula <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>    warmup <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>    iter <span class="op">=</span> <span class="fl">3000</span>,</span>
+<span>    iter <span class="op">=</span> <span class="fl">2000</span>,</span>
 <span>    chains <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>    cores <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>    backend <span class="op">=</span> <span class="st">"cmdstanr"</span>,</span>
-<span>    seed <span class="op">=</span> <span class="fl">20261027</span>,</span>
-<span>    threads <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/threading.html" class="external-link">threading</a></span><span class="op">(</span>threads <span class="op">=</span> <span class="fl">4</span><span class="op">)</span>,</span>
-<span>    file <span class="op">=</span> <span class="st">"cache/eeg_st_results"</span></span>
+<span>    threads <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/threading.html" class="external-link">threading</a></span><span class="op">(</span>threads <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
 <p><strong>Runtime and convergence.</strong> Spatiotemporal models can take many hours. Begin with a small, balanced subset of participants and decimated time points when checking model specification, then increase data resolution and basis dimensions for the scientific analysis. <code>cores = 2</code> and <code>threads = brms::threading(threads = 4)</code> can use approximately eight CPU threads when two chains run concurrently; this is not equivalent to four total cores. Within-chain threading may not speed up every model. For final inference, inspect convergence diagnostics (including <span class="math inline">\(\widehat R\)</span>, effective sample sizes, divergences, and posterior predictive checks) and consider additional chains if computational resources permit. See the <a href="https://paulbuerkner.com/brms/reference/threading.html" class="external-link">brms threading guide</a>.</p>
-<p>Predictions use <code>re_formula = NA</code>, targeting the fitted population-level mean rather than an individual participant’s random intercept. This does not itself incorporate a distribution of unobserved participant-specific spatial–temporal deviations; such smooths are not currently fitted by this interface.</p>
+<p>Predictions use <code>re_formula = NA</code>, targeting the fitted population-level mean rather than an individual participant’s random intercept. This does not itself incorporate a distribution of unobserved participant-specific spatial-temporal deviations; such smooths are not currently fitted by this interface.</p>
 </section><section class="level3"><h3 id="reuse-an-independently-fitted-brms-model">Reuse an independently fitted <code>brms</code> model<a class="anchor" aria-label="anchor" href="#reuse-an-independently-fitted-brms-model"></a>
 </h3>
 <p>If you already fitted a model directly with <code><a href="https://paulbuerkner.com/brms/reference/brm.html" class="external-link">brms::brm()</a></code> (for example, <code>voltage ~ t2(xproj, yproj, time, ...) + (1 | subject)</code>), the fitted object’s data and variable names may not match the standardised <code><a href="../reference/testing_through_time.html">testing_through_time()</a></code> interface. Instead, use the lower-level <code><a href="../reference/analyse_bgam_spatiotemporal.html">analyse_bgam_spatiotemporal()</a></code> function, which does not refit the model:</p>
@@ -354,7 +338,8 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <span></span>
 <span><span class="va">prediction_grid</span><span class="op">$</span><span class="va">subject</span> <span class="op">&lt;-</span> <span class="va">eeg_data</span><span class="op">$</span><span class="va">subject</span><span class="op">[</span><span class="fl">1L</span><span class="op">]</span></span>
 <span></span>
-<span><span class="va">model_path</span> <span class="op">&lt;-</span> <span class="st">"cache/eeg_st_model.rds"</span></span>
+<span><span class="co"># model_path &lt;- "cache/eeg_st_model.rds"</span></span>
+<span><span class="va">model_path</span> <span class="op">&lt;-</span> <span class="st">"cache/eeg_st_results_duchon.rds"</span></span>
 <span><span class="va">model_st</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="va">model_path</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">results_external</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/analyse_bgam_spatiotemporal.html">analyse_bgam_spatiotemporal</a></span><span class="op">(</span></span>
@@ -387,41 +372,40 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <span><span class="co">#&gt;   Contrast: one_sample</span></span>
 <span><span class="co">#&gt;   Posterior odds mode: directional_rope</span></span>
 <span><span class="co">#&gt;   Odds threshold: 10</span></span>
-<span><span class="co">#&gt;   Clusters found: 11</span></span>
+<span><span class="co">#&gt;   Clusters found: 10</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Model and inference:</span></span>
 <span><span class="co">#&gt;   Backend: brmsfit</span></span>
-<span><span class="co">#&gt;   Posterior draws: 4000</span></span>
+<span><span class="co">#&gt;   Posterior draws: 2000</span></span>
 <span><span class="co">#&gt;   Threshold direction: both</span></span>
 <span><span class="co">#&gt;   Null value: 0</span></span>
 <span><span class="co">#&gt;   ROPE half-width: 0</span></span>
 <span><span class="co">#&gt;   Credible interval: 0.95</span></span>
 <span><span class="co">#&gt;   Sensor adjacency: provided</span></span>
 <span><span class="co">#&gt;   Prediction locations: 7808</span></span>
-<span><span class="co">#&gt;   Cluster member points: 2606</span></span>
+<span><span class="co">#&gt;   Cluster member points: 4438</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Cluster statistics:</span></span>
-<span><span class="co">#&gt;   By sign: negative = 5; positive = 6</span></span>
-<span><span class="co">#&gt;   Total cluster points: 2606</span></span>
-<span><span class="co">#&gt;   Median cluster size: 26</span></span>
-<span><span class="co">#&gt;   Mean duration: 0.182</span></span>
-<span><span class="co">#&gt;   Median duration: 0.172</span></span>
-<span><span class="co">#&gt;   Maximum sensors in one cluster: 51</span></span>
+<span><span class="co">#&gt;   By sign: negative = 2; positive = 8</span></span>
+<span><span class="co">#&gt;   Total cluster points: 4438</span></span>
+<span><span class="co">#&gt;   Median cluster size: 47.5</span></span>
+<span><span class="co">#&gt;   Mean duration: 0.184</span></span>
+<span><span class="co">#&gt;   Median duration: 0.191</span></span>
+<span><span class="co">#&gt;   Maximum sensors in one cluster: 61</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Cluster table:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;      sign id onset offset duration n_points time_min time_max n_sensors</span></span>
-<span><span class="co">#&gt;  positive  1 0.176  0.426    0.250       93    0.176    0.426         3</span></span>
-<span><span class="co">#&gt;  positive  2 0.199  0.371    0.172       23    0.199    0.371         1</span></span>
-<span><span class="co">#&gt;  positive  3 0.301  0.387    0.086       12    0.301    0.387         1</span></span>
-<span><span class="co">#&gt;  positive  4 0.707  0.996    0.289      149    0.707    0.996         6</span></span>
-<span><span class="co">#&gt;  positive  5 0.730  0.973    0.242       49    0.730    0.973         2</span></span>
-<span><span class="co">#&gt;  positive  6 0.762  0.957    0.195       26    0.762    0.957         1</span></span>
-<span><span class="co">#&gt;  negative  7 0.129  0.230    0.102       26    0.129    0.230         2</span></span>
-<span><span class="co">#&gt;  negative  8 0.137  0.223    0.086       12    0.137    0.223         1</span></span>
-<span><span class="co">#&gt;  negative  9 0.145  0.207    0.062       10    0.145    0.207         2</span></span>
-<span><span class="co">#&gt;  negative 10 0.176  0.184    0.008        2    0.176    0.184         1</span></span>
-<span><span class="co">#&gt;  negative 11 0.488  0.996    0.508     2204    0.488    0.996        51</span></span>
+<span><span class="co">#&gt;  positive  1 0.004  0.004    0.000        1    0.004    0.004         1</span></span>
+<span><span class="co">#&gt;  positive  2 0.004  0.004    0.000        2    0.004    0.004         2</span></span>
+<span><span class="co">#&gt;  positive  3 0.230  0.426    0.195      406    0.230    0.426        31</span></span>
+<span><span class="co">#&gt;  positive  4 0.246  0.434    0.188       50    0.246    0.434         3</span></span>
+<span><span class="co">#&gt;  positive  5 0.340  0.387    0.047        7    0.340    0.387         1</span></span>
+<span><span class="co">#&gt;  positive  6 0.730  0.996    0.266      141    0.730    0.996         6</span></span>
+<span><span class="co">#&gt;  positive  7 0.754  0.980    0.227       45    0.754    0.980         2</span></span>
+<span><span class="co">#&gt;  positive  8 0.785  0.957    0.172       30    0.785    0.957         2</span></span>
+<span><span class="co">#&gt;  negative  9 0.082  0.277    0.195      375    0.082    0.277        27</span></span>
+<span><span class="co">#&gt;  negative 10 0.441  0.996    0.555     3381    0.441    0.996        61</span></span>
 <span><span class="co">#&gt; =================================================================</span></span></code></pre></div>
 </section></section><section class="level2"><h2 id="visualising-model-predictions-and-clusters">Visualising model predictions and clusters<a class="anchor" aria-label="anchor" href="#visualising-model-predictions-and-clusters"></a>
 </h2>
@@ -429,7 +413,8 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 </h3>
 <p><code><a href="../reference/plot_spatiotemporal_topography.html">plot_spatiotemporal_topography()</a></code> combines <strong>observed grand means</strong>, <strong>posterior expected activity</strong>, and <strong>residual mean activity</strong> (<code>observed - predicted</code>) at selected times. The function returns a <code>ggplot</code> object and can show one or several of these panels.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_spatiotemporal_topography.html">plot_spatiotemporal_topography</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="co"># OR plot(x = results_external, type = "topography", observed_data = eeg_data)</span></span>
+<span><span class="fu"><a href="../reference/plot_spatiotemporal_topography.html">plot_spatiotemporal_topography</a></span><span class="op">(</span></span>
 <span>    results <span class="op">=</span> <span class="va">results_external</span>,</span>
 <span>    observed_data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
 <span>    outcome_id <span class="op">=</span> <span class="st">"voltage"</span>,</span>
@@ -446,8 +431,6 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <span>    head_outline <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
 <p><img src="figures/eeg_spatio_temporal-plot-comparison-topographies-1.png" alt="" width="100%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># OR plot(x = results_external, type = "topography", observed_data = eeg_data)</span></span></code></pre></div>
 <p>Requested times are matched to the nearest predicted time point. The default diverging scale is shared across the panels, making observed/predicted amplitudes and residuals visually comparable. If preferred, set <code>limits = 2</code> for a fixed symmetric range in scaled voltage units or use a smaller <code>n_times</code> when not supplying explicit <code>times</code>.</p>
 <p>Cluster markings identify <strong>electrodes</strong> belonging to connected components at the selected time. Their exact membership is not inferred from interpolated pixels. For figures focused on model predictions, use <code>what = "predicted"</code>; for diagnostics, the three-row observed/predicted/residual layout is preferable.</p>
 </section><section class="level3"><h3 id="sensor-level-time-courses-scalp-layout">Sensor-level time courses: scalp layout<a class="anchor" aria-label="anchor" href="#sensor-level-time-courses-scalp-layout"></a>
@@ -455,8 +438,9 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <p><code><a href="../reference/plot_sensor_trajectories.html">plot_sensor_trajectories()</a></code> displays observed average voltage and posterior model predictions through time, together with optional credible intervals. With <code>layout = "scalp"</code>, the traces are placed approximately at their corresponding electrode coordinates and share an amplitude scale.</p>
 <p>Two styles of cluster highlighting are available.</p>
 <p><strong>1. Translucent rectangles</strong>, marking periods during which a sensor belongs to a detected cluster:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_sensor_trajectories.html">plot_sensor_trajectories</a></span><span class="op">(</span></span>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># OR plot(x = results_external, type = "trajectories", observed_data = eeg_data)</span></span>
+<span><span class="fu"><a href="../reference/plot_sensor_trajectories.html">plot_sensor_trajectories</a></span><span class="op">(</span></span>
 <span>    results <span class="op">=</span> <span class="va">results_external</span>,</span>
 <span>    observed_data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
 <span>    outcome_id <span class="op">=</span> <span class="st">"voltage"</span>,</span>
@@ -468,11 +452,8 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <span>    show_ci <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span>    <span class="op">)</span></span></code></pre></div>
 <p><img src="figures/eeg_spatio_temporal-plot-scalp-rectangles-1.png" alt="" width="100%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span></span>
-<span><span class="co"># OR plot(x = results_external, type = "trajectories", observed_data = eeg_data)</span></span></code></pre></div>
-<p><strong>2. Highlighted prediction-line segments</strong>, emphasizing the portion of each predicted waveform that belongs to a cluster:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<p><strong>2. Highlighted prediction-line segments</strong>, emphasising the portion of each predicted waveform that belongs to a cluster:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_sensor_trajectories.html">plot_sensor_trajectories</a></span><span class="op">(</span></span>
 <span>    results <span class="op">=</span> <span class="va">results_external</span>,</span>
 <span>    observed_data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
@@ -489,7 +470,7 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 </section><section class="level3"><h3 id="sensor-level-time-courses-faceted-layout">Sensor-level time courses: faceted layout<a class="anchor" aria-label="anchor" href="#sensor-level-time-courses-faceted-layout"></a>
 </h3>
 <p>The scalp layout is useful for viewing spatial organisation. The faceted alternative provides more room to inspect individual waveforms and uncertainties.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_sensor_trajectories.html">plot_sensor_trajectories</a></span><span class="op">(</span></span>
 <span>    results <span class="op">=</span> <span class="va">results_external</span>,</span>
 <span>    observed_data <span class="op">=</span> <span class="va">eeg_data</span>,</span>
@@ -498,13 +479,12 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <span>    participant_id <span class="op">=</span> <span class="st">"subject"</span>,</span>
 <span>    layout <span class="op">=</span> <span class="st">"facets"</span>,</span>
 <span>    cluster_style <span class="op">=</span> <span class="st">"rectangles"</span>,</span>
-<span>    sensors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">eeg_data</span><span class="op">$</span><span class="va">channel</span><span class="op">)</span> <span class="op">)</span>, size <span class="op">=</span> <span class="fl">9</span><span class="op">)</span>,</span>
+<span>    sensors <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">eeg_data</span><span class="op">$</span><span class="va">channel</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">9</span><span class="op">)</span>,</span>
 <span>    ncol <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>    free_y <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    show_ci <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span>    <span class="op">)</span></span>
-<span><span class="co">#&gt; Error in `sample.int()`:</span></span>
-<span><span class="co">#&gt; ! invalid first argument</span></span></code></pre></div>
+<span>    <span class="op">)</span></span></code></pre></div>
+<p><img src="figures/eeg_spatio_temporal-plot-sensor-facets-1.png" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>You can select a smaller sensor subset with <code>sensors = c("FZ", "CZ", "PZ")</code>, switch to <code>cluster_style = "segments"</code>, or turn off highlighting using <code>cluster_style = "none"</code>. Keeping <code>free_y = FALSE</code> facilitates across-sensor amplitude comparisons; setting it to <code>TRUE</code> can reveal low-amplitude responses but changes the displayed scale across panels.</p>
 </section></section><section class="level2"><h2 id="practical-recommendations-and-limitations">Practical recommendations and limitations<a class="anchor" aria-label="anchor" href="#practical-recommendations-and-limitations"></a>
 </h2>
@@ -516,12 +496,10 @@ y_{i,s,t} \sim \mathcal{N}(\mu_{i,s,t},\sigma^2), \qquad
 <li>
 <strong>Observed versus fitted activity.</strong> The displayed residual topographies show the difference between <em>grand-average observed activity</em> and <em>population-level expected predictions</em>. They are descriptive fit diagnostics, not trial-level residuals or a substitute for posterior predictive checks.</li>
 <li>
-<strong>Spatial geometry.</strong> Projected 2D positions approximate sensor layout; smoothing and graph adjacency use different aspects of that representation. Report the coordinate projection, adjacency method, <code>k</code>, and distance filter used.</li>
+<strong>Spatial geometry.</strong> Projected 2D positions approximate sensor layout; smoothing and graph adjacency use different aspects of that representation. Report the coordinate projection and adjacency layout or approximation method used.</li>
 <li>
-<strong>Reproducibility.</strong> Save fitted models or result objects, the adjacency graph, package versions, random seed, basis specification, posterior draw count, and inference thresholds. Consider retaining all posterior draws for final analyses even if a smaller subset is used for exploratory plots.</li>
-</ul>
-<p>The methods generalise naturally to other sensor-by-time signals. For scientific analyses, model selection, sensitivity checks, and participant-level uncertainty should be treated as part of the inferential workflow, not merely as plotting details.</p>
-</section><script id="quarto-html-after-body" type="application/javascript">
+<strong>Reproducibility.</strong> Save fitted models or result objects, the adjacency graph, package versions, basis specification, and inference thresholds.</li>
+</ul></section><script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);

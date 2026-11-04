@@ -249,9 +249,10 @@ plot_sensor_trajectories <- function(
                     x = "Time (s)", y = outcome_id,
                     subtitle = "Observed mean: black solid; predicted: blue dashed"
                     ) +
-                ggplot2::theme_minimal(base_size = 10) +
+                # ggplot2::theme_minimal(base_size = 10) +
+                theme_neurogam() +
                 ggplot2::theme(
-                    panel.grid.minor = ggplot2::element_blank(),
+                    # panel.grid.minor = ggplot2::element_blank(),
                     strip.text = ggplot2::element_text(size = 8)
                     )
             )
