@@ -15,6 +15,11 @@
 - Ensure cluster detection at the participant level use the
   participant-specific baseline-derived ROPE (cf. `utils.R`).
 
+### Other changes
+
+- Fixing a code error and using more efficient Duchon splines in the
+  spatio-temporal vignette, thanks to Jiahui Fan.
+
 ## neurogam 0.1.0
 
 - Preparing for initial CRAN submission (updating and reorganising the
