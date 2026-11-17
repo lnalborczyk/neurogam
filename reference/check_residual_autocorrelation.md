@@ -202,6 +202,9 @@ Ladislas Nalborczyk <ladislas.nalborczyk@cnrs.fr>.
 
 ``` r
 if (FALSE) { # \dontrun{
+# Not run: Requires fitted model involving computationally
+# intensive Stan compilation and MCMC sampling.
+
 # fit is a brmsfit with an AR(1) term
 out <- check_residual_autocorrelation(
     fit = fit,

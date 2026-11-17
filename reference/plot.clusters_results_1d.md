@@ -91,7 +91,9 @@ participant.
 
 ``` r
 if (FALSE) { # \dontrun{
-res <- testing_through_time(...)
-plot(res)
+# Not run: obtaining the fitted model requires
+# computationally intensive Stan sampling.
+# See ?testing_through_time for how to create `results`.
+plot(results)
 } # }
 ```

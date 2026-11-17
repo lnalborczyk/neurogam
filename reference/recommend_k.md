@@ -145,6 +145,9 @@ The resulting plot shows `p_*` vs `k` with:
 
 ``` r
 if (FALSE) { # \dontrun{
+# Not run: Bayesian model fitting involves computationally
+# intensive Stan compilation and MCMC sampling.
+
 # Generate a small, reproducible EEG-like example
 set.seed(123)
 

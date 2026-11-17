@@ -140,7 +140,6 @@ and one of `outcome_mean` / `outcome_sem` (Gaussian) or `success` /
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 # Gaussian, summary, no predictor
 make_bgam_formula(
   family = gaussian(),
@@ -148,6 +147,7 @@ make_bgam_formula(
   predictor_type = "none",
   kvalue = 20, bs = "tp"
   )
+#> outcome_mean | se(outcome_sem, sigma = TRUE) ~ 1 + (1 | participant) + s(time, bs = "tp", k = 20) + s(time, participant, bs = "fs", m = 1, k = 10) 
 
 # Binomial, summary, within-subject predictor
 make_bgam_formula(
@@ -157,5 +157,5 @@ make_bgam_formula(
   within_between = "within-subject",
   kvalue = 20, bs = "tp"
   )
-} # }
+#> success | trials(trials) ~ 1 + predictor + s(time, bs = "tp", k = 20, by = predictor) + s(time, participant, bs = "fs", m = 1, k = 10) 
 ```

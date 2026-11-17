@@ -214,7 +214,7 @@ testing_through_time(
 - backend:
 
   Character; package to use as the backend for fitting the `Stan` model.
-  One of `"cmdstanr"` (default) or `"rstan"`.
+  One of `"cmdstanr"` (default), `"rstan"`, or `"stanli"`.
 
 - stan_control:
 
@@ -379,6 +379,9 @@ Internally, the function:
 
 ``` r
 if (FALSE) { # \dontrun{
+# Not run: Bayesian model fitting involves computationally
+# intensive Stan compilation and MCMC sampling.
+
 # Generate a small, reproducible EEG-like example
 set.seed(123)
 
@@ -392,7 +395,7 @@ eeg_data <- expand.grid(
     )
 
 eeg_data <- eeg_data |>
-    mutate(
+    dplyr::mutate(
         eeg = 0.8 * exp(-((time - 0.3) / 0.09)^2) * (condition == "cond2") +
             rnorm(nrow(eeg_data), sd = 0.5)
     )

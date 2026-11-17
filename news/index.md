@@ -7,6 +7,8 @@
 - Implementing more sensible default values for `baseline_window()` in
   [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md)
   (1D analyses).
+- Supporting `stanli` backend in
+  [`testing_through_time()`](https://lnalborczyk.github.io/neurogam/reference/testing_through_time.md).
 
 ### Bug fixes
 

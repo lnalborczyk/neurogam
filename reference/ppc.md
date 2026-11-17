@@ -97,6 +97,10 @@ depending on the selected `ppc_type`.
 
 ``` r
 if (FALSE) { # \dontrun{
+# Not run: these examples require a previously fitted
+# Bayesian model, which is computationally expensive
+# to obtain.
+
 # Group-level PPC
 ppc(object = res, ppc_type = "group")
 

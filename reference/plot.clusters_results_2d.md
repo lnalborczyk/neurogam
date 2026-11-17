@@ -80,7 +80,10 @@ This method relies on patchwork to combine the two panels using `+`.
 
 ``` r
 if (FALSE) { # \dontrun{
-res2d <- testing_through_time(...)
-plot(res2d)
+# Not run: obtaining the fitted 2D model requires
+# computationally intensive Stan sampling.
+# `results_2d` is returned by testing_through_time()
+# with two temporal coordinates.
+plot(results_2d)
 } # }
 ```
