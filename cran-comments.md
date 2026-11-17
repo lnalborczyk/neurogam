@@ -18,7 +18,8 @@ Changes made in response to the review:
 
 ## Test environments and check results
 
-- **macOS Sequoia 15.7.4** (Apple Silicon, aarch64), **R 4.5.2**: 0 ERRORs, 0 WARNINGs, 0 NOTE.
+- macOS Sequoia 15.7.4 (Apple Silicon, aarch64), R 4.5.2: 0 ERRORs, 0 WARNINGs, 0 NOTEs.
+- Ubuntu Linux (x86_64), R release, GitHub Actions full CRAN-style check (--as-cran --no-manual): 0 ERRORs, 0 WARNINGs; check completed successfully.
 
 The package was checked locally using `devtools::check(cran = TRUE)`.
 
