@@ -82,7 +82,6 @@ if grouping is used). Internally, the data are:
 }
 }
 \examples{
-\dontrun{
 set.seed(666)
 df <- data.frame(
   time = seq(0, 1, length.out = 100),
@@ -115,7 +114,6 @@ find_clusters(
   group = "participant",
   threshold_type = "both"
   )
-}
 
 }
 \author{

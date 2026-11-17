@@ -132,6 +132,9 @@ using either the posterior mean or median of \eqn{\phi_k} (controlled by
 }
 \examples{
 \dontrun{
+# Not run: Requires fitted model involving computationally
+# intensive Stan compilation and MCMC sampling.
+
 # fit is a brmsfit with an AR(1) term
 out <- check_residual_autocorrelation(
     fit = fit,

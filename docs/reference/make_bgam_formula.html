@@ -189,14 +189,14 @@ reshaped to use the internal column names expected by <code>testing_through_time
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># Gaussian, summary, no predictor</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Gaussian, summary, no predictor</span></span></span>
 <span class="r-in"><span><span class="fu">make_bgam_formula</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  multilevel <span class="op">=</span> <span class="st">"summary"</span>,</span></span>
 <span class="r-in"><span>  predictor_type <span class="op">=</span> <span class="st">"none"</span>,</span></span>
 <span class="r-in"><span>  kvalue <span class="op">=</span> <span class="fl">20</span>, bs <span class="op">=</span> <span class="st">"tp"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> outcome_mean | se(outcome_sem, sigma = TRUE) ~ 1 + (1 | participant) + s(time, bs = "tp", k = 20) + s(time, participant, bs = "fs", m = 1, k = 10) </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Binomial, summary, within-subject predictor</span></span></span>
 <span class="r-in"><span><span class="fu">make_bgam_formula</span><span class="op">(</span></span></span>
@@ -206,7 +206,7 @@ reshaped to use the internal column names expected by <code>testing_through_time
 <span class="r-in"><span>  within_between <span class="op">=</span> <span class="st">"within-subject"</span>,</span></span>
 <span class="r-in"><span>  kvalue <span class="op">=</span> <span class="fl">20</span>, bs <span class="op">=</span> <span class="st">"tp"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> success | trials(trials) ~ 1 + predictor + s(time, bs = "tp", k = 20, by = predictor) + s(time, participant, bs = "fs", m = 1, k = 10) </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

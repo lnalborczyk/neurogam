@@ -30,6 +30,9 @@ implementations; no predictions or clusters are recomputed.
 }
 \examples{
 \dontrun{
+# Not run: generating `results_st` requires
+# computationally intensive Bayesian model fitting.
+# `eeg_data2` contains the corresponding observations.
 plot(results_st, type = "topography", observed_data = eeg_data2)
 plot(results_st, type = "trajectories", observed_data = eeg_data2,
      layout = "facets", cluster_style = "segments")

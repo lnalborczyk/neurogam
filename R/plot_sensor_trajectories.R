@@ -40,18 +40,21 @@
 #' @return A ggplot object.
 #' @examples
 #' \dontrun{
+#' # Not run: generating `results_st` requires
+#' # computationally intensive Bayesian model fitting.
+#' # `eeg_data2` contains the corresponding observations.
 #' plot_sensor_trajectories(
 #'     results_st, eeg_data2, outcome_id = "voltage",
 #'     sensor_id = "channel", layout = "scalp",
 #'     cluster_style = "segments"
-#' )
+#'     )
 #' }
 #' @importFrom rlang .data
 #'
 #' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
 #'
 #' @export
-plot_sensor_trajectories <- function(
+plot_sensor_trajectories <- function (
     results,
     observed_data,
     observed_data_b = NULL,

@@ -2,7 +2,7 @@ Package: neurogam
 Type: Package
 Title: Bayesian Generalised Additive Models for Time-Resolved Data
 Version: 0.1.1
-Date: 2026-11-04
+Date: 2026-11-17
 Authors@R:
     c(
     person(
@@ -17,14 +17,14 @@ Authors@R:
     email = "paul.buerkner@gmail.com",
     comment = c(ORCID = "0000-0001-5765-8995")
     ) )
-Description: Provides tools for fitting Bayesian generalised additive
+Description: Fits Bayesian generalised additive
     multilevel models to time-resolved data using 'brms'. Supports
     one-dimensional time courses, cross-temporal generalisation matrices,
     and spatiotemporal measurements, including posterior summaries,
-    directional evidence assessment, cluster identification, and
+    posterior evidence assessment, cluster identification, and
     visualisation of fitted effects. Designed for applications involving
     electroencephalography, magnetoencephalography, electromyography,
-    pupillometry, and other time-resolved measurements. The temporal
+    pupillometry, and other time-resolved measurements. The
     inference framework is described in Nalborczyk & Bürkner (2025)
     <doi:10.1101/2025.08.29.672336>.
 License: MIT + file LICENSE

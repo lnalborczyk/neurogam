@@ -70,6 +70,10 @@ depending on the selected \code{ppc_type}.
 }
 \examples{
 \dontrun{
+# Not run: these examples require a previously fitted
+# Bayesian model, which is computationally expensive
+# to obtain.
+
 # Group-level PPC
 ppc(object = res, ppc_type = "group")
 

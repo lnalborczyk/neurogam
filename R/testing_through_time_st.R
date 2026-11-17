@@ -122,8 +122,10 @@ testing_through_time_spatiotemporal <- function (
         stop("AR residual structure is not yet supported for 3D models.",
              call. = FALSE)
     }
-    threshold_type <- match.arg(threshold_type, c("both", "above", "below"))
-    backend <- match.arg(backend, c("rstan", "cmdstanr"))
+
+    threshold_type <- match.arg(threshold_type, c("both", "above", "below") )
+    backend <- match.arg(backend, c("rstan", "cmdstanr", 'stanli') )
+
     if (!is.null(n_post_samples) &&
         (!is.numeric(n_post_samples) || length(n_post_samples) != 1L ||
          !is.finite(n_post_samples) || n_post_samples < 1L ||
@@ -333,7 +335,7 @@ testing_through_time_spatiotemporal <- function (
             null_value = if (is.null(grids$b)) chance_level else 0,
             rope = rope,
             credible_interval = credible_interval,
-            #odds_mode = "legacy_one_sided",
+            # odds_mode = "legacy_one_sided",
             odds_mode = odds_mode,
             contrast = analysed$contrast,
             contrast_levels = analysed$contrast_levels,

@@ -62,7 +62,7 @@ separately by the caller.}
 A list containing `model`, `n_post_samples`, and `reused`.
 }
 \description{
-Centralizes the brms fitting arguments and the `previous_model` path.
+Centralises the brms fitting arguments and the `previous_model` path.
 This helper does not validate model/data compatibility, construct prediction
 grids, or compute any posterior quantities; callers retain those duties.
 }

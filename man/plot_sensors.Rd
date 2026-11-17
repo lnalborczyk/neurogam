@@ -105,27 +105,27 @@ Highlighting works in two modes:
 }
 }
 \examples{
-\dontrun{
-# Basic sensor layout with head outline and labels
-plot_sensors(sensors, show_points = TRUE, show_labels = TRUE)
+sensors <- data.frame(
+  channel = c("Cz", "C1", "C2", "Fz", "Pz"),
+  xproj = c(0, -0.4, 0.4, 0, 0),
+  yproj = c(0, 0, 0, 0.5, -0.5)
+  )
 
-# Highlight a few channels by name
+# Basic sensor layout
 plot_sensors(
   sensors,
   show_points = TRUE,
   show_labels = TRUE,
-  highlight = c("CZ", "C1", "C2"),
-  label_only_highlight = TRUE
+  label_repel = FALSE
   )
 
-# Highlight by row index
+# Highlight selected sensors
 plot_sensors(
   sensors,
   show_points = TRUE,
-  highlight = c(10, 25, 42),
-  highlight_col = "dodgerblue"
+  highlight = c("Cz", "C1"),
+  label_repel = FALSE
   )
-}
 
 }
 \author{

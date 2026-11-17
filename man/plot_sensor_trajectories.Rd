@@ -96,11 +96,14 @@ Cluster segments respect sign, cluster ID and gaps in the time grid.
 }
 \examples{
 \dontrun{
+# Not run: generating `results_st` requires
+# computationally intensive Bayesian model fitting.
+# `eeg_data2` contains the corresponding observations.
 plot_sensor_trajectories(
     results_st, eeg_data2, outcome_id = "voltage",
     sensor_id = "channel", layout = "scalp",
     cluster_style = "segments"
-)
+    )
 }
 }
 \author{

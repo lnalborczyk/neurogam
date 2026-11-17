@@ -67,7 +67,6 @@
 #' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}
 #'
 #' @examples
-#' \dontrun{
 #' set.seed(666)
 #' df <- data.frame(
 #'   time = seq(0, 1, length.out = 100),
@@ -100,7 +99,6 @@
 #'   group = "participant",
 #'   threshold_type = "both"
 #'   )
-#' }
 #'
 #' @author Ladislas Nalborczyk \email{ladislas.nalborczyk@@cnrs.fr}.
 #'

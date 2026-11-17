@@ -56,7 +56,6 @@
 #' @return A \code{\link[brms]{brmsformula}} object.
 #'
 #' @examples
-#' \dontrun{
 #' # Gaussian, summary, no predictor
 #' make_bgam_formula(
 #'   family = gaussian(),
@@ -73,7 +72,6 @@
 #'   within_between = "within-subject",
 #'   kvalue = 20, bs = "tp"
 #'   )
-#' }
 #'
 #' @param space_id Optional vector of two spatial coordinate names. If given,
 #'   build a 3D spatial-temporal `t2()` smooth instead of the 1D/2D smooth.

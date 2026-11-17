@@ -152,6 +152,9 @@ and \code{st_interp_to_grid()}.
 }
 \examples{
 \dontrun{
+# Not run: Requires fitted model involving computationally
+# intensive Stan compilation and MCMC sampling.
+
 # Summarised EEG data (long format)
 plot_eeg(
   eeg_data_summary,

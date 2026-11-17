@@ -3,6 +3,7 @@
 ## New features
 
 * Implementing more sensible default values for `baseline_window()` in `testing_through_time()` (1D analyses).
+* Supporting `stanli` backend in `testing_through_time()`.
 
 ## Bug fixes
 

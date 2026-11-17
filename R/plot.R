@@ -32,8 +32,10 @@
 #'
 #' @examples
 #' \dontrun{
-#' res <- testing_through_time(...)
-#' plot(res)
+#' # Not run: obtaining the fitted model requires
+#' # computationally intensive Stan sampling.
+#' # See ?testing_through_time for how to create `results`.
+#' plot(results)
 #' }
 #'
 #' @param type Optional plot type. `NULL` (default) preserves the historical plot; `"predictions"` and `"clusters"` use the standardized result tables.
@@ -271,8 +273,11 @@ plot.clusters_results_1d <- function (
 #'
 #' @examples
 #' \dontrun{
-#' res2d <- testing_through_time(...)
-#' plot(res2d)
+#' # Not run: obtaining the fitted 2D model requires
+#' # computationally intensive Stan sampling.
+#' # `results_2d` is returned by testing_through_time()
+#' # with two temporal coordinates.
+#' plot(results_2d)
 #' }
 #'
 #' @param type Optional plot type. `NULL` (default) preserves the historical plot; `"predictions"` and `"clusters"` use the standardized result tables.
@@ -431,6 +436,10 @@ plot.clusters_results_2d <- function (
 #'
 #' @examples
 #' \dontrun{
+#' # Not run: these examples require a previously fitted
+#' # Bayesian model, which is computationally expensive
+#' # to obtain.
+#'
 #' # Group-level PPC
 #' ppc(object = res, ppc_type = "group")
 #'

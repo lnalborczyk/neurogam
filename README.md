@@ -5,8 +5,6 @@
 
 [![Repo
 status](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![Last
-commit](https://img.shields.io/github/last-commit/lnalborczyk/neurogam)](https://github.com/lnalborczyk/neurogam)
 [![R-CMD-check](https://github.com/lnalborczyk/neurogam/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lnalborczyk/neurogam/actions/workflows/R-CMD-check.yaml)
 [![Codecov](https://codecov.io/gh/lnalborczyk/neurogam/branch/main/graph/badge.svg)](https://app.codecov.io/gh/lnalborczyk/neurogam)
 <!-- badges: end -->
@@ -87,6 +85,7 @@ results_1d <- testing_through_time(
     time_id = "time",
     predictor_id = NA,
     multilevel = "summary",
+    baseline_window = c(-0.2, -0.1),
     threshold = 10
     )
 

@@ -88,7 +88,7 @@
 #' @param threads Numeric; number of threads to use in within-chain parallelisation.
 #'   See \code{\link[brms]{brm}} documentation for more information.
 #' @param backend Character; package to use as the backend for fitting the
-#'   \code{Stan} model. One of \code{"cmdstanr"} (default) or \code{"rstan"}.
+#'   \code{Stan} model. One of \code{"cmdstanr"} (default), \code{"rstan"}, or \code{"stanli"}.
 #' @param stan_control List; parameters to control the MCMC behaviour, using
 #'   default parameters when NULL. See \code{?brm} for more details.
 #' @param file Either NULL or a character string. In the latter case, the
@@ -184,6 +184,9 @@
 #'
 #' @examples
 #' \dontrun{
+#' # Not run: Bayesian model fitting involves computationally
+#' # intensive Stan compilation and MCMC sampling.
+#'
 #' # Generate a small, reproducible EEG-like example
 #' set.seed(123)
 #'
@@ -197,7 +200,7 @@
 #'     )
 #'
 #' eeg_data <- eeg_data |>
-#'     mutate(
+#'     dplyr::mutate(
 #'         eeg = 0.8 * exp(-((time - 0.3) / 0.09)^2) * (condition == "cond2") +
 #'             rnorm(nrow(eeg_data), sd = 0.5)
 #'     )
@@ -345,7 +348,7 @@ testing_through_time <- function (
     odds_mode <- match.arg(odds_mode)
 
     # Backend should be one of above
-    backend <- match.arg(backend, c("rstan", "cmdstanr") )
+    backend <- match.arg(backend, c("rstan", "cmdstanr", "stanli") )
 
     # Threshold_type should be one of above
     threshold_type <- match.arg(threshold_type)

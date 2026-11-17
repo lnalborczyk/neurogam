@@ -357,34 +357,46 @@ neurogam_st_plot_request <- function(type, dots = list()) {
 #' @return A `ggplot` object.
 #' @examples
 #' \dontrun{
+#' # Not run: generating `results_st` requires
+#' # computationally intensive Bayesian model fitting.
+#' # `eeg_data2` contains the corresponding observations.
 #' plot(results_st, type = "topography", observed_data = eeg_data2)
 #' plot(results_st, type = "trajectories", observed_data = eeg_data2,
 #'      layout = "facets", cluster_style = "segments")
 #' }
 #' @export
-plot.clusters_results_st <- function(
+plot.clusters_results_st <- function (
     x,
     type = "topography",
     observed_data = NULL,
     observed_data_b = NULL,
     ...
-) {
-    request <- neurogam_st_plot_request(type, list(...))
-    if (is.null(observed_data) || !is.data.frame(observed_data)) {
-        stop(
+    ) {
+
+    request <- neurogam_st_plot_request(type, list(...) )
+
+    if (is.null(observed_data) || !is.data.frame(observed_data) ) {
+
+        stop (
             "`observed_data` must be a data frame for spatiotemporal ",
             "plots. Supply the original long-form EEG observations.",
             call. = FALSE
-        )
+            )
+
     }
-    if (!is.null(observed_data_b) && !is.data.frame(observed_data_b)) {
-        stop("`observed_data_b` must be a data frame.", call. = FALSE)
+
+    if (!is.null(observed_data_b) && !is.data.frame(observed_data_b) ) {
+
+        stop ("`observed_data_b` must be a data frame.", call. = FALSE)
+
     }
-    plotting_function <- switch(
+
+    plotting_function <- switch (
         request$type,
         topography = plot_spatiotemporal_topography,
         trajectories = plot_sensor_trajectories
-    )
+        )
+
     do.call(
         plotting_function,
         c(
@@ -392,8 +404,9 @@ plot.clusters_results_st <- function(
                 results = x,
                 observed_data = observed_data,
                 observed_data_b = observed_data_b
-            ),
+                ),
             request$dots
+            )
         )
-    )
+
 }

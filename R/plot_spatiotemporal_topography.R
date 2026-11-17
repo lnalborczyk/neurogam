@@ -34,10 +34,13 @@
 #' @return A ggplot object.
 #' @examples
 #' \dontrun{
+#' # Not run: generating `results_st` requires
+#' # computationally intensive Bayesian model fitting.
+#' # `eeg_data2` contains the corresponding observations.
 #' plot_spatiotemporal_topography(
 #'     results_st, eeg_data2, outcome_id = "voltage",
 #'     sensor_id = "channel", n_times = 8
-#' )
+#'     )
 #' }
 #'
 #' @importFrom rlang .data

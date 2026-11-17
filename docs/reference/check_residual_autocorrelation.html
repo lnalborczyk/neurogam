@@ -237,6 +237,9 @@ using either the posterior mean or median of \(\phi_k\) (controlled by
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Not run: Requires fitted model involving computationally</span></span></span>
+<span class="r-in"><span><span class="co"># intensive Stan compilation and MCMC sampling.</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># fit is a brmsfit with an AR(1) term</span></span></span>
 <span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">check_residual_autocorrelation</span><span class="op">(</span></span></span>
 <span class="r-in"><span>    fit <span class="op">=</span> <span class="va">fit</span>,</span></span>

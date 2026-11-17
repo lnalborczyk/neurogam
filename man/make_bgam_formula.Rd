@@ -100,7 +100,6 @@ reshaped to use the internal column names expected by \code{testing_through_time
 (Binomial).
 }
 \examples{
-\dontrun{
 # Gaussian, summary, no predictor
 make_bgam_formula(
   family = gaussian(),
@@ -117,6 +116,5 @@ make_bgam_formula(
   within_between = "within-subject",
   kvalue = 20, bs = "tp"
   )
-}
 
 }

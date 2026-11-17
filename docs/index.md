@@ -79,6 +79,7 @@ results_1d <- testing_through_time(
     time_id = "time",
     predictor_id = NA,
     multilevel = "summary",
+    baseline_window = c(-0.2, -0.1),
     threshold = 10
     )
 

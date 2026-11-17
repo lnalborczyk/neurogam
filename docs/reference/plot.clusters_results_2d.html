@@ -130,8 +130,11 @@ overlaid as contour (which includes interpolation).</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="va">res2d</span> <span class="op">&lt;-</span> <span class="fu"><a href="testing_through_time.html">testing_through_time</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">res2d</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Not run: obtaining the fitted 2D model requires</span></span></span>
+<span class="r-in"><span><span class="co"># computationally intensive Stan sampling.</span></span></span>
+<span class="r-in"><span><span class="co"># `results_2d` is returned by testing_through_time()</span></span></span>
+<span class="r-in"><span><span class="co"># with two temporal coordinates.</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">results_2d</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

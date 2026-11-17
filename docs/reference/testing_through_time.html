@@ -271,7 +271,7 @@ See <code><a href="https://paulbuerkner.com/brms/reference/brm.html" class="exte
 
 <dt id="arg-backend">backend<a class="anchor" aria-label="anchor" href="#arg-backend"></a></dt>
 <dd><p>Character; package to use as the backend for fitting the
-<code>Stan</code> model. One of <code>"cmdstanr"</code> (default) or <code>"rstan"</code>.</p></dd>
+<code>Stan</code> model. One of <code>"cmdstanr"</code> (default), <code>"rstan"</code>, or <code>"stanli"</code>.</p></dd>
 
 
 <dt id="arg-stan-control">stan_control<a class="anchor" aria-label="anchor" href="#arg-stan-control"></a></dt>
@@ -424,6 +424,9 @@ backend, MCMC settings, and Stan compilation are handled explicitly by
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Not run: Bayesian model fitting involves computationally</span></span></span>
+<span class="r-in"><span><span class="co"># intensive Stan compilation and MCMC sampling.</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Generate a small, reproducible EEG-like example</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
@@ -437,7 +440,7 @@ backend, MCMC settings, and Stan compilation are handled explicitly by
 <span class="r-in"><span>    <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">eeg_data</span> <span class="op">&lt;-</span> <span class="va">eeg_data</span> <span class="op">|&gt;</span></span></span>
-<span class="r-in"><span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>        eeg <span class="op">=</span> <span class="fl">0.8</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="op">(</span><span class="op">(</span><span class="va">time</span> <span class="op">-</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">/</span> <span class="fl">0.09</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">*</span> <span class="op">(</span><span class="va">condition</span> <span class="op">==</span> <span class="st">"cond2"</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>            <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">eeg_data</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></span>
 <span class="r-in"><span>    <span class="op">)</span></span></span>
